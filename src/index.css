@@ -1,0 +1,77 @@
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --primary-blue: #3B82F6;
+  --accent-turquoise: #14B8A6;
+  --accent-magenta: #D946EF;
+  --dark-bg: #111827;
+  --light-bg: #EBF4FF; 
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  overflow-x: hidden;
+  @apply bg-[var(--light-bg)] text-[#0D1117];
+  @apply dark:bg-[var(--dark-bg)] dark:text-[#F9FAFB];
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.text-gradient {
+  background: linear-gradient(135deg, var(--primary-blue), var(--accent-turquoise));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.btn-primary {
+  background-color: var(--primary-blue);
+  color: white;
+  transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+  background-color: #2563EB; /* um tom mais escuro de azul */
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
+}
+
+.btn-secondary {
+  border: 2px solid var(--accent-turquoise);
+  color: var(--accent-turquoise);
+  transition: all 0.3s ease;
+}
+
+.btn-secondary:hover {
+  background: var(--accent-turquoise);
+  color: var(--dark-bg);
+  box-shadow: 0 4px 15px rgba(20, 184, 166, 0.3);
+}
+
+.pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite alternate;
+}
+
+@keyframes pulse-glow {
+  from { box-shadow: 0 0 15px rgba(59, 130, 246, 0.3); }
+  to { box-shadow: 0 0 25px rgba(59, 130, 246, 0.5); }
+}
+
+.btn-pulse {
+  animation: btn-pulse 2s infinite;
+}
+
+@keyframes btn-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(20, 184, 166, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(20, 184, 166, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(20, 184, 166, 0);
+  }
+}
