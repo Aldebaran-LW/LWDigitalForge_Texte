@@ -43,6 +43,7 @@ const AdminFormularioProduto = () => {
         reset({
           name: data.name,
           product_type_id: data.product_type_id,
+          hostinger_product_id: data.hostinger_product_id,
           price_monthly: data.price_monthly ? data.price_monthly / 100 : '',
           price_lifetime: data.price_lifetime ? data.price_lifetime / 100 : '',
           shortDescription: data.short_description,
@@ -64,6 +65,7 @@ const AdminFormularioProduto = () => {
     const productData = {
       name: formData.name,
       product_type_id: formData.product_type_id,
+      hostinger_product_id: formData.hostinger_product_id,
       price_monthly: formData.price_monthly ? Math.round(formData.price_monthly * 100) : null,
       price_lifetime: formData.price_lifetime ? Math.round(formData.price_lifetime * 100) : null,
       short_description: formData.shortDescription,
@@ -131,6 +133,10 @@ const AdminFormularioProduto = () => {
                     {productTypes.map(type => <option key={type.id} value={type.id}>{type.name}</option>)}
                   </select>
                   {errors.product_type_id && <p className="text-red-500 text-xs mt-1">{errors.product_type_id.message}</p>}
+                </div>
+                <div>
+                  <label htmlFor="hostinger_product_id" className="block text-sm font-medium mb-1">Hostinger Product ID</label>
+                  <input type="text" id="hostinger_product_id" {...register('hostinger_product_id')} className="w-full p-2 bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-md" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1">Status</label>
