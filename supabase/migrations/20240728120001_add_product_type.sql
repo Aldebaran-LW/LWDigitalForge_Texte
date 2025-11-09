@@ -1,0 +1,1 @@
+INSERT INTO product_types (name) VALUES ('Ferramenta Web');

@@ -43,7 +43,9 @@ const AdminFormularioProduto = () => {
           name: data.name,
           product_type_id: data.product_type_id,
           price_monthly: data.price_monthly ? data.price_monthly / 100 : '',
+          price_annual: data.price_annual ? data.price_annual / 100 : '',
           price_lifetime: data.price_lifetime ? data.price_lifetime / 100 : '',
+          trial_period_days: data.trial_period_days,
           shortDescription: data.short_description,
           detailedDescription: data.detailed_description,
           features: data.features,
@@ -64,7 +66,9 @@ const AdminFormularioProduto = () => {
       name: formData.name,
       product_type_id: formData.product_type_id,
       price_monthly: formData.price_monthly ? Math.round(formData.price_monthly * 100) : null,
+      price_annual: formData.price_annual ? Math.round(formData.price_annual * 100) : null,
       price_lifetime: formData.price_lifetime ? Math.round(formData.price_lifetime * 100) : null,
+      trial_period_days: formData.trial_period_days ? parseInt(formData.trial_period_days, 10) : null,
       short_description: formData.shortDescription,
       detailed_description: formData.detailedDescription,
       features: formData.features,
@@ -154,15 +158,23 @@ const AdminFormularioProduto = () => {
 
           {/* Pricing Section */}
           <h2 className="text-xl font-semibold border-b pt-4 pb-2 border-gray-200 dark:border-gray-600">Precificação</h2>
-           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
                 <label htmlFor="price_monthly" className="block text-sm font-medium mb-1">Licença Mensal (R$)</label>
                 <input type="number" id="price_monthly" step="0.01" {...register('price_monthly')} className="w-full p-2 bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-md" />
               </div>
               <div>
+                <label htmlFor="price_annual" className="block text-sm font-medium mb-1">Licença Anual (R$)</label>
+                <input type="number" id="price_annual" step="0.01" {...register('price_annual')} className="w-full p-2 bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-md" />
+              </div>
+              <div>
                 <label htmlFor="price_lifetime" className="block text-sm font-medium mb-1">Licença Vitalícia (R$)</label>
                 <input type="number" id="price_lifetime" step="0.01" {...register('price_lifetime')} className="w-full p-2 bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-md" />
               </div>
+          </div>
+          <div>
+            <label htmlFor="trial_period_days" className="block text-sm font-medium mb-1">Período de Teste (dias)</label>
+            <input type="number" id="trial_period_days" {...register('trial_period_days')} className="w-full p-2 bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-md" />
           </div>
 
           {/* Integration Section */}
