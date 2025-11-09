@@ -1,4 +1,3 @@
-
 import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
@@ -6,10 +5,15 @@ import { Button } from '@/components/ui/button';
 import { ShoppingCart, Loader2, Info } from 'lucide-react';
 import { useCart } from '@/hooks/useCart';
 import { useToast } from '@/components/ui/use-toast';
-import { getProducts, getProductQuantities } from '@/api/EcommerceApi';
+// 1. API da Hostinger removida
+// import { getProducts, getProductQuantities } from '@/api/EcommerceApi';
+// 2. Supabase importado
+import { supabase } from '@/lib/customSupabaseClient';
 
 const placeholderImage = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjMWEyMDNkIi8+CiAgPHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzY0NzRjYSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkxXPC90ZXh0Pgo8L3N2Zz4K";
 
+// O ProductCard pode continuar o MESMO, pois sua lógica de useEffect
+// recria a estrutura de "variants" que ele espera.
 const ProductCard = ({ product, index }) => {
   const { addToCart } = useCart();
   const { toast } = useToast();
@@ -102,52 +106,71 @@ const ProductCard = ({ product, index }) => {
 const ProductsList = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState(null); // Seu snippet de estado
 
+  // 3. Bloco useEffect substituído pelo seu
   useEffect(() => {
-    const fetchProductsWithQuantities = async () => {
+    const fetchProducts = async () => {
       try {
         setLoading(true);
         setError(null);
-
-        const productsResponse = await getProducts();
-
-        if (productsResponse.products.length === 0) {
+        const { data, error } = await supabase.from('products').select('*');
+        if (error) {
+          throw error;
+        }
+        if (data.length === 0) {
           setProducts([]);
           return;
         }
-
-        const productIds = productsResponse.products.map(product => product.id);
-
-        const quantitiesResponse = await getProductQuantities({
-          fields: 'inventory_quantity',
-          product_ids: productIds
-        });
-
-        const variantQuantityMap = new Map();
-        quantitiesResponse.variants.forEach(variant => {
-          variantQuantityMap.set(variant.id, variant.inventory_quantity);
-        });
-
-        const productsWithQuantities = productsResponse.products.map(product => ({
-          ...product,
-          variants: product.variants.map(variant => ({
-            ...variant,
-            inventory_quantity: variantQuantityMap.get(variant.id) ?? variant.inventory_quantity
-          }))
+        // Sua lógica de mapeamento para recriar a estrutura de variantes
+        const productsWithVariants = data.map(p => ({
+          id: p.id,
+          title: p.name,
+          subtitle: p.subtitle,
+          description: p.description,
+          image: p.image_url,
+          price_in_cents: p.price * 100, // Assumindo que 'price' é um número como 297.00
+          currency: 'BRL',
+          purchasable: true,
+          order: 0,
+          site_product_selection: 'lowest_price_first',
+          images: [{ url: p.image_url, order: 0, type: 'image' }],
+          options: [],
+          variants: [{
+            id: `variant_${p.id}`,
+            title: 'Default',
+            image_url: p.image_url,
+            sku: null,
+            price_in_cents: p.price * 100,
+            sale_price_in_cents: null,
+            currency: 'BRL',
+            currency_info: { code: 'BRL', symbol: 'R$', template: 'R$ $1' },
+            price_formatted: `R$ ${parseFloat(p.price).toFixed(2).replace('.', ',')}`, // Garante que p.price é float
+            sale_price_formatted: null,
+            manage_inventory: false,
+            weight: null,
+            options: [],
+            inventory_quantity: 99, // Estoque fixo por enquanto
+          }],
+          collections: [],
+          additional_info: [],
+          type: { value: 'physical' },
+          custom_fields: [],
+          related_products: [],
+          updated_at: p.created_at,
+          ribbon_text: null, // Pode ser adicionado na tabela Supabase depois
         }));
-
-        setProducts(productsWithQuantities);
+        setProducts(productsWithVariants);
       } catch (err) {
         setError(err.message || 'Falha ao carregar produtos');
       } finally {
-        setLoading(false);
+        setLoading(false); // Movido para o finally
       }
     };
-
-    fetchProductsWithQuantities();
+    fetchProducts();
   }, []);
 
+  // A lógica de renderização (loading, error, etc.) permanece a mesma
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -168,6 +191,7 @@ const ProductsList = () => {
     return (
       <div className="text-center text-gray-500 dark:text-gray-400 p-8">
         <p>Nenhum produto disponível no momento.</p>
+        <p className='text-sm'>(Verifique se você adicionou produtos na tabela 'products' do Supabase)</p>
       </div>
     );
   }
