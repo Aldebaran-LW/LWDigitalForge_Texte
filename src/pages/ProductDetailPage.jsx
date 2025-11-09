@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Helmet } from 'react-helmet';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { getProduct, getProductQuantities } from '@/api/EcommerceApi';
+import { supabase } from '@/lib/customSupabaseClient';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/hooks/useCart';
 import { useToast } from '@/components/ui/use-toast';
@@ -85,30 +85,59 @@ function ProductDetailPage() {
       try {
         setLoading(true);
         setError(null);
-        const fetchedProduct = await getProduct(id);
 
-        const quantitiesResponse = await getProductQuantities({
-          fields: 'inventory_quantity',
-          product_ids: [fetchedProduct.id]
-        });
+        const { data: p, error } = await supabase
+          .from('products')
+          .select('*')
+          .eq('id', id)
+          .single();
 
-        const variantQuantityMap = new Map();
-        quantitiesResponse.variants.forEach(variant => {
-          variantQuantityMap.set(variant.id, variant.inventory_quantity);
-        });
+        if (error) {
+          throw error;
+        }
 
-        const productWithQuantities = {
-          ...fetchedProduct,
-          variants: fetchedProduct.variants.map(variant => ({
-            ...variant,
-            inventory_quantity: variantQuantityMap.get(variant.id) ?? variant.inventory_quantity
-          }))
+        const fetchedProduct = {
+          id: p.id,
+          title: p.name,
+          subtitle: p.subtitle,
+          description: p.description,
+          image: p.image_url,
+          price_in_cents: p.price * 100,
+          currency: 'BRL',
+          purchasable: true,
+          order: 0,
+          site_product_selection: 'lowest_price_first',
+          images: [{ url: p.image_url, order: 0, type: 'image' }],
+          options: [],
+          variants: [{
+            id: `variant_${p.id}`,
+            title: 'Default',
+            image_url: p.image_url,
+            sku: null,
+            price_in_cents: p.price * 100,
+            sale_price_in_cents: null,
+            currency: 'BRL',
+            currency_info: { code: 'BRL', symbol: 'R$', template: 'R$ $1' },
+            price_formatted: `R$ ${p.price.toFixed(2).replace('.', ',')}`,
+            sale_price_formatted: null,
+            manage_inventory: false,
+            weight: null,
+            options: [],
+            inventory_quantity: 99,
+          }],
+          collections: [],
+          additional_info: [],
+          type: { value: 'physical' },
+          custom_fields: [],
+          related_products: [],
+          updated_at: p.created_at,
+          ribbon_text: null
         };
         
-        setProduct(productWithQuantities);
+        setProduct(fetchedProduct);
 
-        if (productWithQuantities.variants && productWithQuantities.variants.length > 0) {
-          setSelectedVariant(productWithQuantities.variants[0]);
+        if (fetchedProduct.variants && fetchedProduct.variants.length > 0) {
+          setSelectedVariant(fetchedProduct.variants[0]);
         }
       } catch (err) {
         setError(err.message || 'Falha ao carregar o produto');
@@ -118,7 +147,7 @@ function ProductDetailPage() {
     };
 
     fetchProductData();
-  }, [id, navigate]);
+  }, [id]);
 
   if (loading) {
     return (
