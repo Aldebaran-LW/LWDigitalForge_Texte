@@ -2,33 +2,25 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { Instagram, Linkedin, Mail, Phone } from 'lucide-react';
-import { toast } from '@/components/ui/use-toast';
 
 const Footer = () => {
-  const handleSocialClick = (linkName) => {
-    toast({
-      title: "🚧 Em breve!",
-      description: `O link para nosso ${linkName} será adicionado em breve!`,
-    });
-  };
-
   const socialLinks = [
-    { icon: Instagram, name: 'Instagram', color: '#D946EF' },
-    { icon: Linkedin, name: 'LinkedIn', color: '#3B82F6' },
-    { icon: Mail, name: 'Email', color: '#14B8A6' },
-    { icon: Phone, name: 'WhatsApp', color: '#14B8A6' }
+    { icon: Instagram, name: 'Instagram', href: '#', color: '#D946EF' },
+    { icon: Linkedin, name: 'LinkedIn', href: '#', color: '#3B82F6' },
+    { icon: Mail, name: 'Email', href: 'mailto:lwdigitalforge@gmail.com', color: '#14B8A6' },
+    { icon: Phone, name: 'WhatsApp', href: 'https://wa.me/SEUNUMERO', color: '#25D366' } // Adicione seu número de WhatsApp aqui
   ];
 
   return (
     <footer className="bg-[#0D1117] border-t border-[#3B82F6]/20">
       <div className="container mx-auto px-4 py-12 relative">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-10 mb-8 text-center md:text-left">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
             viewport={{ once: true }}
-            className="md:col-span-2"
+            className="md:col-span-2 flex flex-col items-center md:items-start"
           >
             <Link to="/" className="flex items-center mb-4">
               <img
@@ -36,7 +28,7 @@ const Footer = () => {
                 alt="LWDigitalForge Logo"
                 className="h-8 mr-2"
               />
-              <span className="text-2xl font-bold text-gradient hidden sm:block">
+              <span className="text-2xl font-bold text-gradient sm:block">
                 LWDigitalForge
               </span>
             </Link>
@@ -47,16 +39,19 @@ const Footer = () => {
             
             <div className="flex space-x-4">
               {socialLinks.map((social) => (
-                <motion.button
+                <motion.a
                   key={social.name}
-                  onClick={() => handleSocialClick(social.name)}
+                  href={social.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   whileHover={{ scale: 1.1, y: -2 }}
                   whileTap={{ scale: 0.95 }}
                   className="w-10 h-10 bg-gradient-to-br from-[#2563EB]/10 to-[#14B8A6]/10 rounded-full flex items-center justify-center border border-transparent hover:border-current transition-all duration-300"
                   style={{ color: social.color }}
+                  aria-label={social.name}
                 >
                   <social.icon size={20} />
-                </motion.button>
+                </motion.a>
               ))}
             </div>
           </motion.div>
@@ -87,8 +82,8 @@ const Footer = () => {
               Legal
             </span>
             <ul className="space-y-3">
-              <li><Link to="/termos-de-servico" className="text-[#F9FAFB]/70 hover:text-[#3B82F6] transition-colors duration-300">Termos de Serviço</Link></li>
-              <li><Link to="/politica-de-privacidade" className="text-[#F9FAFB]/70 hover:text-[#3B82F6] transition-colors duration-300">Política de Privacidade</Link></li>
+              <li><Link to="/termos-de-uso" className="text-[#F9FAFB]/70 hover:text-[#3B82F6] transition-colors duration-300">Termos de Uso</Link></li>
+              <li><Link to="/pagina-privacidade" className="text-[#F9FAFB]/70 hover:text-[#3B82F6] transition-colors duration-300">Política de Privacidade</Link></li>
             </ul>
           </motion.div>
         </div>
@@ -98,7 +93,7 @@ const Footer = () => {
           whileInView={{ opacity: 1 }}
           transition={{ duration: 0.3, delay: 0.3 }}
           viewport={{ once: true }}
-          className="border-t border-[#3B82F6]/20 pt-8 flex flex-col md:flex-row justify-between items-center"
+          className="border-t border-[#3B82F6]/20 pt-8 flex flex-col md:flex-row justify-between items-center text-center"
         >
           <p className="text-[#F9FAFB]/60 text-sm mb-4 md:mb-0">
             © 2025 LWDigitalForge. Todos os direitos reservados.

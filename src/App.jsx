@@ -21,8 +21,10 @@ import FailurePage from '@/pages/FailurePage';
 import PendingPage from '@/pages/PendingPage';
 import ProtectedRoute from '@/components/admin/ProtectedRoute';
 
+// Layouts
+import AdminLayout from '@/layouts/AdminLayout';
+
 // Admin Imports
-import AdminLayout from '@/components/admin/AdminLayout';
 import AdminDashboard from '@/pages/admin/AdminDashboard';
 import AdminGerenciarProdutos from '@/pages/admin/AdminGerenciarProdutos';
 import AdminFormularioProduto from '@/pages/admin/AdminFormularioProduto';
@@ -31,22 +33,20 @@ import AdminUsuarios from '@/pages/admin/AdminUsuarios';
 import AdminTiposDeProduto from '@/pages/admin/AdminTiposDeProduto';
 
 // Portal Imports
-import PortalLayout from '@/components/portal/PortalLayout';
+// import PortalLayout from '@/layouts/PortalLayout'; // Futuramente
 import PortalMeusProdutos from '@/pages/portal/PortalMeusProdutos';
 import PortalTestes from '@/pages/portal/PortalTestes';
 import PortalPagamentos from '@/pages/portal/PortalPagamentos';
 
 function App() {
   const location = useLocation();
-  const isAdminRoute = location.pathname.startsWith('/admin');
-  const isPortalRoute = location.pathname.startsWith('/portal');
-  const isPublicLayout = !isAdminRoute && !isPortalRoute;
+  const isAuthRoute = location.pathname.startsWith('/admin') || location.pathname.startsWith('/portal');
 
   return (
-    <div className="min-h-screen flex flex-col bg-[var(--light-bg)] dark:bg-[var(--dark-bg)] text-[#0D1117] dark:text-[#F9FAFB]">
-      {isPublicLayout && <Header />}
+    <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+      {!isAuthRoute && <Header />}
       
-      <main className={`flex-grow ${isPublicLayout ? 'pt-20' : ''}`}>
+      <main className={`flex-grow ${!isAuthRoute ? 'pt-20' : ''}`}>
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<HomePage />} />
@@ -59,8 +59,8 @@ function App() {
           <Route path="/esqueci-senha" element={<PaginaEsqueciSenha />} />
           <Route path="/redefinir-senha" element={<PaginaRedefinirSenha />} />
           <Route path="/carrinho" element={<PaginaCarrinho />} />
-          <Route path="/termos-de-servico" element={<PaginaTermos />} />
-          <Route path="/politica-de-privacidade" element={<PaginaPrivacidade />} />
+          <Route path="/termos-de-uso" element={<PaginaTermos />} />
+          <Route path="/pagina-privacidade" element={<PaginaPrivacidade />} />
           <Route path="/success" element={<SuccessPage />} />
           <Route path="/failure" element={<FailurePage />} />
           <Route path="/pending" element={<PendingPage />} />
@@ -70,33 +70,25 @@ function App() {
             path="/admin" 
             element={<ProtectedRoute role="ADMIN"><AdminLayout /></ProtectedRoute>}
           >
-            {/* Redirect /admin to /admin/dashboard */}
             <Route index element={<Navigate to="/admin/dashboard" replace />} />
             <Route path="dashboard" element={<AdminDashboard />} />
             <Route path="produtos" element={<AdminGerenciarProdutos />} />
             <Route path="produtos/novo" element={<AdminFormularioProduto />} />
             <Route path="produtos/:id/editar" element={<AdminFormularioProduto />} />
-            <Route path="tipos-de-produto" element={<AdminTiposDeProduto />} />
+            <Route path="tipos-produto" element={<AdminTiposDeProduto />} />
             <Route path="vendas" element={<AdminVendas />} />
             <Route path="usuarios" element={<AdminUsuarios />} />
           </Route>
 
-          {/* Customer Portal Routes */}
-          <Route 
-            path="/portal" 
-            element={<ProtectedRoute role="USER"><PortalLayout /></ProtectedRoute>}
-          >
-            {/* Redirect /portal to /portal/meus-produtos */}
-            <Route index element={<Navigate to="/portal/meus-produtos" replace />} />
-            <Route path="meus-produtos" element={<PortalMeusProdutos />} />
-            <Route path="testes" element={<PortalTestes />} />
-            <Route path="pagamentos" element={<PortalPagamentos />} />
-          </Route>
+          {/* Customer Portal Routes (ainda sem layout unificado) */}
+          <Route path="/portal/meus-produtos" element={<PortalMeusProdutos />} />
+          <Route path="/portal/testes" element={<PortalTestes />} />
+          <Route path="/portal/pagamentos" element={<PortalPagamentos />} />
 
         </Routes>
       </main>
       
-      {isPublicLayout && <Footer />}
+      {!isAuthRoute && <Footer />}
       <Toaster />
     </div>
   );
