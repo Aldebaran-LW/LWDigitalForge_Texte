@@ -45,18 +45,18 @@ const AdminDashboard = () => {
         const { data: salesData, error: salesError } = await supabase.from('sales').select('total_price');
         if (salesError) throw salesError;
 
-        const { data: usersData, error: usersError } = await supabase.from('users').select('id', { count: 'exact' });
+        const { count: usersCount, error: usersError } = await supabase.from('users').select('id', { count: 'exact', head: true });
         if (usersError) throw usersError;
 
 
-        const totalSales = salesData.reduce((acc, sale) => acc + sale.total_price, 0);
-        const totalUsers = usersData.length;
+        const totalSales = salesData ? salesData.reduce((acc, sale) => acc + sale.total_price, 0) : 0;
+        const totalUsers = usersCount || 0;
 
         const realData = [
-          { title: 'Total de Acessos', value: '1,257', icon: Eye, color: 'text-blue-500', bgColor: 'bg-blue-500/10' },
+          { title: 'Total de Acessos', value: 'N/A', icon: Eye, color: 'text-blue-500', bgColor: 'bg-blue-500/10' },
           { title: 'Total de Vendas', value: new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalSales), icon: DollarSign, color: 'text-green-500', bgColor: 'bg-green-500/10' },
           { title: 'Novos Cadastros', value: totalUsers, icon: UserPlus, color: 'text-indigo-500', bgColor: 'bg-indigo-500/10' },
-          { title: 'Taxa de Conversão', value: '6.52%', icon: Zap, color: 'text-amber-500', bgColor: 'bg-amber-500/10' },
+          { title: 'Taxa de Conversão', value: 'N/A', icon: Zap, color: 'text-amber-500', bgColor: 'bg-amber-500/10' },
         ];
         
         setStats(realData);
