@@ -1,12 +1,12 @@
-
 import React, { useState, useEffect } from 'react';
+import { Helmet } from 'react-helmet';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { motion } from 'framer-motion';
 import { supabase } from '@/lib/customSupabaseClient';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2, Clock } from 'lucide-react';
 
 const AdminFormularioProduto = () => {
   const { id } = useParams();
@@ -43,9 +43,9 @@ const AdminFormularioProduto = () => {
           name: data.name,
           product_type_id: data.product_type_id,
           price_monthly: data.price_monthly ? data.price_monthly / 100 : '',
-          price_annual: data.price_annual ? data.price_annual / 100 : '',
+          price_annual: data.price_annual ? data.price_annual / 100 : '', // NOVO CAMPO
           price_lifetime: data.price_lifetime ? data.price_lifetime / 100 : '',
-          trial_period_days: data.trial_period_days,
+          trial_period_days: data.trial_period_days || '', // NOVO CAMPO
           shortDescription: data.short_description,
           detailedDescription: data.detailed_description,
           features: data.features,
@@ -66,9 +66,9 @@ const AdminFormularioProduto = () => {
       name: formData.name,
       product_type_id: formData.product_type_id,
       price_monthly: formData.price_monthly ? Math.round(formData.price_monthly * 100) : null,
-      price_annual: formData.price_annual ? Math.round(formData.price_annual * 100) : null,
+      price_annual: formData.price_annual ? Math.round(formData.price_annual * 100) : null, // NOVO CAMPO
       price_lifetime: formData.price_lifetime ? Math.round(formData.price_lifetime * 100) : null,
-      trial_period_days: formData.trial_period_days ? parseInt(formData.trial_period_days, 10) : null,
+      trial_period_days: formData.trial_period_days ? parseInt(formData.trial_period_days, 10) : null, // NOVO CAMPO
       short_description: formData.shortDescription,
       detailed_description: formData.detailedDescription,
       features: formData.features,
@@ -96,104 +96,123 @@ const AdminFormularioProduto = () => {
   };
 
   if (loading) {
-    return <div className="flex justify-center items-center h-full"><Loader2 className="h-16 w-16 animate-spin text-blue-500" /></div>;
+    return <div className="flex justify-center items-center h-full"><Loader2 className="h-16 w-16 animate-spin" /></div>;
   }
 
   return (
-    <div>
-      <Button variant="ghost" onClick={() => navigate('/admin/produtos')} className="mb-4">
-        <ArrowLeft className="mr-2 h-4 w-4" /> Voltar para a lista
-      </Button>
-      <h1 className="text-3xl font-bold text-gray-800 dark:text-white mb-8">
-        {isEditing ? 'Editar Produto' : 'Adicionar Novo Produto'}
-      </h1>
-      
-      <motion.form 
-          onSubmit={handleSubmit(onSubmit)}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 space-y-6"
-      >
-          {/* General Info */}
-          <h2 className="text-xl font-semibold border-b pb-2 border-gray-200 dark:border-gray-600">Informações Gerais</h2>
-          <div>
-            <label htmlFor="name" className="block text-sm font-medium mb-1">Nome do Produto</label>
-            <input type="text" id="name" {...register('name', { required: 'Nome é obrigatório' })} className="w-full p-2 bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-md" />
-            {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name.message}</p>}
-          </div>
+    <>
+      <Helmet>
+        <title>{isEditing ? 'Editar' : 'Adicionar'} Produto - LWDigitalForge Admin</title>
+      </Helmet>
+      <div>
+        <Button variant="ghost" onClick={() => navigate('/admin/produtos')} className="mb-4">
+          <ArrowLeft className="mr-2 h-4 w-4" /> Voltar para a lista
+        </Button>
+        <h1 className="text-3xl font-bold text-gray-800 dark:text-white mb-8">
+          {isEditing ? 'Editar Produto' : 'Adicionar Novo Produto'}
+        </h1>
+        
+        <motion.form 
+            onSubmit={handleSubmit(onSubmit)}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="bg-white dark:bg-gray-800/50 p-8 rounded-lg shadow-md border border-gray-200 dark:border-white/10 space-y-6"
+        >
+            {/* General Info */}
+            <h2 className="text-xl font-semibold border-b pb-2">Informações Gerais</h2>
+            <div>
+              <label htmlFor="name" className="block text-sm font-medium mb-1">Nome do Produto</label>
+              <input type="text" id="name" {...register('name', { required: 'Nome é obrigatório' })} className="w-full p-2 bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-md" />
+              {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name.message}</p>}
+            </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label htmlFor="product_type_id" className="block text-sm font-medium mb-1">Tipo de Produto</label>
-                <select id="product_type_id" {...register('product_type_id', { required: 'Tipo é obrigatório' })} className="w-full p-2 bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-md">
-                  <option value="">Selecione um tipo</option>
-                  {productTypes.map(type => <option key={type.id} value={type.id}>{type.name}</option>)}
-                </select>
-                {errors.product_type_id && <p className="text-red-500 text-xs mt-1">{errors.product_type_id.message}</p>}
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Status</label>
-                <label className="flex items-center cursor-pointer">
-                    <input type="checkbox" {...register('status')} defaultChecked className="sr-only peer" />
-                    <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                    <span className="ms-3 text-sm font-medium text-gray-700 dark:text-gray-300">Ativo</span>
-                </label>
-              </div>
-          </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                  <label htmlFor="product_type_id" className="block text-sm font-medium mb-1">Tipo de Produto</label>
+                  <select id="product_type_id" {...register('product_type_id', { required: 'Tipo é obrigatório' })} className="w-full p-2 bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-md">
+                    <option value="">Selecione um tipo</option>
+                    {productTypes.map(type => <option key={type.id} value={type.id}>{type.name}</option>)}
+                  </select>
+                  {errors.product_type_id && <p className="text-red-500 text-xs mt-1">{errors.product_type_id.message}</p>}
+                </div>
 
-          <div>
-            <label htmlFor="shortDescription" className="block text-sm font-medium mb-1">Descrição Curta</label>
-            <textarea id="shortDescription" {...register('shortDescription')} rows="2" className="w-full p-2 bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-md"></textarea>
-          </div>
-          
-          <div>
-            <label htmlFor="detailedDescription" className="block text-sm font-medium mb-1">Descrição Detalhada</label>
-            <textarea id="detailedDescription" {...register('detailedDescription')} rows="5" className="w-full p-2 bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-md"></textarea>
-          </div>
-          
-          <div>
-            <label htmlFor="features" className="block text-sm font-medium mb-1">Recursos (separados por vírgula)</label>
-            <input type="text" id="features" {...register('features')} className="w-full p-2 bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-md" />
-          </div>
+                {/* CAMPO ADICIONADO: DIAS DE TESTE */}
+                <div>
+                  <label htmlFor="trial_period_days" className="block text-sm font-medium mb-1">Dias de Teste (Trial)</label>
+                  <div className="relative">
+                    <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <input 
+                      type="number" 
+                      id="trial_period_days" 
+                      {...register('trial_period_days')} 
+                      placeholder="Ex: 7"
+                      className="w-full pl-10 p-2 bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-md" 
+                    />
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium mb-1">Status</label>
+                  <label className="flex items-center cursor-pointer pt-2">
+                      <input type="checkbox" {...register('status')} defaultChecked className="sr-only peer" />
+                      <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                      <span className="ms-3 text-sm font-medium">Ativo</span>
+                  </label>
+                </div>
+            </div>
 
-          {/* Pricing Section */}
-          <h2 className="text-xl font-semibold border-b pt-4 pb-2 border-gray-200 dark:border-gray-600">Precificação</h2>
-           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div>
-                <label htmlFor="price_monthly" className="block text-sm font-medium mb-1">Licença Mensal (R$)</label>
-                <input type="number" id="price_monthly" step="0.01" {...register('price_monthly')} className="w-full p-2 bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-md" />
-              </div>
-              <div>
-                <label htmlFor="price_annual" className="block text-sm font-medium mb-1">Licença Anual (R$)</label>
-                <input type="number" id="price_annual" step="0.01" {...register('price_annual')} className="w-full p-2 bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-md" />
-              </div>
-              <div>
-                <label htmlFor="price_lifetime" className="block text-sm font-medium mb-1">Licença Vitalícia (R$)</label>
-                <input type="number" id="price_lifetime" step="0.01" {...register('price_lifetime')} className="w-full p-2 bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-md" />
-              </div>
-          </div>
-          <div>
-            <label htmlFor="trial_period_days" className="block text-sm font-medium mb-1">Período de Teste (dias)</label>
-            <input type="number" id="trial_period_days" {...register('trial_period_days')} className="w-full p-2 bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-md" />
-          </div>
+            <div>
+              <label htmlFor="shortDescription" className="block text-sm font-medium mb-1">Descrição Curta</label>
+              <textarea id="shortDescription" {...register('shortDescription')} rows="2" className="w-full p-2 bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-md"></textarea>
+            </div>
+            
+            <div>
+              <label htmlFor="detailedDescription" className="block text-sm font-medium mb-1">Descrição Detalhada</label>
+              <textarea id="detailedDescription" {...register('detailedDescription')} rows="5" className="w-full p-2 bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-md"></textarea>
+            </div>
+            
+            <div>
+              <label htmlFor="features" className="block text-sm font-medium mb-1">Recursos (separados por vírgula)</label>
+              <input type="text" id="features" {...register('features')} className="w-full p-2 bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-md" />
+            </div>
 
-          {/* Integration Section */}
-          <h2 className="text-xl font-semibold border-b pt-4 pb-2 border-gray-200 dark:border-gray-600">Configuração da Integração</h2>
-           <div>
-            <label htmlFor="integration_endpoint" className="block text-sm font-medium mb-1">Endpoint da Integração (URL)</label>
-            <input type="text" id="integration_endpoint" {...register('integration_endpoint')} className="w-full p-2 bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-md" />
-          </div>
-           <div>
-            <label htmlFor="integration_api_key" className="block text-sm font-medium mb-1">Chave de API do Produto</label>
-            <input type="text" id="integration_api_key" {...register('integration_api_key')} className="w-full p-2 bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-md" />
-          </div>
+            {/* Pricing Section */}
+            <h2 className="text-xl font-semibold border-b pt-4 pb-2">Precificação</h2>
+             {/* GRID DE PREÇO ATUALIZADO */}
+             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                  <label htmlFor="price_monthly" className="block text-sm font-medium mb-1">Licença Mensal (R$)</label>
+                  <input type="number" id="price_monthly" step="0.01" {...register('price_monthly')} placeholder="Ex: 47.00" className="w-full p-2 bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-md" />
+                </div>
+                {/* CAMPO ADICIONADO: PREÇO ANUAL */}
+                <div>
+                  <label htmlFor="price_annual" className="block text-sm font-medium mb-1">Licença Anual (R$)</label>
+                  <input type="number" id="price_annual" step="0.01" {...register('price_annual')} placeholder="Ex: 470.00" className="w-full p-2 bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-md" />
+                </div>
+                <div>
+                  <label htmlFor="price_lifetime" className="block text-sm font-medium mb-1">Licença Vitalícia (R$)</label>
+                  <input type="number" id="price_lifetime" step="0.01" {...register('price_lifetime')} placeholder="Ex: 1497.00" className="w-full p-2 bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-md" />
+                </div>
+            </div>
 
-          <div className="flex justify-end space-x-4 pt-4">
-              <Button type="button" variant="outline" onClick={() => navigate('/admin/produtos')}>Cancelar</Button>
-              <Button type="submit">Salvar Produto</Button>
-          </div>
-      </motion.form>
-    </div>
+            {/* Integration Section */}
+            <h2 className="text-xl font-semibold border-b pt-4 pb-2">Configuração da Integração</h2>
+             <div>
+              <label htmlFor="integration_endpoint" className="block text-sm font-medium mb-1">Endpoint da Integração (URL)</label>
+              <input type="text" id="integration_endpoint" {...register('integration_endpoint')} className="w-full p-2 bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-md" />
+            </div>
+             <div>
+              <label htmlFor="integration_api_key" className="block text-sm font-medium mb-1">Chave de API do Produto</label>
+              <input type="text" id="integration_api_key" {...register('integration_api_key')} className="w-full p-2 bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-md" />
+            </div>
+
+            <div className="flex justify-end space-x-4 pt-4">
+                <Button type="button" variant="outline" onClick={() => navigate('/admin/produtos')}>Cancelar</Button>
+                <Button type="submit" className="btn-primary">Salvar Produto</Button>
+            </div>
+        </motion.form>
+      </div>
+    </>
   );
 };
 
