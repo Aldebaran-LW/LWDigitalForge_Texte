@@ -23,6 +23,7 @@ import ProtectedRoute from '@/components/admin/ProtectedRoute';
 
 // Layouts
 import AdminLayout from '@/layouts/AdminLayout';
+import PortalLayout from '@/components/layouts/PortalLayout'; // Importando o novo layout
 
 // Admin Imports
 import AdminDashboard from '@/pages/admin/AdminDashboard';
@@ -33,10 +34,9 @@ import AdminUsuarios from '@/pages/admin/AdminUsuarios';
 import AdminTiposDeProduto from '@/pages/admin/AdminTiposDeProduto';
 
 // Portal Imports
-// import PortalLayout from '@/layouts/PortalLayout'; // Futuramente
 import PortalMeusProdutos from '@/pages/portal/PortalMeusProdutos';
-import PortalTestes from '@/pages/portal/PortalTestes';
 import PortalPagamentos from '@/pages/portal/PortalPagamentos';
+import PortalMeuPerfil from '@/pages/portal/PortalMeuPerfil'; // Importando a nova página
 
 function App() {
   const location = useLocation();
@@ -80,10 +80,16 @@ function App() {
             <Route path="usuarios" element={<AdminUsuarios />} />
           </Route>
 
-          {/* Customer Portal Routes (ainda sem layout unificado) */}
-          <Route path="/portal/meus-produtos" element={<PortalMeusProdutos />} />
-          <Route path="/portal/testes" element={<PortalTestes />} />
-          <Route path="/portal/pagamentos" element={<PortalPagamentos />} />
+          {/* Customer Portal Routes */}
+          <Route 
+            path="/portal" 
+            element={<ProtectedRoute><PortalLayout /></ProtectedRoute>}
+          >
+            <Route index element={<Navigate to="/portal/meus-produtos" replace />} />
+            <Route path="meus-produtos" element={<PortalMeusProdutos />} />
+            <Route path="pagamentos" element={<PortalPagamentos />} />
+            <Route path="meu-perfil" element={<PortalMeuPerfil />} />
+          </Route>
 
         </Routes>
       </main>
