@@ -6,6 +6,14 @@ import { Button } from '@/components/ui/button';
 import { UserPlus, Trash2, Loader2, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 
+// Esta função busca os usuários da tabela de autenticação do Supabase.
+// Requer privilégios de administrador e, por segurança, é executada numa Edge Function.
+const fetchAllUsers = async () => {
+  const { data, error } = await supabase.functions.invoke('get-all-users');
+  if (error) throw error;
+  return data.users;
+}
+
 const AdminUsuarios = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -15,18 +23,13 @@ const AdminUsuarios = () => {
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
-    // Esta query assume que você tem uma tabela 'profiles' com os dados dos usuários.
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('id, email, created_at, role')
-      .order('created_at', { ascending: false });
-
-    if (error) {
+    try {
+      const usersData = await fetchAllUsers();
+      setUsers(usersData);
+      setError(null);
+    } catch (error) {
       setError(error.message);
       toast({ variant: 'destructive', title: 'Erro ao carregar usuários', description: error.message });
-    } else {
-      setUsers(data);
-      setError(null);
     }
     setLoading(false);
   }, [toast]);
@@ -108,7 +111,7 @@ const AdminUsuarios = () => {
               <tr>
                 <th scope="col" className="px-6 py-3">Email do Usuário</th>
                 <th scope="col" className="px-6 py-3">Data de Cadastro</th>
-                <th scope="col" className="px-6 py-3">Tipo de Conta</th>
+                 <th scope="col" className="px-6 py-3">ID do Usuário</th>
               </tr>
             </thead>
             <tbody>
@@ -126,11 +129,7 @@ const AdminUsuarios = () => {
                 >
                   <th scope="row" className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">{user.email}</th>
                   <td className="px-6 py-4">{formatDate(user.created_at)}</td>
-                  <td className="px-6 py-4">
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${user.role === 'test' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300' : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'}`}>
-                      {user.role === 'test' ? 'Teste' : 'Usuário'}
-                    </span>
-                  </td>
+                  <td className="px-6 py-4 font-mono text-xs">{user.id}</td>
                 </motion.tr>
               ))}
             </tbody>

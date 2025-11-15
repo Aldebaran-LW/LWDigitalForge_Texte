@@ -20,7 +20,7 @@ const AdminVendas = () => {
       .select(`
         id,
         created_at,
-        total_amount,
+        total_price,
         user_email,
         products (name)
       `)
@@ -104,7 +104,7 @@ const AdminVendas = () => {
                   </th>
                   <td className="px-6 py-4">{sale.user_email || 'Não identificado'}</td>
                   <td className="px-6 py-4">{sale.products?.name || 'Produto não encontrado'}</td>
-                  <td className="px-6 py-4">{formatPrice(sale.total_amount)}</td>
+                  <td className="px-6 py-4">{formatPrice(sale.total_price)}</td>
                   <td className="px-6 py-4">{formatDate(sale.created_at)}</td>
                 </motion.tr>
               ))}

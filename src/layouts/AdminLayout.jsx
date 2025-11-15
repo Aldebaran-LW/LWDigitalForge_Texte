@@ -1,12 +1,13 @@
 
 import React from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
-import { LayoutDashboard, Package, ShoppingCart, Users, Tag, ArrowLeft } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingCart, Users, Tag, AppWindow, ArrowLeft } from 'lucide-react'; // Adicionado AppWindow
 import { useTheme } from '@/contexts/ThemeContext';
 
 const adminNavLinks = [
   { to: '/admin/dashboard', text: 'Dashboard', icon: LayoutDashboard },
   { to: '/admin/produtos', text: 'Produtos', icon: Package },
+  { to: '/admin/aplicacoes', text: 'Aplicações', icon: AppWindow }, // Novo link adicionado
   { to: '/admin/vendas', text: 'Vendas', icon: ShoppingCart },
   { to: '/admin/usuarios', text: 'Usuários', icon: Users },
   { to: '/admin/tipos-produto', text: 'Tipos de Produto', icon: Tag },

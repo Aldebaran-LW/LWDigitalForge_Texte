@@ -2,9 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Eye, DollarSign, UserPlus, Zap, Loader2, AlertCircle } from 'lucide-react';
-import { supabase } from '../../lib/customSupabaseClient'; // Importando o cliente Supabase
+import { supabase } from '../../lib/customSupabaseClient';
 
-// Poderia ser extraído para seu próprio arquivo: components/admin/StatCard.jsx
 const StatCard = ({ title, value, icon: Icon, color, bgColor, loading }) => {
   if (loading) {
     return (
@@ -40,30 +39,37 @@ const AdminDashboard = () => {
     const fetchDashboardData = async () => {
       try {
         setLoading(true);
+        setError(null); // Limpa erros anteriores
 
-        // Buscar dados reais do Supabase
-        const { data: salesData, error: salesError } = await supabase.from('sales').select('total_price');
-        if (salesError) throw salesError;
+        // As consultas são feitas em paralelo para mais performance
+        const [salesResponse, usersResponse] = await Promise.all([
+          supabase.from('sales').select('total_price'),
+          supabase.from('users').select('id', { count: 'exact', head: true })
+        ]);
 
-        const { count: usersCount, error: usersError } = await supabase.from('users').select('id', { count: 'exact', head: true });
-        if (usersError) throw usersError;
+        const { data: salesData, error: salesError } = salesResponse;
+        const { count: usersCount, error: usersError } = usersResponse;
 
+        // Se houver erros, registra no console, mas não impede a renderização
+        if (salesError) console.error('Erro ao buscar dados de vendas:', salesError.message);
+        if (usersError) console.error('Erro ao buscar contagem de usuários:', usersError.message);
 
+        // Calcula os totais, tratando os casos onde não há dados
         const totalSales = salesData ? salesData.reduce((acc, sale) => acc + sale.total_price, 0) : 0;
         const totalUsers = usersCount || 0;
 
-        const realData = [
+        const dashboardStats = [
           { title: 'Total de Acessos', value: 'N/A', icon: Eye, color: 'text-blue-500', bgColor: 'bg-blue-500/10' },
-          { title: 'Total de Vendas', value: new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalSales), icon: DollarSign, color: 'text-green-500', bgColor: 'bg-green-500/10' },
+          { title: 'Total de Vendas', value: new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalSales / 100), icon: DollarSign, color: 'text-green-500', bgColor: 'bg-green-500/10' },
           { title: 'Novos Cadastros', value: totalUsers, icon: UserPlus, color: 'text-indigo-500', bgColor: 'bg-indigo-500/10' },
           { title: 'Taxa de Conversão', value: 'N/A', icon: Zap, color: 'text-amber-500', bgColor: 'bg-amber-500/10' },
         ];
         
-        setStats(realData);
+        setStats(dashboardStats);
 
       } catch (e) {
-        console.error(e)
-        setError('Falha ao carregar os dados do dashboard.');
+        console.error('Falha inesperada no dashboard:', e)
+        setError('Ocorreu um erro inesperado ao carregar os dados.');
       } finally {
         setLoading(false);
       }
@@ -112,14 +118,12 @@ const AdminDashboard = () => {
         <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
             <h3 className="text-xl font-bold mb-4">Vendas nos Últimos 6 Meses</h3>
             <div className="h-64 flex items-center justify-center text-gray-400">
-                {/* Adicione seu componente de gráfico aqui */}
                 <p>Componente de Gráfico</p>
             </div>
         </div>
         <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
             <h3 className="text-xl font-bold mb-4">Atividades Recentes</h3>
             <div className="h-64 flex items-center justify-center text-gray-400">
-                {/* Adicione sua lista de atividades aqui */}
                 <p>Lista de Atividades Recentes</p>
             </div>
         </div>

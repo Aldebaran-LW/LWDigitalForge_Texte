@@ -64,7 +64,6 @@ const PaginaTermos = () => {
 
             <h2>6. Propriedade Intelectual</h2>
             <p><strong>Nossos Direitos:</strong> Todo o conteúdo incluído nos Serviços, como texto, gráficos, logotipos, ícones, imagens e software, é propriedade da LWDigitalForge ou de seus fornecedores de conteúdo e protegido pelas leis de direitos autorais.</p>
-            <p><strong>Conteúdo do Usuário:</strong> Ao publicar conteúdo em nossos Serviços (por exemplo, em um fórum), você nos concede uma licença mundial, não exclusiva, isenta de royalties, para usar, reproduzir, modificar, adaptar e publicar tal conteúdo com o propósito de exibir, distribuir e promover seus Serviços.</p>
 
             <h2>7. Rescisão</h2>
             <p>Reservamo-nos o direito de suspender ou encerrar seu acesso aos Serviços, a nosso exclusivo critério, sem aviso prévio e por qualquer motivo, incluindo, sem limitação, a violação destes Termos.</p>

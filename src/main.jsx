@@ -10,7 +10,7 @@ import { CartProvider } from '@/hooks/useCart';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <>
-    <BrowserRouter>
+    <BrowserRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
       <ThemeProvider>
         <AuthProvider>
           <CartProvider>

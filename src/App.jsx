@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { Toaster } from '@/components/ui/toaster';
@@ -20,10 +19,11 @@ import SuccessPage from '@/pages/SuccessPage';
 import FailurePage from '@/pages/FailurePage';
 import PendingPage from '@/pages/PendingPage';
 import ProtectedRoute from '@/components/admin/ProtectedRoute';
+import UpdatePassword from '@/pages/UpdatePassword';
 
 // Layouts
 import AdminLayout from '@/layouts/AdminLayout';
-import PortalLayout from '@/components/layouts/PortalLayout'; // Importando o novo layout
+import PortalLayout from '@/components/layouts/PortalLayout';
 
 // Admin Imports
 import AdminDashboard from '@/pages/admin/AdminDashboard';
@@ -32,15 +32,18 @@ import AdminFormularioProduto from '@/pages/admin/AdminFormularioProduto';
 import AdminVendas from '@/pages/admin/AdminVendas';
 import AdminUsuarios from '@/pages/admin/AdminUsuarios';
 import AdminTiposDeProduto from '@/pages/admin/AdminTiposDeProduto';
+import AdminGerenciarApps from '@/pages/admin/AdminGerenciarApps';
+import AdminFormularioApp from '@/pages/admin/AdminFormularioApp'; // Importa o novo formulário
+
 
 // Portal Imports
 import PortalMeusProdutos from '@/pages/portal/PortalMeusProdutos';
 import PortalPagamentos from '@/pages/portal/PortalPagamentos';
-import PortalMeuPerfil from '@/pages/portal/PortalMeuPerfil'; // Importando a nova página
+import PortalMeuPerfil from '@/pages/portal/PortalMeuPerfil';
 
 function App() {
   const location = useLocation();
-  const isAuthRoute = location.pathname.startsWith('/admin') || location.pathname.startsWith('/portal');
+  const isAuthRoute = location.pathname.startsWith('/admin') || location.pathname.startsWith('/portal') || location.pathname === '/update-password';
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
@@ -58,6 +61,7 @@ function App() {
           <Route path="/cadastro" element={<PaginaCadastro />} />
           <Route path="/esqueci-senha" element={<PaginaEsqueciSenha />} />
           <Route path="/redefinir-senha" element={<PaginaRedefinirSenha />} />
+          <Route path="/update-password" element={<UpdatePassword />} />
           <Route path="/carrinho" element={<PaginaCarrinho />} />
           <Route path="/termos-de-uso" element={<PaginaTermos />} />
           <Route path="/pagina-privacidade" element={<PaginaPrivacidade />} />
@@ -75,6 +79,9 @@ function App() {
             <Route path="produtos" element={<AdminGerenciarProdutos />} />
             <Route path="produtos/novo" element={<AdminFormularioProduto />} />
             <Route path="produtos/:id/editar" element={<AdminFormularioProduto />} />
+            <Route path="aplicacoes" element={<AdminGerenciarApps />} />
+            <Route path="aplicacoes/nova" element={<AdminFormularioApp />} /> {/* Rota Adicionada */}
+            <Route path="aplicacoes/:id/editar" element={<AdminFormularioApp />} /> {/* Rota Adicionada */}
             <Route path="tipos-produto" element={<AdminTiposDeProduto />} />
             <Route path="vendas" element={<AdminVendas />} />
             <Route path="usuarios" element={<AdminUsuarios />} />
