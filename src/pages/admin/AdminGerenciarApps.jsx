@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { supabase } from '@/lib/customSupabaseClient';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Edit, Trash2, Loader2, AlertTriangle, GitBranch, Link as LinkIcon } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Loader2, AlertTriangle, GitBranch, Link as LinkIcon, Gift } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import {
   AlertDialog,
@@ -18,6 +18,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { formatCurrency } from '@/api/EcommerceApi'; // Importando o formatador
 
 const AdminGerenciarApps = () => {
   const [apps, setApps] = useState([]);
@@ -59,7 +60,7 @@ const AdminGerenciarApps = () => {
   return (
     <>
       <Helmet>
-        <title>Gerenciar Aplicações - Admin</title>
+        <title>Gerenciar Produtos - Admin</title>
       </Helmet>
       <div className="container mx-auto p-4 sm:p-6 lg:p-8">
         <motion.div
@@ -68,11 +69,11 @@ const AdminGerenciarApps = () => {
           transition={{ duration: 0.5 }}
           className="flex justify-between items-center mb-8"
         >
-          <h1 className="text-3xl font-bold text-gray-800 dark:text-white">Gerenciar Aplicações</h1>
+          <h1 className="text-3xl font-bold text-gray-800 dark:text-white">Gerenciar Produtos</h1>
           <Button asChild>
             <Link to="/admin/aplicacoes/nova">
               <PlusCircle className="mr-2 h-4 w-4" />
-              Adicionar Aplicação
+              Adicionar Produto
             </Link>
           </Button>
         </motion.div>
@@ -94,22 +95,23 @@ const AdminGerenciarApps = () => {
             <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
               <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-800 dark:text-gray-400">
                 <tr>
-                  <th scope="col" className="px-6 py-3">Nome da Aplicação</th>
-                  <th scope="col" className="px-6 py-3">Descrição</th>
-                  <th scope="col" className="px-6 py-3">Links</th>
+                  <th scope="col" className="px-6 py-3">Produto</th>
+                  <th scope="col" className="px-6 py-3">Preço Mensal</th>
+                  <th scope="col" className="px-6 py-3">Preço Anual</th>
+                  <th scope="col" className="px-6 py-3">Teste</th>
                   <th scope="col" className="px-6 py-3 text-right">Ações</th>
                 </tr>
               </thead>
               <tbody>
                 {apps.length === 0 ? (
                   <tr>
-                    <td colSpan="4" className="text-center py-16 px-6">
-                      <h3 className="text-xl font-semibold text-gray-700 dark:text-gray-200">Nenhuma aplicação encontrada</h3>
-                      <p className="text-gray-500 dark:text-gray-400 mt-2 mb-6">Comece adicionando sua primeira aplicação para poder vinculá-la a um produto.</p>
+                    <td colSpan="5" className="text-center py-16 px-6">
+                      <h3 className="text-xl font-semibold text-gray-700 dark:text-gray-200">Nenhum produto encontrado</h3>
+                      <p className="text-gray-500 dark:text-gray-400 mt-2 mb-6">Comece adicionando seu primeiro produto para que ele apareça na sua loja.</p>
                       <Button asChild>
                         <Link to="/admin/aplicacoes/nova">
                           <PlusCircle className="mr-2 h-4 w-4" />
-                          Adicionar Primeira Aplicação
+                          Adicionar Primeiro Produto
                         </Link>
                       </Button>
                     </td>
@@ -125,24 +127,15 @@ const AdminGerenciarApps = () => {
                     <th scope="row" className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
                        <div className="flex items-center">
                         {app.image_url && <img src={app.image_url} alt={app.name} className="w-8 h-8 rounded-full mr-3 object-cover"/>}
-                        <span>{app.name}</span>
+                        <div className="flex flex-col">
+                          <span>{app.name}</span>
+                          <span className="text-xs text-gray-400 max-w-xs truncate">{app.description || '---'}</span>
+                        </div>
                       </div>
                     </th>
-                    <td className="px-6 py-4 max-w-sm truncate">{app.description || '---'}</td>
-                    <td className="px-6 py-4">
-                        <div className="flex items-center space-x-4">
-                            {app.github_repo_url && 
-                                <a href={app.github_repo_url} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white transition-colors">
-                                    <GitBranch className="h-5 w-5" />
-                                </a>
-                            }
-                            {app.vercel_deployment_url && 
-                                <a href={app.vercel_deployment_url} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white transition-colors">
-                                    <LinkIcon className="h-5 w-5" />
-                                </a>
-                            }
-                        </div>
-                    </td>
+                    <td className="px-6 py-4">{app.price_monthly ? formatCurrency(app.price_monthly) : '---'}</td>
+                    <td className="px-6 py-4">{app.price_yearly ? formatCurrency(app.price_yearly) : '---'}</td>
+                    <td className="px-6 py-4">{app.trial_days ? `${app.trial_days} dias` : '---'}</td>
                     <td className="px-6 py-4 text-right space-x-2">
                       <Button asChild variant="ghost" size="icon" className="text-blue-500 hover:text-blue-700">
                           <Link to={`/admin/aplicacoes/${app.id}/editar`}><Edit className="h-4 w-4" /></Link>
@@ -157,7 +150,7 @@ const AdminGerenciarApps = () => {
                               <AlertDialogHeader>
                                   <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
                                   <AlertDialogDescription>
-                                      Esta ação não pode ser desfeita. Isso excluirá permanentemente a aplicação "{app.name}".
+                                      Esta ação não pode ser desfeita. Isso excluirá permanentemente o produto "{app.name}".
                                   </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>

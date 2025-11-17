@@ -3,11 +3,11 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Helmet } from 'react-helmet';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { supabase } from '@/lib/customSupabaseClient';
+import { getProduct } from '@/api/EcommerceApi';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/hooks/useCart';
 import { useToast } from '@/components/ui/use-toast';
-import { ShoppingCart, Loader2, ArrowLeft, CheckCircle, Minus, Plus, XCircle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ShoppingCart, Loader2, ArrowLeft, CheckCircle, Minus, Plus, XCircle, ChevronLeft, ChevronRight, Gift } from 'lucide-react';
 
 const placeholderImage = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjMWEyMDNkIi8+CiAgPHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzY0NzRjYSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkxXPC90ZXh0Pgo8L3N2Zz4K";
 
@@ -22,6 +22,32 @@ function ProductDetailPage() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const { addToCart } = useCart();
   const { toast } = useToast();
+
+  useEffect(() => {
+    const fetchProduct = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const fetchedProduct = await getProduct(id);
+        
+        if (!fetchedProduct) {
+          throw new Error("Produto não encontrado.");
+        }
+
+        setProduct(fetchedProduct);
+
+        if (fetchedProduct.variants && fetchedProduct.variants.length > 0) {
+          setSelectedVariant(fetchedProduct.variants[0]);
+        }
+      } catch (err) {
+        setError(err.message || 'Falha ao carregar o produto');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProduct();
+  }, [id]);
 
   const handleAddToCart = useCallback(async () => {
     if (product && selectedVariant) {
@@ -80,75 +106,6 @@ function ProductDetailPage() {
     }
   }, [product?.images]);
 
-  useEffect(() => {
-    const fetchProductData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        const { data: p, error } = await supabase
-          .from('products')
-          .select('*')
-          .eq('id', id)
-          .single();
-
-        if (error) {
-          throw error;
-        }
-
-        const fetchedProduct = {
-          id: p.id,
-          title: p.name,
-          subtitle: p.subtitle,
-          description: p.description,
-          image: p.image_url,
-          price_in_cents: p.price * 100,
-          currency: 'BRL',
-          purchasable: true,
-          order: 0,
-          site_product_selection: 'lowest_price_first',
-          images: [{ url: p.image_url, order: 0, type: 'image' }],
-          options: [],
-          variants: [{
-            id: `variant_${p.id}`,
-            title: 'Default',
-            image_url: p.image_url,
-            sku: null,
-            price_in_cents: p.price * 100,
-            sale_price_in_cents: null,
-            currency: 'BRL',
-            currency_info: { code: 'BRL', symbol: 'R$', template: 'R$ $1' },
-            price_formatted: `R$ ${p.price.toFixed(2).replace('.', ',')}`,
-            sale_price_formatted: null,
-            manage_inventory: false,
-            weight: null,
-            options: [],
-            inventory_quantity: 99,
-          }],
-          collections: [],
-          additional_info: [],
-          type: { value: 'physical' },
-          custom_fields: [],
-          related_products: [],
-          updated_at: p.created_at,
-          ribbon_text: null
-        };
-        
-        setProduct(fetchedProduct);
-
-        if (fetchedProduct.variants && fetchedProduct.variants.length > 0) {
-          setSelectedVariant(fetchedProduct.variants[0]);
-        }
-      } catch (err) {
-        setError(err.message || 'Falha ao carregar o produto');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchProductData();
-  }, [id]);
-
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-[calc(100vh-5rem)]">
@@ -185,7 +142,7 @@ function ProductDetailPage() {
     <>
       <Helmet>
         <title>{product.title} - LWDigitalForge</title>
-        <meta name="description" content={product.description?.substring(0, 160) || product.title} />
+        <meta name="description" content={product.subtitle?.substring(0, 160) || product.title} />
       </Helmet>
       <div className="max-w-6xl mx-auto py-12 px-4">
         <Link to="/produtos" className="inline-flex items-center gap-2 text-gray-700 dark:text-white hover:text-blue-500 transition-colors mb-6">
@@ -231,7 +188,14 @@ function ProductDetailPage() {
               )}
             </div>
 
-            <div className="prose prose-sm dark:prose-invert text-gray-600 dark:text-gray-300 mb-6" dangerouslySetInnerHTML={{ __html: product.description }} />
+            {product.trial_days > 0 && (
+              <div className="mb-6 text-center text-sm p-3 bg-blue-500/10 rounded-lg border border-blue-500/20 text-blue-300 flex items-center justify-center gap-2">
+                <Gift size={16} />
+                <span>{`Teste gratuitamente por ${product.trial_days} dias!`}</span>
+              </div>
+            )}
+
+            <div className="prose prose-sm dark:prose-invert text-gray-600 dark:text-gray-300 mb-6" dangerouslySetInnerHTML={{ __html: product.subtitle }} />
 
             {product.variants.length > 1 && (
               <div className="mb-6">
@@ -244,17 +208,19 @@ function ProductDetailPage() {
               </div>
             )}
 
+            {/* O seletor de quantidade não faz sentido para assinaturas, então vamos remover.
             <div className="flex items-center gap-4 mb-6">
               <div className="flex items-center border border-gray-300 dark:border-white/20 rounded-full p-1">
-                <Button onClick={() => handleQuantityChange(-1)} variant="ghost" size="icon" className="rounded-full h-8 w-8 text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-white/10"><Minus size={16} /></Button>
+                <Button onClick={() => handleQuantityChange(-1)} variant="ghost" size="icon" className="rounded-full h-8 w-8 text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-white/10'"><Minus size={16} /></Button>
                 <span className="w-10 text-center text-gray-800 dark:text-white font-bold">{quantity}</span>
-                <Button onClick={() => handleQuantityChange(1)} variant="ghost" size="icon" className="rounded-full h-8 w-8 text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-white/10"><Plus size={16} /></Button>
+                <Button onClick={() => handleQuantityChange(1)} variant="ghost" size="icon" className="rounded-full h-8 w-8 text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-white/10'"><Plus size={16} /></Button>
               </div>
             </div>
+            */}
 
             <div className="mt-auto">
               <Button onClick={handleAddToCart} size="lg" className="w-full btn-primary font-semibold py-3 text-lg disabled:opacity-50 disabled:cursor-not-allowed" disabled={!canAddToCart || !product.purchasable}>
-                <ShoppingCart className="mr-2 h-5 w-5" /> Adicionar ao Carrinho
+                <ShoppingCart className="mr-2 h-5 w-5" /> {selectedVariant?.title === 'Anual' ? 'Assinar Plano Anual' : 'Assinar Plano Mensal'}
               </Button>
 
               {isStockManaged && canAddToCart && product.purchasable && (
