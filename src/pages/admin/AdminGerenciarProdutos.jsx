@@ -28,11 +28,8 @@ const AdminGerenciarProdutos = () => {
   const fetchProducts = useCallback(async () => {
     setLoading(true);
     const { data, error } = await supabase
-      .from('products')
-      .select(`
-        *,
-        product_types (name)
-      `)
+      .from('registered_apps')
+      .select('*')
       .order('name', { ascending: true });
 
     if (error) {
@@ -50,7 +47,7 @@ const AdminGerenciarProdutos = () => {
   }, [fetchProducts]);
 
   const handleDelete = async (productId) => {
-    const { error } = await supabase.from('products').delete().eq('id', productId);
+    const { error } = await supabase.from('registered_apps').delete().eq('id', productId);
     if (error) {
       toast({ variant: 'destructive', title: 'Erro ao excluir produto', description: error.message });
     } else {
@@ -97,16 +94,17 @@ const AdminGerenciarProdutos = () => {
               <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-800 dark:text-gray-400">
                 <tr>
                   <th scope="col" className="px-6 py-3">Nome do Produto</th>
-                  <th scope="col" className="px-6 py-3">Tipo</th>
-                  <th scope="col" className="px-6 py-3">Preço (Vitalício)</th>
-                  <th scope="col" className="px-6 py-3">Status</th>
+                  <th scope="col" className="px-6 py-3">Descrição</th>
+                  <th scope="col" className="px-6 py-3">Preço Mensal</th>
+                  <th scope="col" className="px-6 py-3">Preço Anual</th>
+                  <th scope="col" className="px-6 py-3">Preço Vitalício</th>
                   <th scope="col" className="px-6 py-3 text-right">Ações</th>
                 </tr>
               </thead>
               <tbody>
                 {products.length === 0 ? (
                   <tr>
-                    <td colSpan="5" className="text-center py-8 text-gray-500">Nenhum produto encontrado.</td>
+                    <td colSpan="6" className="text-center py-8 text-gray-500">Nenhum produto encontrado.</td>
                   </tr>
                 ) : products.map((product, index) => (
                   <motion.tr 
@@ -119,13 +117,12 @@ const AdminGerenciarProdutos = () => {
                     <th scope="row" className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
                       {product.name}
                     </th>
-                    <td className="px-6 py-4">{product.product_types?.name || 'Sem tipo'}</td>
-                    <td className="px-6 py-4">{formatPrice(product.price_lifetime)}</td>
-                    <td className="px-6 py-4">
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${product.status ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'}`}>
-                        {product.status ? 'Ativo' : 'Inativo'}
-                      </span>
+                    <td className="px-6 py-4 max-w-xs truncate" title={product.description}>
+                      {product.description || 'Sem descrição'}
                     </td>
+                    <td className="px-6 py-4">{formatPrice(product.price_monthly)}</td>
+                    <td className="px-6 py-4">{formatPrice(product.price_annual)}</td>
+                    <td className="px-6 py-4">{formatPrice(product.price_lifetime)}</td>
                     <td className="px-6 py-4 text-right space-x-2">
                       <Button asChild variant="ghost" size="icon" className="text-blue-500 hover:text-blue-700">
                           <Link to={`/admin/produtos/${product.id}/editar`}><Edit className="h-4 w-4" /></Link>
