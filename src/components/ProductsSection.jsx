@@ -26,7 +26,7 @@ const ProductsSection = () => {
           setProducts(data || []);
         }
       } catch (error) {
-        console.error('Erro ao buscar produtos:', error);
+        console.error('ProductsSection: Erro ao buscar produtos:', error);
         setProducts([]);
       } finally {
         setLoading(false);

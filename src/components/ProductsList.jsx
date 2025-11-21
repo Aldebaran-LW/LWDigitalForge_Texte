@@ -131,13 +131,14 @@ const ProductsList = () => {
           .order('created_at', { ascending: false });
 
         if (supabaseError) {
+          console.error('Erro ao buscar produtos:', supabaseError);
           throw new Error(supabaseError.message);
         }
 
         setProducts(data || []);
       } catch (err) {
-        setError(err.message || 'Falha ao carregar produtos');
         console.error('Erro ao buscar produtos:', err);
+        setError(err.message || 'Falha ao carregar produtos');
       } finally {
         setLoading(false);
       }
