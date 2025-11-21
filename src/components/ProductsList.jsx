@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { ShoppingCart, Loader2, Info } from 'lucide-react';
 import { useCart } from '@/hooks/useCart';
 import { useToast } from '@/components/ui/use-toast';
-import { getProducts, getProductQuantities } from '@/api/EcommerceApi';
+import { supabase } from '@/lib/customSupabaseClient';
 
 const placeholderImage = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjMWEyMDNkIi8+CiAgPHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzY0NzRjYSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkxXPC90ZXh0Pgo8L3N2Zz4K";
 
@@ -15,40 +15,26 @@ const ProductCard = ({ product, index }) => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  const displayVariant = useMemo(() => product.variants[0], [product]);
-  const hasSale = useMemo(() => displayVariant && displayVariant.sale_price_in_cents !== null, [displayVariant]);
-  const displayPrice = useMemo(() => hasSale ? displayVariant.sale_price_formatted : displayVariant.price_formatted, [displayVariant, hasSale]);
-  const originalPrice = useMemo(() => hasSale ? displayVariant.price_formatted : null, [displayVariant, hasSale]);
+  const formatPrice = (priceInCents) => {
+    if (!priceInCents) return 'Consulte valores';
+    return `R$ ${(priceInCents / 100).toFixed(2).replace('.', ',')}`;
+  };
+
+  const getDisplayPrice = () => {
+    if (product.price_lifetime) return formatPrice(product.price_lifetime);
+    if (product.price_annual) return formatPrice(product.price_annual);
+    if (product.price_monthly) return formatPrice(product.price_monthly);
+    return 'Consulte valores';
+  };
 
   const handleActionClick = useCallback(async (e) => {
     e.preventDefault();
     e.stopPropagation();
-
-    if (product.variants.length > 1) {
-      navigate(`/product/${product.id}`);
-      return;
-    }
-
-    const defaultVariant = product.variants[0];
-    const availableQuantity = defaultVariant.inventory_quantity;
-
-    try {
-      await addToCart(product, defaultVariant, 1, availableQuantity);
-      toast({
-        title: "Adicionado ao Carrinho! 🛒",
-        description: `${product.title} foi adicionado ao seu carrinho.`,
-      });
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Erro ao adicionar",
-        description: error.message,
-      });
-    }
-  }, [product, addToCart, toast, navigate]);
+    navigate(`/produtos/${product.id}`);
+  }, [product, navigate]);
   
-  const actionText = product.variants.length > 1 ? "Ver Opções" : "Adicionar ao Carrinho";
-  const ActionIcon = product.variants.length > 1 ? Info : ShoppingCart;
+  const actionText = "Saiba Mais";
+  const ActionIcon = Info;
 
   return (
     <motion.div
@@ -58,35 +44,64 @@ const ProductCard = ({ product, index }) => {
       whileHover={{ y: -10, scale: 1.02 }}
       className="bg-white dark:bg-[#111827]/50 backdrop-blur-sm rounded-xl p-6 border border-gray-200 dark:border-blue-500/20 hover:border-blue-400 dark:hover:border-blue-500/60 transition-all duration-300 flex flex-col"
     >
-      <Link to={`/product/${product.id}`} className="flex flex-col h-full">
+      <Link to={`/produtos/${product.id}`} className="flex flex-col h-full">
         <div className="relative mb-4">
-          <img
-            src={product.image || placeholderImage}
-            alt={product.title}
-            className="w-full h-56 object-cover rounded-lg"
-          />
-          {product.ribbon_text && (
-            <div className="absolute top-3 left-3 bg-blue-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
-              {product.ribbon_text}
-            </div>
+          {product.image_url ? (
+            <img
+              src={product.image_url}
+              alt={product.name}
+              className="w-full h-56 object-cover rounded-lg"
+              onError={(e) => {
+                e.target.src = placeholderImage;
+              }}
+            />
+          ) : (
+            <img
+              src={placeholderImage}
+              alt={product.name}
+              className="w-full h-56 object-cover rounded-lg"
+            />
           )}
         </div>
 
         <h3 className="text-xl font-bold text-gray-800 dark:text-[#F9FAFB] mb-2 truncate">
-          {product.title}
+          {product.name}
         </h3>
         
-        <p className="text-gray-600 dark:text-[#F9FAFB]/70 text-sm mb-4 leading-relaxed flex-grow">
-          {product.subtitle || 'Explore os detalhes deste produto incrível.'}
+        <p className="text-gray-600 dark:text-[#F9FAFB]/70 text-sm mb-4 leading-relaxed flex-grow line-clamp-3">
+          {product.description || 'Explore os detalhes deste produto incrível.'}
         </p>
 
         <div className="text-left mb-4">
-          <span className="text-2xl font-bold text-blue-500 dark:text-blue-400">
-            {displayPrice}
-          </span>
-          {hasSale && (
-            <span className="ml-2 text-lg text-gray-400 line-through">{originalPrice}</span>
-          )}
+          <div className="space-y-1">
+            {product.price_lifetime && (
+              <div>
+                <span className="text-2xl font-bold text-blue-500 dark:text-blue-400">
+                  {formatPrice(product.price_lifetime)}
+                </span>
+                <span className="text-sm text-gray-500 dark:text-gray-400 ml-2">Vitalício</span>
+              </div>
+            )}
+            {!product.price_lifetime && product.price_annual && (
+              <div>
+                <span className="text-2xl font-bold text-blue-500 dark:text-blue-400">
+                  {formatPrice(product.price_annual)}
+                </span>
+                <span className="text-sm text-gray-500 dark:text-gray-400 ml-2">Anual</span>
+              </div>
+            )}
+            {!product.price_lifetime && !product.price_annual && product.price_monthly && (
+              <div>
+                <span className="text-2xl font-bold text-blue-500 dark:text-blue-400">
+                  {formatPrice(product.price_monthly)}
+                </span>
+                <span className="text-sm text-gray-500 dark:text-gray-400 ml-2">Mensal</span>
+              </div>
+            )}
+            {!product.price_lifetime && !product.price_annual && !product.price_monthly && (
+              <span className="text-lg text-gray-500 dark:text-gray-400">Consulte valores</span>
+            )}
+          </div>
         </div>
         
         <div className="mt-auto">
@@ -105,47 +120,30 @@ const ProductsList = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchProductsWithQuantities = async () => {
+    const fetchProducts = async () => {
       try {
         setLoading(true);
         setError(null);
 
-        const productsResponse = await getProducts();
+        const { data, error: supabaseError } = await supabase
+          .from('registered_apps')
+          .select('*')
+          .order('created_at', { ascending: false });
 
-        if (productsResponse.products.length === 0) {
-          setProducts([]);
-          return;
+        if (supabaseError) {
+          throw new Error(supabaseError.message);
         }
 
-        const productIds = productsResponse.products.map(product => product.id);
-
-        const quantitiesResponse = await getProductQuantities({
-          fields: 'inventory_quantity',
-          product_ids: productIds
-        });
-
-        const variantQuantityMap = new Map();
-        quantitiesResponse.variants.forEach(variant => {
-          variantQuantityMap.set(variant.id, variant.inventory_quantity);
-        });
-
-        const productsWithQuantities = productsResponse.products.map(product => ({
-          ...product,
-          variants: product.variants.map(variant => ({
-            ...variant,
-            inventory_quantity: variantQuantityMap.get(variant.id) ?? variant.inventory_quantity
-          }))
-        }));
-
-        setProducts(productsWithQuantities);
+        setProducts(data || []);
       } catch (err) {
         setError(err.message || 'Falha ao carregar produtos');
+        console.error('Erro ao buscar produtos:', err);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchProductsWithQuantities();
+    fetchProducts();
   }, []);
 
   if (loading) {
