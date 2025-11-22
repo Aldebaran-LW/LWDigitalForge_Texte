@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/customSupabaseClient';
 import { Loader2 } from 'lucide-react';
@@ -9,6 +9,7 @@ import { Loader2 } from 'lucide-react';
 const ProductsSection = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -77,7 +78,8 @@ const ProductsSection = () => {
                 transition={{ duration: 0.3, delay: index * 0.1 }}
                 viewport={{ once: true }}
                 whileHover={{ y: -10, scale: 1.02 }}
-                className="bg-white dark:bg-[#111827]/50 backdrop-blur-sm rounded-xl p-6 border border-gray-200 dark:border-blue-500/20 hover:border-blue-400 dark:hover:border-blue-500/60 transition-all duration-300 relative flex flex-col"
+                onClick={() => navigate(`/produtos/${product.id}`)}
+                className="bg-white dark:bg-[#111827]/50 backdrop-blur-sm rounded-xl p-6 border border-gray-200 dark:border-blue-500/20 hover:border-blue-400 dark:hover:border-blue-500/60 transition-all duration-300 relative flex flex-col cursor-pointer"
               >
                 {product.image_url && (
                   <div className="flex justify-center mb-4">
@@ -123,8 +125,8 @@ const ProductsSection = () => {
                   </div>
                 </div>
 
-                <Button asChild className="btn-secondary w-full py-3 font-semibold rounded-lg bg-transparent btn-pulse mt-auto">
-                  <Link to={`/produtos/${product.id}`}>Saiba Mais</Link>
+                <Button className="btn-secondary w-full py-3 font-semibold rounded-lg bg-transparent btn-pulse mt-auto pointer-events-none">
+                  Saiba Mais
                 </Button>
               </motion.div>
             ))}

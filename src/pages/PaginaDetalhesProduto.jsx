@@ -208,7 +208,7 @@ const PaginaDetalhesProduto = () => {
                                     )}
                                 </div>
                                 <div className="flex flex-col sm:flex-row gap-4">
-                                    {product.trial_period_days > 0 && (
+                                    {product.trial_period_days && product.trial_period_days > 0 && (
                                         <Button onClick={handleTestClick} className="w-full btn-primary px-8 py-4 text-lg font-semibold rounded-lg pulse-glow">
                                             Testar por {product.trial_period_days} Dias
                                         </Button>

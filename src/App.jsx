@@ -16,6 +16,7 @@ import PaginaCarrinho from '@/pages/PaginaCarrinho';
 import PaginaTermos from '@/pages/PaginaTermos';
 import PaginaPrivacidade from '@/pages/PaginaPrivacidade';
 import ProductDetailPage from '@/pages/ProductDetailPage';
+import PaginaDetalhesProduto from '@/pages/PaginaDetalhesProduto';
 import SuccessPage from '@/pages/SuccessPage';
 import ProtectedRoute from '@/components/admin/ProtectedRoute';
 
@@ -49,6 +50,7 @@ function App() {
           {/* Public Routes */}
           <Route path="/" element={<HomePage />} />
           <Route path="/produtos" element={<PaginaProdutos />} />
+          <Route path="/produtos/:id" element={<PaginaDetalhesProduto />} />
           <Route path="/product/:id" element={<ProductDetailPage />} />
           <Route path="/sobre" element={<PaginaSobre />} />
           <Route path="/login" element={<PaginaLogin />} />

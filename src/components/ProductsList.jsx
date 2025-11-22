@@ -27,11 +27,9 @@ const ProductCard = ({ product, index }) => {
     return 'Consulte valores';
   };
 
-  const handleActionClick = useCallback(async (e) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const handleCardClick = useCallback(() => {
     navigate(`/produtos/${product.id}`);
-  }, [product, navigate]);
+  }, [product.id, navigate]);
   
   const actionText = "Saiba Mais";
   const ActionIcon = Info;
@@ -42,9 +40,10 @@ const ProductCard = ({ product, index }) => {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: index * 0.05 }}
       whileHover={{ y: -10, scale: 1.02 }}
-      className="bg-white dark:bg-[#111827]/50 backdrop-blur-sm rounded-xl p-6 border border-gray-200 dark:border-blue-500/20 hover:border-blue-400 dark:hover:border-blue-500/60 transition-all duration-300 flex flex-col"
+      onClick={handleCardClick}
+      className="bg-white dark:bg-[#111827]/50 backdrop-blur-sm rounded-xl p-6 border border-gray-200 dark:border-blue-500/20 hover:border-blue-400 dark:hover:border-blue-500/60 transition-all duration-300 flex flex-col cursor-pointer"
     >
-      <Link to={`/produtos/${product.id}`} className="flex flex-col h-full">
+      <div className="flex flex-col h-full">
         <div className="relative mb-4">
           {product.image_url ? (
             <img
@@ -105,11 +104,11 @@ const ProductCard = ({ product, index }) => {
         </div>
         
         <div className="mt-auto">
-          <Button onClick={handleActionClick} className="w-full btn-secondary py-3 font-semibold rounded-lg bg-transparent btn-pulse">
+          <Button className="w-full btn-secondary py-3 font-semibold rounded-lg bg-transparent btn-pulse pointer-events-none">
             <ActionIcon className="mr-2 h-4 w-4" /> {actionText}
           </Button>
         </div>
-      </Link>
+      </div>
     </motion.div>
   );
 };
