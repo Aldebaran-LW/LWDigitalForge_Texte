@@ -78,7 +78,7 @@ const ProductsSection = () => {
                 transition={{ duration: 0.3, delay: index * 0.1 }}
                 viewport={{ once: true }}
                 whileHover={{ y: -10, scale: 1.02 }}
-                onClick={() => navigate(`/produtos/${product.id}`)}
+                onClick={() => navigate(`/product/${product.id}`)}
                 className="bg-white dark:bg-[#111827]/50 backdrop-blur-sm rounded-xl p-6 border border-gray-200 dark:border-blue-500/20 hover:border-blue-400 dark:hover:border-blue-500/60 transition-all duration-300 relative flex flex-col cursor-pointer"
               >
                 {product.image_url && (
