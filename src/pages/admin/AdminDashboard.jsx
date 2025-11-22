@@ -1,16 +1,63 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
-import { Eye, DollarSign, UserPlus, Zap } from 'lucide-react';
+import { Eye, DollarSign, UserPlus, Zap, Loader2 } from 'lucide-react';
+import { supabase } from '@/lib/customSupabaseClient';
 
 const AdminDashboard = () => {
-  const stats = [
-    { title: 'Total de Acessos', value: '1,257', icon: Eye, color: 'text-blue-500', bgColor: 'bg-blue-500/10' },
-    { title: 'Total de Vendas', value: 'R$ 8,920', icon: DollarSign, color: 'text-green-500', bgColor: 'bg-green-500/10' },
-    { title: 'Novos Cadastros', value: '82', icon: UserPlus, color: 'text-indigo-500', bgColor: 'bg-indigo-500/10' },
-    { title: 'Taxa de Conversão', value: '6.52%', icon: Zap, color: 'text-amber-500', bgColor: 'bg-amber-500/10' },
-  ];
+  const [stats, setStats] = useState([
+    { title: 'Total de Acessos', value: '0', icon: Eye, color: 'text-blue-500', bgColor: 'bg-blue-500/10' },
+    { title: 'Total de Vendas', value: 'R$ 0,00', icon: DollarSign, color: 'text-green-500', bgColor: 'bg-green-500/10' },
+    { title: 'Total de Usuários', value: '0', icon: UserPlus, color: 'text-indigo-500', bgColor: 'bg-indigo-500/10' },
+    { title: 'Total de Produtos', value: '0', icon: Zap, color: 'text-amber-500', bgColor: 'bg-amber-500/10' },
+  ]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        // Buscar total de usuários
+        const { count: totalUsers } = await supabase
+          .from('profiles')
+          .select('*', { count: 'exact', head: true });
+
+        // Buscar total de vendas e receita
+        const { data: salesData } = await supabase
+          .from('sales')
+          .select('total_price');
+
+        const totalRevenue = salesData ? salesData.reduce((sum, sale) => sum + (sale.total_price || 0), 0) : 0;
+
+        // Buscar total de produtos
+        const { count: totalProducts } = await supabase
+          .from('registered_apps')
+          .select('*', { count: 'exact', head: true });
+
+        // Formatar valores
+        const formatCurrency = (cents) => {
+          return `R$ ${(cents / 100).toFixed(2).replace('.', ',')}`;
+        };
+
+        const formatNumber = (num) => {
+          return num?.toLocaleString('pt-BR') || '0';
+        };
+
+        setStats([
+          { title: 'Total de Acessos', value: '0', icon: Eye, color: 'text-blue-500', bgColor: 'bg-blue-500/10' },
+          { title: 'Total de Vendas', value: formatCurrency(totalRevenue), icon: DollarSign, color: 'text-green-500', bgColor: 'bg-green-500/10' },
+          { title: 'Total de Usuários', value: formatNumber(totalUsers || 0), icon: UserPlus, color: 'text-indigo-500', bgColor: 'bg-indigo-500/10' },
+          { title: 'Total de Produtos', value: formatNumber(totalProducts || 0), icon: Zap, color: 'text-amber-500', bgColor: 'bg-amber-500/10' },
+        ]);
+      } catch (error) {
+        console.error('Erro ao buscar estatísticas:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, []);
 
   return (
     <>
@@ -27,27 +74,33 @@ const AdminDashboard = () => {
             Dashboard
         </motion.h1>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {stats.map((stat, index) => (
-            <motion.div
-              key={stat.title}
-              initial={{ opacity: 0, y: 50 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
-              className="bg-white dark:bg-[#111827]/80 p-6 rounded-lg shadow-md border border-gray-200 dark:border-white/10"
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{stat.title}</p>
-                  <p className="text-3xl font-bold text-gray-800 dark:text-white mt-1">{stat.value}</p>
+        {loading ? (
+          <div className="flex justify-center items-center py-20">
+            <Loader2 className="h-12 w-12 text-blue-500 dark:text-white animate-spin" />
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {stats.map((stat, index) => (
+              <motion.div
+                key={stat.title}
+                initial={{ opacity: 0, y: 50 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+                className="bg-white dark:bg-[#111827]/80 p-6 rounded-lg shadow-md border border-gray-200 dark:border-white/10"
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{stat.title}</p>
+                    <p className="text-3xl font-bold text-gray-800 dark:text-white mt-1">{stat.value}</p>
+                  </div>
+                  <div className={`p-3 rounded-full ${stat.bgColor} ${stat.color}`}>
+                    <stat.icon className="h-6 w-6" />
+                  </div>
                 </div>
-                <div className={`p-3 rounded-full ${stat.bgColor} ${stat.color}`}>
-                  <stat.icon className="h-6 w-6" />
-                </div>
-              </div>
-            </motion.div>
-          ))}
-        </div>
+              </motion.div>
+            ))}
+          </div>
+        )}
       </div>
     </>
   );
