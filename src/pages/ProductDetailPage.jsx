@@ -30,17 +30,28 @@ const ProductDetailPage = () => {
 
       if (error) {
         console.error('Erro ao buscar produto:', error);
+        toast({
+          variant: 'destructive',
+          title: 'Erro',
+          description: 'Produto não encontrado.',
+        });
       } else {
         setProduct(data);
-        // Define um preço padrão inicial
-        if (data.price_lifetime) setSelectedPrice('lifetime');
-        else if (data.price_annual) setSelectedPrice('annual');
-        else if (data.price_monthly) setSelectedPrice('monthly');
+        // Define um preço padrão inicial baseado nos preços disponíveis
+        if (data && data.price_lifetime) {
+          setSelectedPrice('lifetime');
+        } else if (data && data.price_annual) {
+          setSelectedPrice('annual');
+        } else if (data && data.price_monthly) {
+          setSelectedPrice('monthly');
+        }
       }
       setLoading(false);
     };
 
-    fetchProduct();
+    if (id) {
+      fetchProduct();
+    }
   }, [id]);
 
   const handleAddToCart = () => {
@@ -50,14 +61,29 @@ const ProductDetailPage = () => {
     let variantName = '';
 
     if (selectedPrice === 'monthly') {
+        if (!product.price_monthly) {
+            toast({ variant: "destructive", title: "Erro", description: "Preço mensal não disponível." });
+            return;
+        }
         price = product.price_monthly;
         variantName = 'Plano Mensal';
     } else if (selectedPrice === 'annual') {
+        if (!product.price_annual) {
+            toast({ variant: "destructive", title: "Erro", description: "Preço anual não disponível." });
+            return;
+        }
         price = product.price_annual;
         variantName = 'Plano Anual';
-    } else {
+    } else if (selectedPrice === 'lifetime') {
+        if (!product.price_lifetime) {
+            toast({ variant: "destructive", title: "Erro", description: "Preço vitalício não disponível." });
+            return;
+        }
         price = product.price_lifetime;
         variantName = 'Licença Vitalícia';
+    } else {
+        toast({ variant: "destructive", title: "Erro", description: "Plano selecionado inválido." });
+        return;
     }
 
     const cartItem = {

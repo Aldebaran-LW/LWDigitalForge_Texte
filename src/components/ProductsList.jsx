@@ -9,7 +9,8 @@ const placeholderImage = "https://placehold.co/600x400/1e293b/white?text=Produto
 
 const ProductCard = ({ product, index }) => {
   // Lógica para exibir o menor preço disponível ("A partir de...")
-  const prices = [product.price_monthly, product.price_annual, product.price_lifetime].filter(p => p);
+  const prices = [product.price_monthly, product.price_annual, product.price_lifetime]
+    .filter(p => p != null && p !== undefined && p > 0);
   const minPrice = prices.length > 0 ? Math.min(...prices) : 0;
   
   const formatPrice = (cents) => `R$ ${(cents / 100).toFixed(2).replace('.', ',')}`;

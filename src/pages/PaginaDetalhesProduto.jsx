@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { CheckCircle, ChevronDown, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
-import { useCart } from '@/contexts/CartContext';
+import { useCart } from '@/hooks/useCart';
 import { supabase } from '@/lib/customSupabaseClient';
 import {
   DropdownMenu,
@@ -39,6 +39,10 @@ const PaginaDetalhesProduto = () => {
                     });
                 } else {
                     setProduct(data);
+                    // Inicializa licenseType baseado nos preços disponíveis
+                    if (data.price_lifetime) setLicenseType('lifetime');
+                    else if (data.price_annual) setLicenseType('annual');
+                    else if (data.price_monthly) setLicenseType('monthly');
                 }
             } catch (error) {
                 console.error('Erro ao buscar produto:', error);
@@ -50,7 +54,7 @@ const PaginaDetalhesProduto = () => {
         if (id) {
             fetchProduct();
         }
-    }, [id, toast]);
+    }, [id]);
 
     const formatPrice = (priceInCents) => {
         if (!priceInCents) return 'Consulte valores';
@@ -92,17 +96,57 @@ const PaginaDetalhesProduto = () => {
     }
 
     const handleAddToCart = () => {
-        const productToAdd = {
-            ...product,
-            price: getCurrentPrice(),
-            license: licenseType === 'monthly' ? 'Licença Mensal' : 
-                     licenseType === 'annual' ? 'Licença Anual' : 'Licença Vitalícia',
+        if (!product || !licenseType) return;
+
+        let price = 0;
+        let variantName = '';
+
+        if (licenseType === 'monthly' && product.price_monthly) {
+            price = product.price_monthly;
+            variantName = 'Plano Mensal';
+        } else if (licenseType === 'annual' && product.price_annual) {
+            price = product.price_annual;
+            variantName = 'Plano Anual';
+        } else if (licenseType === 'lifetime' && product.price_lifetime) {
+            price = product.price_lifetime;
+            variantName = 'Licença Vitalícia';
+        } else {
+            toast({
+                variant: 'destructive',
+                title: 'Erro',
+                description: 'Preço não disponível para este plano.',
+            });
+            return;
+        }
+
+        const cartItem = {
+            id: product.id,
+            title: product.name,
+            image: product.image_url,
+            variants: [{
+                id: `${product.id}_${licenseType}`,
+                title: variantName,
+                price_in_cents: price,
+                price_formatted: `R$ ${(price / 100).toFixed(2).replace('.', ',')}`,
+                inventory_quantity: 999,
+                manage_inventory: false
+            }]
         };
-        addToCart(productToAdd);
-        toast({
-            title: "✅ Produto Adicionado!",
-            description: `${product.name} (${productToAdd.license}) foi adicionado ao seu carrinho.`,
-        });
+
+        addToCart(cartItem, cartItem.variants[0], 1, 999)
+            .then(() => {
+                toast({
+                    title: "✅ Produto Adicionado!",
+                    description: `${product.name} (${variantName}) foi adicionado ao seu carrinho.`,
+                });
+            })
+            .catch(err => {
+                toast({
+                    variant: "destructive",
+                    title: "Erro",
+                    description: err.message || "Erro ao adicionar produto ao carrinho.",
+                });
+            });
     };
 
     const handleTestClick = () => {
