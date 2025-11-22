@@ -29,17 +29,15 @@ const AdminFormularioProduto = () => {
         toast({ variant: 'destructive', title: 'Erro ao buscar produto', description: error.message });
         navigate('/admin/produtos');
       } else {
-        // Populate form with existing data
+        // Converte o array de features de volta para string separada por vírgula para exibir no input
+        const featuresString = data.features ? data.features.join(', ') : '';
+        
         reset({
-          name: data.name,
-          description: data.description,
-          github_repo_url: data.github_repo_url,
-          vercel_deployment_url: data.vercel_deployment_url,
-          image_url: data.image_url,
+          ...data,
+          features: featuresString,
           price_monthly: data.price_monthly ? data.price_monthly / 100 : '',
           price_annual: data.price_annual ? data.price_annual / 100 : '',
           price_lifetime: data.price_lifetime ? data.price_lifetime / 100 : '',
-          trial_period_days: data.trial_period_days || '',
         });
       }
       setLoading(false);
@@ -50,16 +48,26 @@ const AdminFormularioProduto = () => {
   }, [id, isEditing, reset, navigate, toast]);
 
   const onSubmit = async (formData) => {
+    // Converte a string de features em um array
+    const featuresArray = formData.features 
+      ? formData.features.split(',').map(f => f.trim()).filter(f => f !== '') 
+      : [];
+
     const productData = {
       name: formData.name,
       description: formData.description || null,
+      detailed_description: formData.detailed_description || null, // Novo Campo
+      features: featuresArray, // Novo Campo
+      image_url: formData.image_url || null,
       github_repo_url: formData.github_repo_url || null,
       vercel_deployment_url: formData.vercel_deployment_url || null,
-      image_url: formData.image_url || null,
+      
+      // Preços convertidos para centavos
       price_monthly: formData.price_monthly ? Math.round(formData.price_monthly * 100) : null,
       price_annual: formData.price_annual ? Math.round(formData.price_annual * 100) : null,
       price_lifetime: formData.price_lifetime ? Math.round(formData.price_lifetime * 100) : null,
       trial_period_days: formData.trial_period_days ? parseInt(formData.trial_period_days) : null,
+      
       updated_at: new Date().toISOString(),
     };
 
@@ -104,17 +112,26 @@ const AdminFormularioProduto = () => {
             animate={{ opacity: 1 }}
             className="bg-white dark:bg-gray-800/50 p-8 rounded-lg shadow-md border border-gray-200 dark:border-white/10 space-y-6"
         >
-            {/* General Info */}
-            <h2 className="text-xl font-semibold border-b pb-2">Informações Gerais</h2>
+            <h2 className="text-xl font-semibold border-b pb-2">Dados Principais</h2>
             <div>
-              <label htmlFor="name" className="block text-sm font-medium mb-1">Nome do Produto *</label>
-              <input type="text" id="name" {...register('name', { required: 'Nome é obrigatório' })} className="w-full p-2 bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-md" />
-              {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name.message}</p>}
+              <label className="block text-sm font-medium mb-1">Nome do Produto *</label>
+              <input type="text" {...register('name', { required: 'Obrigatório' })} className="w-full p-2 bg-gray-100 dark:bg-gray-900 border rounded-md" />
+              {errors.name && <p className="text-red-500 text-xs">{errors.name.message}</p>}
             </div>
 
             <div>
-              <label htmlFor="description" className="block text-sm font-medium mb-1">Descrição</label>
-              <textarea id="description" {...register('description')} rows="4" className="w-full p-2 bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-md" placeholder="Descrição detalhada do produto"></textarea>
+              <label className="block text-sm font-medium mb-1">Resumo Curto</label>
+              <textarea {...register('description')} rows="2" className="w-full p-2 bg-gray-100 dark:bg-gray-900 border rounded-md" placeholder="Aparece no card do produto" />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-1">Descrição Detalhada (Vendas)</label>
+              <textarea {...register('detailed_description')} rows="6" className="w-full p-2 bg-gray-100 dark:bg-gray-900 border rounded-md" placeholder="Descreva todos os benefícios do produto aqui..." />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-1">Recursos / Benefícios (Separe por vírgula)</label>
+              <input type="text" {...register('features')} className="w-full p-2 bg-gray-100 dark:bg-gray-900 border rounded-md" placeholder="Ex: Suporte 24h, Backup Automático, Acesso Vitalício" />
             </div>
 
             <div>
@@ -133,8 +150,7 @@ const AdminFormularioProduto = () => {
               </div>
             </div>
 
-            {/* Pricing Section */}
-            <h2 className="text-xl font-semibold border-b pt-4 pb-2">Precificação</h2>
+            <h2 className="text-xl font-semibold border-b pt-4 pb-2">Planos de Preço (R$)</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
                 <label htmlFor="price_monthly" className="block text-sm font-medium mb-1">Preço Mensal (R$)</label>

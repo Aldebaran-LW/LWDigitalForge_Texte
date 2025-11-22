@@ -145,6 +145,27 @@ const PaginaDetalhesProduto = () => {
                             <h1 className="text-4xl md:text-5xl font-bold mb-4 text-gradient">{product.name}</h1>
                             <p className="text-lg text-gray-600 dark:text-[#F9FAFB]/80 mb-6 whitespace-pre-line">{product.description || 'Sem descrição disponível'}</p>
                             
+                            {product.detailed_description && (
+                                <div className="mb-8">
+                                    <h3 className="text-2xl font-semibold mb-2">Sobre este produto</h3>
+                                    <p className="text-lg text-gray-600 dark:text-[#F9FAFB]/80 whitespace-pre-line">{product.detailed_description}</p>
+                                </div>
+                            )}
+
+                            {product.features && product.features.length > 0 && (
+                                <div className="bg-gray-100 dark:bg-[#111827]/70 p-6 rounded-lg mb-8">
+                                    <h3 className="text-2xl font-semibold mb-4">O que está incluído:</h3>
+                                    <ul className="space-y-3">
+                                        {product.features.map((feature, idx) => (
+                                            <li key={idx} className="flex items-center text-gray-700 dark:text-gray-300">
+                                                <CheckCircle className="w-5 h-5 text-green-500 mr-3 flex-shrink-0" />
+                                                {feature}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+                            
                             {(product.github_repo_url || product.vercel_deployment_url) && (
                                 <div className="mb-8">
                                     <h3 className="text-2xl font-semibold mb-4">Links:</h3>
