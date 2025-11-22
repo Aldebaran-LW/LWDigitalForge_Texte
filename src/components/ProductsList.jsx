@@ -1,38 +1,18 @@
-
-import React, { useCallback, useMemo, useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ShoppingCart, Loader2, Info } from 'lucide-react';
-import { useCart } from '@/hooks/useCart';
-import { useToast } from '@/components/ui/use-toast';
+import { Loader2, Info } from 'lucide-react';
 import { supabase } from '@/lib/customSupabaseClient';
 
-const placeholderImage = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjMWEyMDNkIi8+CiAgPHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzY0NzRjYSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkxXPC90ZXh0Pgo8L3N2Zz4K";
+const placeholderImage = "https://placehold.co/600x400/1e293b/white?text=Produto+Digital";
 
 const ProductCard = ({ product, index }) => {
-  const { addToCart } = useCart();
-  const { toast } = useToast();
-  const navigate = useNavigate();
-
-  const formatPrice = (priceInCents) => {
-    if (!priceInCents) return 'Consulte valores';
-    return `R$ ${(priceInCents / 100).toFixed(2).replace('.', ',')}`;
-  };
-
-  const getDisplayPrice = () => {
-    if (product.price_lifetime) return formatPrice(product.price_lifetime);
-    if (product.price_annual) return formatPrice(product.price_annual);
-    if (product.price_monthly) return formatPrice(product.price_monthly);
-    return 'Consulte valores';
-  };
-
-  const handleCardClick = useCallback(() => {
-    navigate(`/produtos/${product.id}`);
-  }, [product.id, navigate]);
+  // Lógica para exibir o menor preço disponível ("A partir de...")
+  const prices = [product.price_monthly, product.price_annual, product.price_lifetime].filter(p => p);
+  const minPrice = prices.length > 0 ? Math.min(...prices) : 0;
   
-  const actionText = "Saiba Mais";
-  const ActionIcon = Info;
+  const formatPrice = (cents) => `R$ ${(cents / 100).toFixed(2).replace('.', ',')}`;
 
   return (
     <motion.div
@@ -40,26 +20,19 @@ const ProductCard = ({ product, index }) => {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: index * 0.05 }}
       whileHover={{ y: -10, scale: 1.02 }}
-      onClick={handleCardClick}
-      className="bg-white dark:bg-[#111827]/50 backdrop-blur-sm rounded-xl p-6 border border-gray-200 dark:border-blue-500/20 hover:border-blue-400 dark:hover:border-blue-500/60 transition-all duration-300 flex flex-col cursor-pointer"
+      className="bg-white dark:bg-[#111827]/50 backdrop-blur-sm rounded-xl p-6 border border-gray-200 dark:border-blue-500/20 hover:border-blue-400 dark:hover:border-blue-500/60 transition-all duration-300 flex flex-col"
     >
-      <div className="flex flex-col h-full">
+      <Link to={`/product/${product.id}`} className="flex flex-col h-full">
         <div className="relative mb-4">
-          {product.image_url ? (
-            <img
-              src={product.image_url}
-              alt={product.name}
-              className="w-full h-56 object-cover rounded-lg"
-              onError={(e) => {
-                e.target.src = placeholderImage;
-              }}
-            />
-          ) : (
-            <img
-              src={placeholderImage}
-              alt={product.name}
-              className="w-full h-56 object-cover rounded-lg"
-            />
+          <img
+            src={product.image_url || placeholderImage}
+            alt={product.name}
+            className="w-full h-56 object-cover rounded-lg"
+          />
+          {product.trial_period_days && product.trial_period_days > 0 && (
+            <div className="absolute top-3 left-3 bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
+              Teste Grátis
+            </div>
           )}
         </div>
 
@@ -72,43 +45,24 @@ const ProductCard = ({ product, index }) => {
         </p>
 
         <div className="text-left mb-4">
-          <div className="space-y-1">
-            {product.price_lifetime && (
+           {minPrice > 0 ? (
               <div>
-                <span className="text-2xl font-bold text-blue-500 dark:text-blue-400">
-                  {formatPrice(product.price_lifetime)}
-                </span>
-                <span className="text-sm text-gray-500 dark:text-gray-400 ml-2">Vitalício</span>
+                <span className="text-xs text-gray-500 uppercase">A partir de</span>
+                <div className="text-2xl font-bold text-blue-500 dark:text-blue-400">
+                    {formatPrice(minPrice)}
+                </div>
               </div>
-            )}
-            {!product.price_lifetime && product.price_annual && (
-              <div>
-                <span className="text-2xl font-bold text-blue-500 dark:text-blue-400">
-                  {formatPrice(product.price_annual)}
-                </span>
-                <span className="text-sm text-gray-500 dark:text-gray-400 ml-2">Anual</span>
-              </div>
-            )}
-            {!product.price_lifetime && !product.price_annual && product.price_monthly && (
-              <div>
-                <span className="text-2xl font-bold text-blue-500 dark:text-blue-400">
-                  {formatPrice(product.price_monthly)}
-                </span>
-                <span className="text-sm text-gray-500 dark:text-gray-400 ml-2">Mensal</span>
-              </div>
-            )}
-            {!product.price_lifetime && !product.price_annual && !product.price_monthly && (
-              <span className="text-lg text-gray-500 dark:text-gray-400">Consulte valores</span>
-            )}
-          </div>
+           ) : (
+               <span className="text-2xl font-bold text-green-500">Grátis</span>
+           )}
         </div>
         
         <div className="mt-auto">
-          <Button className="w-full btn-secondary py-3 font-semibold rounded-lg bg-transparent btn-pulse pointer-events-none">
-            <ActionIcon className="mr-2 h-4 w-4" /> {actionText}
+          <Button className="w-full btn-secondary py-3 font-semibold rounded-lg bg-transparent btn-pulse">
+            <Info className="mr-2 h-4 w-4" /> Ver Detalhes
           </Button>
         </div>
-      </div>
+      </Link>
     </motion.div>
   );
 };
@@ -116,55 +70,32 @@ const ProductCard = ({ product, index }) => {
 const ProductsList = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchProducts = async () => {
-      try {
-        setLoading(true);
-        setError(null);
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('registered_apps')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-        const { data, error: supabaseError } = await supabase
-          .from('registered_apps')
-          .select('*')
-          .order('created_at', { ascending: false });
-
-        if (supabaseError) {
-          console.error('Erro ao buscar produtos:', supabaseError);
-          throw new Error(supabaseError.message);
-        }
-
+      if (error) {
+        console.error('Erro ao buscar produtos:', error);
+      } else {
         setProducts(data || []);
-      } catch (err) {
-        console.error('Erro ao buscar produtos:', err);
-        setError(err.message || 'Falha ao carregar produtos');
-      } finally {
-        setLoading(false);
       }
+
+      setLoading(false);
     };
 
     fetchProducts();
   }, []);
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <Loader2 className="h-16 w-16 text-blue-500 dark:text-white animate-spin" />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="text-center text-red-400 p-8">
-        <p>Erro ao carregar produtos: {error}</p>
-      </div>
-    );
-  }
+  if (loading) return <div className="flex justify-center items-center h-64"><Loader2 className="h-16 w-16 text-blue-500 animate-spin" /></div>;
 
   if (products.length === 0) {
     return (
-      <div className="text-center text-gray-500 dark:text-gray-400 p-8">
+      <div className="text-center text-gray-500 p-8">
         <p>Nenhum produto disponível no momento.</p>
       </div>
     );

@@ -60,7 +60,6 @@ const ProductDetailPage = () => {
         variantName = 'Licença Vitalícia';
     }
 
-    // Cria um objeto compatível com o carrinho
     const cartItem = {
         id: product.id,
         title: product.name,
@@ -70,17 +69,21 @@ const ProductDetailPage = () => {
             title: variantName,
             price_in_cents: price,
             price_formatted: `R$ ${(price / 100).toFixed(2).replace('.', ',')}`,
-            inventory_quantity: 999 // Infoproduto é ilimitado
+            inventory_quantity: 999,
+            manage_inventory: false
         }]
     };
 
-    // Usa a função addToCart existente, adaptando os parâmetros
-    addToCart(cartItem, cartItem.variants[0], 1, 999);
-    
-    toast({
-      title: "Adicionado ao Carrinho!",
-      description: `${product.name} (${variantName}) foi adicionado.`,
-    });
+    addToCart(cartItem, cartItem.variants[0], 1, 999)
+      .then(() => {
+        toast({
+          title: "Adicionado ao Carrinho!",
+          description: `${product.name} (${variantName}) foi adicionado.`,
+        });
+      })
+      .catch(err => {
+         toast({ variant: "destructive", title: "Erro", description: err.message });
+      });
   };
 
   const formatPrice = (cents) => `R$ ${(cents / 100).toFixed(2).replace('.', ',')}`;
