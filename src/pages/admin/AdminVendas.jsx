@@ -9,6 +9,11 @@ const AdminVendas = () => {
   const [sales, setSales] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const formatCurrency = (cents) => {
+    if (!cents || cents === 0) return 'R$ 0,00';
+    return `R$ ${(cents / 100).toFixed(2).replace('.', ',')}`;
+  };
+
   useEffect(() => {
     const fetchSales = async () => {
       try {
@@ -28,7 +33,7 @@ const AdminVendas = () => {
             id: sale.id,
             customer: sale.user_email || 'N/A',
             product: sale.registered_apps?.name || 'Produto não encontrado',
-            amount: sale.total_price ? `R$ ${(sale.total_price / 100).toFixed(2).replace('.', ',')}` : 'R$ 0,00',
+            amount: formatCurrency(sale.total_price),
             date: sale.created_at ? new Date(sale.created_at).toLocaleDateString('pt-BR') : 'N/A',
             status: sale.payment_status || 'N/A',
           }));
@@ -44,11 +49,6 @@ const AdminVendas = () => {
 
     fetchSales();
   }, []);
-
-  const formatCurrency = (cents) => {
-    if (!cents) return 'R$ 0,00';
-    return `R$ ${(cents / 100).toFixed(2).replace('.', ',')}`;
-  };
 
   return (
     <>
@@ -99,7 +99,7 @@ const AdminVendas = () => {
                         className="bg-white dark:bg-[#111827]/80 border-b dark:border-gray-700 hover:bg-gray-50/50 dark:hover:bg-white/5"
                     >
                       <th scope="row" className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                        #{sale.id}
+                        #{String(sale.id).substring(0, 8)}
                       </th>
                       <td className="px-6 py-4">{sale.customer}</td>
                       <td className="px-6 py-4">{sale.product}</td>

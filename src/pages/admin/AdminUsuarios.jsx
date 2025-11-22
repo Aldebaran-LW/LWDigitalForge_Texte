@@ -18,7 +18,7 @@ const AdminUsuarios = () => {
         const { data: usersData, error: rpcError } = await supabase
           .rpc('get_users_with_emails');
 
-        if (!rpcError && usersData) {
+        if (!rpcError && usersData && Array.isArray(usersData)) {
           const formattedUsers = usersData.map(user => ({
             id: user.id,
             email: user.email || `ID: ${user.id.substring(0, 8)}...`,
@@ -28,7 +28,13 @@ const AdminUsuarios = () => {
             joinDate: 'Data não disponível',
           }));
           setUsers(formattedUsers);
+          setLoading(false);
           return;
+        }
+
+        // Log do erro RPC se houver
+        if (rpcError) {
+          console.warn('Erro ao usar função RPC, usando fallback:', rpcError);
         }
 
         // Fallback: buscar apenas perfis

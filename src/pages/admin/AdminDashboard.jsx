@@ -17,31 +17,46 @@ const AdminDashboard = () => {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        // Buscar total de usuários
-        const { count: totalUsers } = await supabase
-          .from('profiles')
-          .select('*', { count: 'exact', head: true });
-
-        // Buscar total de vendas e receita
-        const { data: salesData } = await supabase
-          .from('sales')
-          .select('total_price');
-
-        const totalRevenue = salesData ? salesData.reduce((sum, sale) => sum + (sale.total_price || 0), 0) : 0;
-
-        // Buscar total de produtos
-        const { count: totalProducts } = await supabase
-          .from('registered_apps')
-          .select('*', { count: 'exact', head: true });
-
         // Formatar valores
         const formatCurrency = (cents) => {
+          if (!cents || cents === 0) return 'R$ 0,00';
           return `R$ ${(cents / 100).toFixed(2).replace('.', ',')}`;
         };
 
         const formatNumber = (num) => {
           return num?.toLocaleString('pt-BR') || '0';
         };
+
+        // Buscar total de usuários
+        const { count: totalUsers, error: usersError } = await supabase
+          .from('profiles')
+          .select('*', { count: 'exact', head: true });
+
+        if (usersError) {
+          console.error('Erro ao buscar usuários:', usersError);
+        }
+
+        // Buscar total de vendas e receita
+        const { data: salesData, error: salesError } = await supabase
+          .from('sales')
+          .select('total_price');
+
+        if (salesError) {
+          console.error('Erro ao buscar vendas:', salesError);
+        }
+
+        const totalRevenue = salesData && Array.isArray(salesData) 
+          ? salesData.reduce((sum, sale) => sum + (sale.total_price || 0), 0) 
+          : 0;
+
+        // Buscar total de produtos
+        const { count: totalProducts, error: productsError } = await supabase
+          .from('registered_apps')
+          .select('*', { count: 'exact', head: true });
+
+        if (productsError) {
+          console.error('Erro ao buscar produtos:', productsError);
+        }
 
         setStats([
           { title: 'Total de Acessos', value: '0', icon: Eye, color: 'text-blue-500', bgColor: 'bg-blue-500/10' },
