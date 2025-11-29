@@ -4,6 +4,7 @@ import { Outlet, Link, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Package, ShoppingCart, Users, LogOut, Tag } from 'lucide-react';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import ThemeToggle from '@/components/ThemeToggle';
+import { ASSETS } from '@/config/assets';
 
 const AdminLayout = () => {
   const { signOut } = useAuth();
@@ -23,7 +24,7 @@ const AdminLayout = () => {
         <div>
           <div className="flex items-center gap-2 mb-10">
             <img
-              src="https://horizons-cdn.hostinger.com/758a5a0c-3537-4df4-a495-ab13beb5b033/afb7579835ff809c5e86f98a5b3a75b6.png"
+              src={ASSETS.Logo}
               alt="LWDigitalForge Logo"
               className="h-8"
             />

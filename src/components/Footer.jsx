@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { Instagram, Linkedin, Mail, Phone } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
+import { ASSETS } from '@/config/assets';
 
 const Footer = () => {
   const handleSocialClick = (linkName) => {
@@ -32,7 +33,7 @@ const Footer = () => {
           >
             <Link to="/" className="flex items-center mb-4">
               <img
-                src="https://horizons-cdn.hostinger.com/758a5a0c-3537-4df4-a495-ab13beb5b033/afb7579835ff809c5e86f98a5b3a75b6.png"
+                src={ASSETS.Logo}
                 alt="LWDigitalForge Logo"
                 className="h-8 mr-2"
               />
