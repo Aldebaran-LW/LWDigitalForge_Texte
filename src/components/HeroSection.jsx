@@ -2,14 +2,14 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ASSETS } from '@/config/assets';
+import { getAssetUrlFromStorage } from '@/config/assets';
 
 const HeroSection = () => {
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20">
       <div className="absolute inset-0">
         <img
-          src={ASSETS.Capa}
+          src={getAssetUrlFromStorage('Capa')}
           alt="Fundo tecnológico com circuitos e linhas de dados"
           className="w-full h-full object-cover opacity-20 dark:opacity-30"
         />

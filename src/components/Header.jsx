@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useCart } from '@/hooks/useCart';
 import ShoppingCart from '@/components/ShoppingCart';
-import { ASSETS } from '@/config/assets';
+import { getAssetUrlFromStorage } from '@/config/assets';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -32,7 +32,7 @@ const Header = () => {
               className="flex items-center"
             >
               <img
-                src={ASSETS.Logo}
+                src={getAssetUrlFromStorage('Logo')}
                 alt="LWDigitalForge Logo"
                 className="h-8 mr-2"
               />

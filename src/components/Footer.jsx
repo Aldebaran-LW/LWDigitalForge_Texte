@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { Instagram, Linkedin, Mail, Phone } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
-import { ASSETS } from '@/config/assets';
+import { getAssetUrlFromStorage } from '@/config/assets';
 
 const Footer = () => {
   const handleSocialClick = (linkName) => {
@@ -33,7 +33,7 @@ const Footer = () => {
           >
             <Link to="/" className="flex items-center mb-4">
               <img
-                src={ASSETS.Logo}
+                src={getAssetUrlFromStorage('Logo')}
                 alt="LWDigitalForge Logo"
                 className="h-8 mr-2"
               />

@@ -4,7 +4,7 @@ import { Outlet, Link, useLocation } from 'react-router-dom';
 import { Package, CreditCard, TestTube2, LogOut } from 'lucide-react';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import ThemeToggle from '@/components/ThemeToggle';
-import { ASSETS } from '@/config/assets';
+import { getAssetUrlFromStorage } from '@/config/assets';
 
 const PortalLayout = () => {
   const { profile, signOut } = useAuth();
@@ -22,7 +22,7 @@ const PortalLayout = () => {
         <div>
           <div className="flex items-center gap-2 mb-10">
              <img
-              src={ASSETS.Logo}
+              src={getAssetUrlFromStorage('Logo')}
               alt="LWDigitalForge Logo"
               className="h-8"
             />
