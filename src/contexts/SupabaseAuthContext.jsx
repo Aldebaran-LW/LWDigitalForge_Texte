@@ -159,15 +159,17 @@ export const AuthProvider = ({ children }) => {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/portal/meus-produtos`,
+          redirectTo: `${window.location.origin}/auth/callback`,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
-          }
+          },
+          skipBrowserRedirect: false
         }
       });
 
       if (error) {
+        console.error('Erro no signInWithOAuth:', error);
         toast({
           variant: "destructive",
           title: "Erro no Login",
