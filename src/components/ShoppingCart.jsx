@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ShoppingCart as ShoppingCartIcon, X, Plus, Minus } from 'lucide-react';
 import { useCart } from '@/hooks/useCart';
 import { Button } from '@/components/ui/button';
-import { initializeCheckout } from '@/api/EcommerceApi';
+import { supabase } from '@/lib/customSupabaseClient';
 import { useToast } from '@/components/ui/use-toast';
 
 const placeholderImage = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjMzc0MTUxIi8+CiAgPHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzlDQTNBRiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPk5vIEltYWdlPC90ZXh0Pgo8L3N2Zz4K";
@@ -24,18 +24,27 @@ const ShoppingCart = ({ isCartOpen, setIsCartOpen }) => {
     }
 
     try {
-      const items = cartItems.map(item => ({
-        variant_id: item.variant.id,
-        quantity: item.quantity,
-      }));
+      const { data, error } = await supabase.functions.invoke('create-checkout', {
+        body: { products: cartItems.map(item => ({ id: item.product.id, quantity: item.quantity })) },
+      });
 
-      const successUrl = `${window.location.origin}/success`;
-      const cancelUrl = window.location.href;
+      if (error) {
+        throw error;
+      }
 
-      const { url } = await initializeCheckout({ items, successUrl, cancelUrl });
-      
-      // Do not clear cart here, let the success page handle it
-      window.location.href = url;
+      const { id } = data;
+      const publicKey = process.env.REACT_APP_MERCADOPAGO_PUBLIC_KEY;
+
+      if (!publicKey) {
+        throw new Error('Chave pública do Mercado Pago não configurada.');
+      }
+
+      const mercadopago = new window.MercadoPago(publicKey, {
+        locale: 'pt-BR',
+      });
+
+      mercadopago.checkout({ preference: { id } });
+
     } catch (error) {
       toast({
         title: 'Erro no Checkout',

@@ -1,0 +1,14 @@
+## Pages
+- [- LWDigitalForge](/paginadetalhesproduto): No description available
+- [- LWDigitalForge](/productdetail): No description available
+- [Carrinho de Compras - LWDigitalForge](/paginacarrinho): Revise seus produtos e finalize sua compra.
+- [Contato e Orçamento - LWDigitalForge](/paginacontatoorcamento): Solicite um orçamento para sua automação personalizada ou entre em contato conosco.
+- [Criar Conta - LWDigitalForge](/paginacadastro): Crie sua conta para acessar nossos produtos e serviços.
+- [Login - LWDigitalForge](/paginalogin): Acesse o portal do cliente ou o painel de administração.
+- [LWDigitalForge - Automação Inteligente | Bots e Ferramentas](/home): Transforme sua produtividade com bots Telegram e planilhas Excel inteligentes. Automação que trabalha por você 24/7.
+- [Nossas Soluções - LWDigitalForge](/paginaprodutos): Explore nossa gama de bots Telegram e planilhas Excel projetadas para maximizar sua produtividade.
+- [Política de Privacidade - LWDigitalForge](/paginaprivacidade): Entenda como coletamos, usamos e protegemos suas informações pessoais.
+- [Recuperar Senha - LWDigitalForge](/paginaesquecisenha): Recupere o acesso à sua conta LWDigitalForge.
+- [Redefinir Senha - LWDigitalForge](/paginaredefinirsenha): Crie uma nova senha para sua conta LWDigitalForge.
+- [Sobre Nós - LWDigitalForge](/paginasobre): Conheça a história e a missão da LWDigitalForge, sua parceira em automação e produtividade.
+- [Termos de Uso - LWDigitalForge](/paginatermos): Leia nossos Termos de Uso para entender as regras de uso de nossos produtos e plataforma.
