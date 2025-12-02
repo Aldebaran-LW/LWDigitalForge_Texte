@@ -153,6 +153,44 @@ export const AuthProvider = ({ children }) => {
     return { error: null };
   }, [toast, navigate, fetchUserProfile]);
 
+  const signInWithGoogle = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/portal/meus-produtos`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          }
+        }
+      });
+
+      if (error) {
+        toast({
+          variant: "destructive",
+          title: "Erro no Login",
+          description: error.message || "Não foi possível fazer login com Google.",
+        });
+        setLoading(false);
+        return { error };
+      }
+
+      // O loading será desativado quando a sessão for estabelecida
+      return { error: null };
+    } catch (error) {
+      console.error('Erro no login com Google:', error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível conectar com o Google.",
+      });
+      setLoading(false);
+      return { error };
+    }
+  }, [toast]);
+
   const signOut = useCallback(async () => {
     setLoading(true);
     await supabase.auth.signOut();
@@ -174,8 +212,9 @@ export const AuthProvider = ({ children }) => {
     isAuthenticated: !!session,
     signUp,
     signIn,
+    signInWithGoogle,
     signOut,
-  }), [user, session, loading, role, profile, signUp, signIn, signOut]);
+  }), [user, session, loading, role, profile, signUp, signIn, signInWithGoogle, signOut]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

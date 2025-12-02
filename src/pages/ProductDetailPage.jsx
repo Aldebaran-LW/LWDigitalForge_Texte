@@ -132,7 +132,7 @@ const ProductDetailPage = () => {
     if (!user) {
       toast({
         title: "Login Necessário",
-        description: "Faça login para iniciar o teste grátis.",
+        description: "Faça login ou cadastre-se para iniciar o teste grátis.",
       });
       navigate('/login');
       return;
@@ -146,16 +146,35 @@ const ProductDetailPage = () => {
       if (result.success) {
         toast({
           title: "Teste Iniciado!",
-          description: `Você tem ${product.trial_period_days} dias para testar ${product.name}.`,
+          description: `Você tem ${product.trial_period_days} dias para testar ${product.name}. Redirecionando...`,
         });
         setHasActiveTrial(true);
-        navigate('/portal/testes');
+        
+        // Redirecionar para o app após 2 segundos
+        setTimeout(() => {
+          if (result.redirectUrl) {
+            window.open(result.redirectUrl, '_blank');
+          } else {
+            navigate('/portal/testes');
+          }
+        }, 2000);
       } else {
-        toast({
-          variant: "destructive",
-          title: "Erro",
-          description: result.error,
-        });
+        // Se já tem acesso, redirecionar direto para o app
+        if (result.redirectUrl) {
+          toast({
+            title: "Você já tem acesso!",
+            description: "Redirecionando para o aplicativo...",
+          });
+          setTimeout(() => {
+            window.open(result.redirectUrl, '_blank');
+          }, 1000);
+        } else {
+          toast({
+            variant: "destructive",
+            title: "Erro",
+            description: result.error,
+          });
+        }
       }
     } catch (error) {
       console.error('Erro ao iniciar teste:', error);

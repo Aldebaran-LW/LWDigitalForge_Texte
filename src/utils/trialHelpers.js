@@ -57,7 +57,7 @@ export const checkUserProductAccess = async (userId, productId) => {
  * Inicia um teste grátis para um produto
  * @param {string} userId - ID do usuário
  * @param {object} product - Objeto do produto
- * @returns {Promise<{success: boolean, data: object, error: string}>}
+ * @returns {Promise<{success: boolean, data: object, error: string, redirectUrl: string}>}
  */
 export const startProductTrial = async (userId, product) => {
   try {
@@ -73,7 +73,8 @@ export const startProductTrial = async (userId, product) => {
     if (existingAccess.hasAccess) {
       return {
         success: false,
-        error: 'Você já tem acesso ativo a este produto.'
+        error: 'Você já tem acesso ativo a este produto.',
+        redirectUrl: product.vercel_deployment_url || product.github_repo_url
       };
     }
 
@@ -117,7 +118,8 @@ export const startProductTrial = async (userId, product) => {
 
     return {
       success: true,
-      data: data
+      data: data,
+      redirectUrl: product.vercel_deployment_url || product.github_repo_url
     };
   } catch (error) {
     console.error('Erro ao iniciar teste:', error);
