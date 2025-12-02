@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { supabase } from '@/lib/customSupabaseClient';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/hooks/useCart';
 import { useToast } from '@/components/ui/use-toast';
-import { ShoppingCart, Loader2, ArrowLeft, CheckCircle, Shield, Zap, Calendar } from 'lucide-react';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { ShoppingCart, Loader2, ArrowLeft, CheckCircle, Shield, Zap, Calendar, TestTube2 } from 'lucide-react';
+import { checkUserProductAccess, startProductTrial } from '@/utils/trialHelpers';
 
 const placeholderImage = "https://placehold.co/600x400/1e293b/white?text=Produto+Digital";
 
@@ -14,10 +16,14 @@ const ProductDetailPage = () => {
   const { id } = useParams();
   const { addToCart } = useCart();
   const { toast } = useToast();
+  const { user } = useAuth();
+  const navigate = useNavigate();
   
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedPrice, setSelectedPrice] = useState(null); // 'monthly', 'annual', 'lifetime'
+  const [hasActiveTrial, setHasActiveTrial] = useState(false);
+  const [startingTrial, setStartingTrial] = useState(false);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -49,10 +55,20 @@ const ProductDetailPage = () => {
       setLoading(false);
     };
 
+    const checkActiveTrial = async () => {
+      if (!user || !id) return;
+      
+      const access = await checkUserProductAccess(user.id, id);
+      if (access.hasAccess && access.accessType === 'trial') {
+        setHasActiveTrial(true);
+      }
+    };
+
     if (id) {
       fetchProduct();
+      checkActiveTrial();
     }
-  }, [id]);
+  }, [id, user]);
 
   const handleAddToCart = () => {
     if (!product || !selectedPrice) return;
@@ -110,6 +126,47 @@ const ProductDetailPage = () => {
       .catch(err => {
          toast({ variant: "destructive", title: "Erro", description: err.message });
       });
+  };
+
+  const handleStartTrial = async () => {
+    if (!user) {
+      toast({
+        title: "Login Necessário",
+        description: "Faça login para iniciar o teste grátis.",
+      });
+      navigate('/login');
+      return;
+    }
+
+    setStartingTrial(true);
+
+    try {
+      const result = await startProductTrial(user.id, product);
+      
+      if (result.success) {
+        toast({
+          title: "Teste Iniciado!",
+          description: `Você tem ${product.trial_period_days} dias para testar ${product.name}.`,
+        });
+        setHasActiveTrial(true);
+        navigate('/portal/testes');
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Erro",
+          description: result.error,
+        });
+      }
+    } catch (error) {
+      console.error('Erro ao iniciar teste:', error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível iniciar o teste.",
+      });
+    } finally {
+      setStartingTrial(false);
+    }
   };
 
   const formatPrice = (cents) => `R$ ${(cents / 100).toFixed(2).replace('.', ',')}`;
@@ -226,8 +283,38 @@ const ProductDetailPage = () => {
                             <Calendar className="w-5 h-5 text-indigo-600 mt-1" />
                             <div>
                                 <p className="font-semibold text-indigo-700 dark:text-indigo-300">Teste Grátis de {product.trial_period_days} Dias</p>
-                                <p className="text-sm text-indigo-600/80 dark:text-indigo-400">Garantia incondicional. Se não gostar, devolvemos seu dinheiro.</p>
+                                <p className="text-sm text-indigo-600/80 dark:text-indigo-400">Experimente antes de comprar. Sem compromisso!</p>
                             </div>
+                        </div>
+                    )}
+
+                    {product.trial_period_days && product.trial_period_days > 0 && !hasActiveTrial && (
+                        <Button 
+                            onClick={handleStartTrial} 
+                            size="lg" 
+                            className="w-full py-6 text-lg font-bold shadow-lg hover:shadow-xl transition-all mb-4 bg-green-600 hover:bg-green-700"
+                            disabled={startingTrial}
+                        >
+                            {startingTrial ? (
+                                <>
+                                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                                    Iniciando Teste...
+                                </>
+                            ) : (
+                                <>
+                                    <TestTube2 className="mr-2 h-5 w-5" />
+                                    Iniciar Teste Grátis ({product.trial_period_days} dias)
+                                </>
+                            )}
+                        </Button>
+                    )}
+
+                    {hasActiveTrial && (
+                        <div className="bg-green-50 dark:bg-green-900/30 p-4 rounded-lg mb-4 text-center">
+                            <p className="font-semibold text-green-700 dark:text-green-300">✓ Você já tem um teste ativo deste produto</p>
+                            <Link to="/portal/testes" className="text-sm text-green-600 dark:text-green-400 hover:underline">
+                                Ver meus testes
+                            </Link>
                         </div>
                     )}
 
