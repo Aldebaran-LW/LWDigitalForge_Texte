@@ -70,30 +70,13 @@ export const AuthProvider = ({ children }) => {
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('Auth state changed:', event, session?.user?.email);
-        
-        // Quando o usuário faz login via OAuth, redirecionar para a área apropriada
-        if (event === 'SIGNED_IN' && session) {
-          const userProfile = await fetchUserProfile(session.user);
-          const userRole = userProfile?.role || 'USER';
-          
-          // Pequeno delay para garantir que a sessão foi estabelecida
-          setTimeout(() => {
-            if (userRole === 'ADMIN') {
-              navigate('/admin/dashboard');
-            } else {
-              navigate('/portal/meus-produtos');
-            }
-          }, 500);
-        }
-        
+      async (_event, session) => {
         await handleSession(session);
       }
     );
 
     return () => subscription.unsubscribe();
-  }, [handleSession, fetchUserProfile, navigate]);
+  }, [handleSession]);
 
   const signUp = useCallback(async (fullName, phone, email, password) => {
     setLoading(true);
@@ -176,7 +159,7 @@ export const AuthProvider = ({ children }) => {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}`,
+          redirectTo: `${window.location.origin}/auth/callback`,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
