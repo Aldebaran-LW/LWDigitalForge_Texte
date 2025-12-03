@@ -17,13 +17,11 @@ import PaginaTermos from '@/pages/PaginaTermos';
 import PaginaPrivacidade from '@/pages/PaginaPrivacidade';
 import ProductDetailPage from '@/pages/ProductDetailPage';
 import SuccessPage from '@/pages/SuccessPage';
-import FailurePage from '@/pages/FailurePage';
-import PendingPage from '@/pages/PendingPage';
 import AuthCallback from '@/pages/AuthCallback';
 import ProtectedRoute from '@/components/admin/ProtectedRoute';
 
 // Layouts
-import AdminLayout from '@/layouts/AdminLayout';
+import AdminLayout from '@/components/admin/AdminLayout';
 
 // Admin Imports
 import AdminDashboard from '@/pages/admin/AdminDashboard';
@@ -66,8 +64,6 @@ function App() {
           <Route path="/politica-de-privacidade" element={<PaginaPrivacidade />} />
           <Route path="/pagina-privacidade" element={<PaginaPrivacidade />} />
           <Route path="/success" element={<SuccessPage />} />
-          <Route path="/failure" element={<FailurePage />} />
-          <Route path="/pending" element={<PendingPage />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
 
           {/* Admin Routes */}
