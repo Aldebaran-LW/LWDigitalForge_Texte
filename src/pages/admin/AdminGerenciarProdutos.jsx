@@ -1,10 +1,11 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { Helmet } from 'react-helmet';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { supabase } from '@/lib/customSupabaseClient';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Edit, Trash2, Loader2, AlertTriangle, Clock } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Loader2, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import {
   AlertDialog,
@@ -27,11 +28,8 @@ const AdminGerenciarProdutos = () => {
   const fetchProducts = useCallback(async () => {
     setLoading(true);
     const { data, error } = await supabase
-      .from('products')
-      .select(`
-        *,
-        product_types (name)
-      `)
+      .from('registered_apps')
+      .select('*')
       .order('name', { ascending: true });
 
     if (error) {
@@ -49,7 +47,7 @@ const AdminGerenciarProdutos = () => {
   }, [fetchProducts]);
 
   const handleDelete = async (productId) => {
-    const { error } = await supabase.from('products').delete().eq('id', productId);
+    const { error } = await supabase.from('registered_apps').delete().eq('id', productId);
     if (error) {
       toast({ variant: 'destructive', title: 'Erro ao excluir produto', description: error.message });
     } else {
@@ -59,7 +57,7 @@ const AdminGerenciarProdutos = () => {
   };
 
   const formatPrice = (priceInCents) => {
-    if (priceInCents === null || priceInCents === undefined) return '---';
+    if (priceInCents === null || priceInCents === undefined) return 'N/A';
     return `R$ ${(priceInCents / 100).toFixed(2).replace('.', ',')}`;
   };
 
@@ -93,24 +91,20 @@ const AdminGerenciarProdutos = () => {
             className="bg-white dark:bg-gray-800/50 rounded-lg shadow-md border border-gray-200 dark:border-white/10 overflow-x-auto"
           >
             <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
-              {/* CABEÇALHO DA TABELA ATUALIZADO */}
               <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-800 dark:text-gray-400">
                 <tr>
                   <th scope="col" className="px-6 py-3">Nome do Produto</th>
-                  <th scope="col" className="px-6 py-3">Tipo</th>
-                  <th scope="col" className="px-6 py-3">Preço (Mensal)</th>
-                  <th scope="col" className="px-6 py-3">Preço (Anual)</th>
-                  <th scope="col" className="px-6 py-3">Preço (Vitalício)</th>
-                  <th scope="col" className="px-6 py-3">Teste</th>
-                  <th scope="col" className="px-6 py-3">Status</th>
+                  <th scope="col" className="px-6 py-3">Descrição</th>
+                  <th scope="col" className="px-6 py-3">Preço Mensal</th>
+                  <th scope="col" className="px-6 py-3">Preço Anual</th>
+                  <th scope="col" className="px-6 py-3">Preço Vitalício</th>
                   <th scope="col" className="px-6 py-3 text-right">Ações</th>
                 </tr>
               </thead>
               <tbody>
                 {products.length === 0 ? (
                   <tr>
-                    {/* COLSPAN ATUALIZADO */}
-                    <td colSpan="8" className="text-center py-8 text-gray-500">Nenhum produto encontrado.</td>
+                    <td colSpan="6" className="text-center py-8 text-gray-500">Nenhum produto encontrado.</td>
                   </tr>
                 ) : products.map((product, index) => (
                   <motion.tr 
@@ -120,26 +114,15 @@ const AdminGerenciarProdutos = () => {
                       transition={{ duration: 0.3, delay: index * 0.05 }}
                       className="bg-white dark:bg-gray-800/80 border-b dark:border-gray-700 hover:bg-gray-50/50 dark:hover:bg-white/5"
                   >
-                    {/* LINHAS DA TABELA ATUALIZADAS */}
                     <th scope="row" className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
                       {product.name}
                     </th>
-                    <td className="px-6 py-4">{product.product_types?.name || 'Sem tipo'}</td>
+                    <td className="px-6 py-4 max-w-xs truncate" title={product.description}>
+                      {product.description || 'Sem descrição'}
+                    </td>
                     <td className="px-6 py-4">{formatPrice(product.price_monthly)}</td>
                     <td className="px-6 py-4">{formatPrice(product.price_annual)}</td>
                     <td className="px-6 py-4">{formatPrice(product.price_lifetime)}</td>
-                    <td className="px-6 py-4">
-                      {product.trial_period_days ? (
-                        <span className="flex items-center gap-1">
-                          <Clock className="h-3 w-3 text-gray-400" /> {product.trial_period_days} dias
-                        </span>
-                      ) : '---'}
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${product.status ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'}`}>
-                        {product.status ? 'Ativo' : 'Inativo'}
-                      </span>
-                    </td>
                     <td className="px-6 py-4 text-right space-x-2">
                       <Button asChild variant="ghost" size="icon" className="text-blue-500 hover:text-blue-700">
                           <Link to={`/admin/produtos/${product.id}/editar`}><Edit className="h-4 w-4" /></Link>

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -6,7 +7,7 @@ import { motion } from 'framer-motion';
 import { supabase } from '@/lib/customSupabaseClient';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
-import { ArrowLeft, Loader2, Clock } from 'lucide-react';
+import { ArrowLeft, Loader2 } from 'lucide-react';
 
 const AdminFormularioProduto = () => {
   const { id } = useParams();
@@ -15,80 +16,73 @@ const AdminFormularioProduto = () => {
   const isEditing = !!id;
   const { register, handleSubmit, formState: { errors }, reset, setValue } = useForm();
   
-  const [productTypes, setProductTypes] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchProductTypes = async () => {
-      const { data, error } = await supabase.from('product_types').select('*').order('name');
-      if (error) {
-        toast({ variant: 'destructive', title: 'Erro ao buscar tipos', description: error.message });
-      } else {
-        setProductTypes(data);
-      }
-    };
-
     const fetchProduct = async () => {
       if (!isEditing) {
         setLoading(false);
         return;
       }
-      const { data, error } = await supabase.from('products').select('*').eq('id', id).single();
+      const { data, error } = await supabase.from('registered_apps').select('*').eq('id', id).single();
       if (error) {
         toast({ variant: 'destructive', title: 'Erro ao buscar produto', description: error.message });
         navigate('/admin/produtos');
       } else {
-        // Populate form with existing data
+        // Converte o array de features de volta para string separada por vírgula para exibir no input
+        const featuresString = data.features ? data.features.join(', ') : '';
+        
         reset({
-          name: data.name,
-          product_type_id: data.product_type_id,
+          ...data,
+          features: featuresString,
           price_monthly: data.price_monthly ? data.price_monthly / 100 : '',
-          price_annual: data.price_annual ? data.price_annual / 100 : '', // NOVO CAMPO
+          price_annual: data.price_annual ? data.price_annual / 100 : '',
           price_lifetime: data.price_lifetime ? data.price_lifetime / 100 : '',
-          trial_period_days: data.trial_period_days || '', // NOVO CAMPO
-          shortDescription: data.short_description,
-          detailedDescription: data.detailed_description,
-          features: data.features,
-          status: data.status,
-          integration_endpoint: data.integration_endpoint,
-          integration_api_key: data.integration_api_key,
         });
       }
       setLoading(false);
     };
     
     setLoading(true);
-    Promise.all([fetchProductTypes(), fetchProduct()]);
+    fetchProduct();
   }, [id, isEditing, reset, navigate, toast]);
 
   const onSubmit = async (formData) => {
+    // Converte a string de features em um array
+    const featuresArray = formData.features 
+      ? formData.features.split(',').map(f => f.trim()).filter(f => f !== '') 
+      : [];
+
     const productData = {
       name: formData.name,
-      product_type_id: formData.product_type_id,
+      description: formData.description || null,
+      detailed_description: formData.detailed_description || null, // Novo Campo
+      features: featuresArray, // Novo Campo
+      image_url: formData.image_url || null,
+      github_repo_url: formData.github_repo_url || null,
+      vercel_deployment_url: formData.vercel_deployment_url || null,
+      
+      // Preços convertidos para centavos
       price_monthly: formData.price_monthly ? Math.round(formData.price_monthly * 100) : null,
-      price_annual: formData.price_annual ? Math.round(formData.price_annual * 100) : null, // NOVO CAMPO
+      price_annual: formData.price_annual ? Math.round(formData.price_annual * 100) : null,
       price_lifetime: formData.price_lifetime ? Math.round(formData.price_lifetime * 100) : null,
-      trial_period_days: formData.trial_period_days ? parseInt(formData.trial_period_days, 10) : null, // NOVO CAMPO
-      short_description: formData.shortDescription,
-      detailed_description: formData.detailedDescription,
-      features: formData.features,
-      status: formData.status,
-      integration_endpoint: formData.integration_endpoint,
-      integration_api_key: formData.integration_api_key,
-      updated_at: new Date(),
+      trial_period_days: formData.trial_period_days ? parseInt(formData.trial_period_days) : null,
+      
+      updated_at: new Date().toISOString(),
     };
 
     let error;
     if (isEditing) {
-      const { error: updateError } = await supabase.from('products').update(productData).eq('id', id);
+      const { error: updateError } = await supabase.from('registered_apps').update(productData).eq('id', id);
       error = updateError;
     } else {
-      const { error: insertError } = await supabase.from('products').insert(productData);
+      const { error: insertError } = await supabase.from('registered_apps').insert(productData);
       error = insertError;
     }
 
     if (error) {
       toast({ variant: 'destructive', title: `Erro ao salvar produto`, description: error.message });
+      console.error('Erro ao salvar:', error);
     } else {
       toast({ title: `Produto ${isEditing ? 'atualizado' : 'criado'} com sucesso!` });
       navigate('/admin/produtos');
@@ -118,92 +112,63 @@ const AdminFormularioProduto = () => {
             animate={{ opacity: 1 }}
             className="bg-white dark:bg-gray-800/50 p-8 rounded-lg shadow-md border border-gray-200 dark:border-white/10 space-y-6"
         >
-            {/* General Info */}
-            <h2 className="text-xl font-semibold border-b pb-2">Informações Gerais</h2>
+            <h2 className="text-xl font-semibold border-b pb-2">Dados Principais</h2>
             <div>
-              <label htmlFor="name" className="block text-sm font-medium mb-1">Nome do Produto</label>
-              <input type="text" id="name" {...register('name', { required: 'Nome é obrigatório' })} className="w-full p-2 bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-md" />
-              {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name.message}</p>}
+              <label className="block text-sm font-medium mb-1">Nome do Produto *</label>
+              <input type="text" {...register('name', { required: 'Obrigatório' })} className="w-full p-2 bg-gray-100 dark:bg-gray-900 border rounded-md" />
+              {errors.name && <p className="text-red-500 text-xs">{errors.name.message}</p>}
             </div>
 
+            <div>
+              <label className="block text-sm font-medium mb-1">Resumo Curto</label>
+              <textarea {...register('description')} rows="2" className="w-full p-2 bg-gray-100 dark:bg-gray-900 border rounded-md" placeholder="Aparece no card do produto" />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-1">Descrição Detalhada (Vendas)</label>
+              <textarea {...register('detailed_description')} rows="6" className="w-full p-2 bg-gray-100 dark:bg-gray-900 border rounded-md" placeholder="Descreva todos os benefícios do produto aqui..." />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-1">Recursos / Benefícios (Separe por vírgula)</label>
+              <input type="text" {...register('features')} className="w-full p-2 bg-gray-100 dark:bg-gray-900 border rounded-md" placeholder="Ex: Suporte 24h, Backup Automático, Acesso Vitalício" />
+            </div>
+
+            <div>
+              <label htmlFor="image_url" className="block text-sm font-medium mb-1">URL da Imagem</label>
+              <input type="url" id="image_url" {...register('image_url')} className="w-full p-2 bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-md" placeholder="https://exemplo.com/imagem.jpg" />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label htmlFor="github_repo_url" className="block text-sm font-medium mb-1">URL do Repositório GitHub</label>
+                <input type="url" id="github_repo_url" {...register('github_repo_url')} className="w-full p-2 bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-md" placeholder="https://github.com/usuario/repositorio" />
+              </div>
+              <div>
+                <label htmlFor="vercel_deployment_url" className="block text-sm font-medium mb-1">URL de Deploy (Vercel)</label>
+                <input type="url" id="vercel_deployment_url" {...register('vercel_deployment_url')} className="w-full p-2 bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-md" placeholder="https://app.vercel.app" />
+              </div>
+            </div>
+
+            <h2 className="text-xl font-semibold border-b pt-4 pb-2">Planos de Preço (R$)</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div>
-                  <label htmlFor="product_type_id" className="block text-sm font-medium mb-1">Tipo de Produto</label>
-                  <select id="product_type_id" {...register('product_type_id', { required: 'Tipo é obrigatório' })} className="w-full p-2 bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-md">
-                    <option value="">Selecione um tipo</option>
-                    {productTypes.map(type => <option key={type.id} value={type.id}>{type.name}</option>)}
-                  </select>
-                  {errors.product_type_id && <p className="text-red-500 text-xs mt-1">{errors.product_type_id.message}</p>}
-                </div>
-
-                {/* CAMPO ADICIONADO: DIAS DE TESTE */}
-                <div>
-                  <label htmlFor="trial_period_days" className="block text-sm font-medium mb-1">Dias de Teste (Trial)</label>
-                  <div className="relative">
-                    <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                    <input 
-                      type="number" 
-                      id="trial_period_days" 
-                      {...register('trial_period_days')} 
-                      placeholder="Ex: 7"
-                      className="w-full pl-10 p-2 bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-md" 
-                    />
-                  </div>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium mb-1">Status</label>
-                  <label className="flex items-center cursor-pointer pt-2">
-                      <input type="checkbox" {...register('status')} defaultChecked className="sr-only peer" />
-                      <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                      <span className="ms-3 text-sm font-medium">Ativo</span>
-                  </label>
-                </div>
+              <div>
+                <label htmlFor="price_monthly" className="block text-sm font-medium mb-1">Preço Mensal (R$)</label>
+                <input type="number" id="price_monthly" step="0.01" min="0" {...register('price_monthly')} className="w-full p-2 bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-md" placeholder="0.00" />
+              </div>
+              <div>
+                <label htmlFor="price_annual" className="block text-sm font-medium mb-1">Preço Anual (R$)</label>
+                <input type="number" id="price_annual" step="0.01" min="0" {...register('price_annual')} className="w-full p-2 bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-md" placeholder="0.00" />
+              </div>
+              <div>
+                <label htmlFor="price_lifetime" className="block text-sm font-medium mb-1">Preço Vitalício (R$)</label>
+                <input type="number" id="price_lifetime" step="0.01" min="0" {...register('price_lifetime')} className="w-full p-2 bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-md" placeholder="0.00" />
+              </div>
             </div>
 
             <div>
-              <label htmlFor="shortDescription" className="block text-sm font-medium mb-1">Descrição Curta</label>
-              <textarea id="shortDescription" {...register('shortDescription')} rows="2" className="w-full p-2 bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-md"></textarea>
-            </div>
-            
-            <div>
-              <label htmlFor="detailedDescription" className="block text-sm font-medium mb-1">Descrição Detalhada</label>
-              <textarea id="detailedDescription" {...register('detailedDescription')} rows="5" className="w-full p-2 bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-md"></textarea>
-            </div>
-            
-            <div>
-              <label htmlFor="features" className="block text-sm font-medium mb-1">Recursos (separados por vírgula)</label>
-              <input type="text" id="features" {...register('features')} className="w-full p-2 bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-md" />
-            </div>
-
-            {/* Pricing Section */}
-            <h2 className="text-xl font-semibold border-b pt-4 pb-2">Precificação</h2>
-             {/* GRID DE PREÇO ATUALIZADO */}
-             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div>
-                  <label htmlFor="price_monthly" className="block text-sm font-medium mb-1">Licença Mensal (R$)</label>
-                  <input type="number" id="price_monthly" step="0.01" {...register('price_monthly')} placeholder="Ex: 47.00" className="w-full p-2 bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-md" />
-                </div>
-                {/* CAMPO ADICIONADO: PREÇO ANUAL */}
-                <div>
-                  <label htmlFor="price_annual" className="block text-sm font-medium mb-1">Licença Anual (R$)</label>
-                  <input type="number" id="price_annual" step="0.01" {...register('price_annual')} placeholder="Ex: 470.00" className="w-full p-2 bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-md" />
-                </div>
-                <div>
-                  <label htmlFor="price_lifetime" className="block text-sm font-medium mb-1">Licença Vitalícia (R$)</label>
-                  <input type="number" id="price_lifetime" step="0.01" {...register('price_lifetime')} placeholder="Ex: 1497.00" className="w-full p-2 bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-md" />
-                </div>
-            </div>
-
-            {/* Integration Section */}
-            <h2 className="text-xl font-semibold border-b pt-4 pb-2">Configuração da Integração</h2>
-             <div>
-              <label htmlFor="integration_endpoint" className="block text-sm font-medium mb-1">Endpoint da Integração (URL)</label>
-              <input type="text" id="integration_endpoint" {...register('integration_endpoint')} className="w-full p-2 bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-md" />
-            </div>
-             <div>
-              <label htmlFor="integration_api_key" className="block text-sm font-medium mb-1">Chave de API do Produto</label>
-              <input type="text" id="integration_api_key" {...register('integration_api_key')} className="w-full p-2 bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-md" />
+              <label htmlFor="trial_period_days" className="block text-sm font-medium mb-1">Período de Teste (dias)</label>
+              <input type="number" id="trial_period_days" min="0" {...register('trial_period_days')} className="w-full p-2 bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-md" placeholder="0" />
             </div>
 
             <div className="flex justify-end space-x-4 pt-4">

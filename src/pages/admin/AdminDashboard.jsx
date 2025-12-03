@@ -1,130 +1,123 @@
 
 import React, { useState, useEffect } from 'react';
+import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
-import { Eye, DollarSign, UserPlus, Zap, Loader2, AlertCircle } from 'lucide-react';
-import { supabase } from '../../lib/customSupabaseClient'; // Importando o cliente Supabase
-
-// Poderia ser extraído para seu próprio arquivo: components/admin/StatCard.jsx
-const StatCard = ({ title, value, icon: Icon, color, bgColor, loading }) => {
-  if (loading) {
-    return (
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 animate-pulse">
-        <div className="h-6 bg-gray-300 dark:bg-gray-600 rounded w-3/4 mb-2"></div>
-        <div className="h-8 bg-gray-300 dark:bg-gray-600 rounded w-1/2"></div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{title}</p>
-          <p className="text-3xl font-bold text-gray-800 dark:text-white mt-1">{value}</p>
-        </div>
-        <div className={`p-3 rounded-full ${bgColor} ${color}`}>
-          <Icon className="h-6 w-6" />
-        </div>
-      </div>
-    </div>
-  );
-};
-
+import { Eye, DollarSign, UserPlus, Zap, Loader2 } from 'lucide-react';
+import { supabase } from '@/lib/customSupabaseClient';
 
 const AdminDashboard = () => {
-  const [stats, setStats] = useState([]);
+  const [stats, setStats] = useState([
+    { title: 'Total de Acessos', value: '0', icon: Eye, color: 'text-blue-500', bgColor: 'bg-blue-500/10' },
+    { title: 'Total de Vendas', value: 'R$ 0,00', icon: DollarSign, color: 'text-green-500', bgColor: 'bg-green-500/10' },
+    { title: 'Total de Usuários', value: '0', icon: UserPlus, color: 'text-indigo-500', bgColor: 'bg-indigo-500/10' },
+    { title: 'Total de Produtos', value: '0', icon: Zap, color: 'text-amber-500', bgColor: 'bg-amber-500/10' },
+  ]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchDashboardData = async () => {
+    const fetchStats = async () => {
       try {
-        setLoading(true);
+        // Formatar valores
+        const formatCurrency = (cents) => {
+          if (!cents || cents === 0) return 'R$ 0,00';
+          return `R$ ${(cents / 100).toFixed(2).replace('.', ',')}`;
+        };
 
-        // Buscar dados reais do Supabase
-        const { data: salesData, error: salesError } = await supabase.from('sales').select('total_price');
-        if (salesError) throw salesError;
+        const formatNumber = (num) => {
+          return num?.toLocaleString('pt-BR') || '0';
+        };
 
-        const { count: usersCount, error: usersError } = await supabase.from('users').select('id', { count: 'exact', head: true });
-        if (usersError) throw usersError;
+        // Buscar total de usuários
+        const { count: totalUsers, error: usersError } = await supabase
+          .from('profiles')
+          .select('*', { count: 'exact', head: true });
 
+        if (usersError) {
+          console.error('Erro ao buscar usuários:', usersError);
+        }
 
-        const totalSales = salesData ? salesData.reduce((acc, sale) => acc + sale.total_price, 0) : 0;
-        const totalUsers = usersCount || 0;
+        // Buscar total de vendas e receita
+        const { data: salesData, error: salesError } = await supabase
+          .from('sales')
+          .select('total_price');
 
-        const realData = [
-          { title: 'Total de Acessos', value: 'N/A', icon: Eye, color: 'text-blue-500', bgColor: 'bg-blue-500/10' },
-          { title: 'Total de Vendas', value: new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalSales), icon: DollarSign, color: 'text-green-500', bgColor: 'bg-green-500/10' },
-          { title: 'Novos Cadastros', value: totalUsers, icon: UserPlus, color: 'text-indigo-500', bgColor: 'bg-indigo-500/10' },
-          { title: 'Taxa de Conversão', value: 'N/A', icon: Zap, color: 'text-amber-500', bgColor: 'bg-amber-500/10' },
-        ];
-        
-        setStats(realData);
+        if (salesError) {
+          console.error('Erro ao buscar vendas:', salesError);
+        }
 
-      } catch (e) {
-        console.error(e)
-        setError('Falha ao carregar os dados do dashboard.');
+        const totalRevenue = salesData && Array.isArray(salesData) 
+          ? salesData.reduce((sum, sale) => sum + (sale.total_price || 0), 0) 
+          : 0;
+
+        // Buscar total de produtos
+        const { count: totalProducts, error: productsError } = await supabase
+          .from('registered_apps')
+          .select('*', { count: 'exact', head: true });
+
+        if (productsError) {
+          console.error('Erro ao buscar produtos:', productsError);
+        }
+
+        setStats([
+          { title: 'Total de Acessos', value: '0', icon: Eye, color: 'text-blue-500', bgColor: 'bg-blue-500/10' },
+          { title: 'Total de Vendas', value: formatCurrency(totalRevenue), icon: DollarSign, color: 'text-green-500', bgColor: 'bg-green-500/10' },
+          { title: 'Total de Usuários', value: formatNumber(totalUsers || 0), icon: UserPlus, color: 'text-indigo-500', bgColor: 'bg-indigo-500/10' },
+          { title: 'Total de Produtos', value: formatNumber(totalProducts || 0), icon: Zap, color: 'text-amber-500', bgColor: 'bg-amber-500/10' },
+        ]);
+      } catch (error) {
+        console.error('Erro ao buscar estatísticas:', error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchDashboardData();
+    fetchStats();
   }, []);
 
   return (
-    <div>
-      <motion.h1 
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="text-3xl font-bold text-gray-800 dark:text-white mb-8"
-      >
-          Dashboard
-      </motion.h1>
+    <>
+      <Helmet>
+        <title>Dashboard - LWDigitalForge Admin</title>
+      </Helmet>
+      <div className="container mx-auto">
+        <motion.h1 
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="text-3xl font-bold text-gray-800 dark:text-white mb-8"
+        >
+            Dashboard
+        </motion.h1>
 
-      {error && (
-        <div className="bg-red-100 dark:bg-red-500/20 border border-red-400 text-red-700 dark:text-red-300 px-4 py-3 rounded-lg relative mb-6 flex items-center">
-          <AlertCircle className="w-5 h-5 mr-2"/>
-          <span>{error}</span>
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {loading ? (
-            Array.from({ length: 4 }).map((_, index) => <StatCard key={index} loading={true} />)
+          <div className="flex justify-center items-center py-20">
+            <Loader2 className="h-12 w-12 text-blue-500 dark:text-white animate-spin" />
+          </div>
         ) : (
-            stats.map((stat, index) => (
-            <motion.div
-              key={stat.title}
-              initial={{ opacity: 0, y: 50 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
-            >
-                <StatCard {...stat} />
-            </motion.div>
-          ))
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {stats.map((stat, index) => (
+              <motion.div
+                key={stat.title}
+                initial={{ opacity: 0, y: 50 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+                className="bg-white dark:bg-[#111827]/80 p-6 rounded-lg shadow-md border border-gray-200 dark:border-white/10"
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{stat.title}</p>
+                    <p className="text-3xl font-bold text-gray-800 dark:text-white mt-1">{stat.value}</p>
+                  </div>
+                  <div className={`p-3 rounded-full ${stat.bgColor} ${stat.color}`}>
+                    <stat.icon className="h-6 w-6" />
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
         )}
       </div>
-
-      {/* Seção de Gráficos e Atividades Recentes */}
-      <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
-            <h3 className="text-xl font-bold mb-4">Vendas nos Últimos 6 Meses</h3>
-            <div className="h-64 flex items-center justify-center text-gray-400">
-                {/* Adicione seu componente de gráfico aqui */}
-                <p>Componente de Gráfico</p>
-            </div>
-        </div>
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
-            <h3 className="text-xl font-bold mb-4">Atividades Recentes</h3>
-            <div className="h-64 flex items-center justify-center text-gray-400">
-                {/* Adicione sua lista de atividades aqui */}
-                <p>Lista de Atividades Recentes</p>
-            </div>
-        </div>
-      </div>
-    </div>
+    </>
   );
 };
 

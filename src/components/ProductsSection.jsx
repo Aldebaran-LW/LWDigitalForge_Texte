@@ -1,57 +1,46 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { supabase } from '@/lib/customSupabaseClient';
 import { Loader2 } from 'lucide-react';
-import { getProducts, getProductQuantities } from '@/api/EcommerceApi';
-import ProductCard from '@/components/ProductCard';
 
 const ProductsSection = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchFeaturedProducts = async () => {
+    const fetchProducts = async () => {
       try {
-        setLoading(true);
-        setError(null);
+        const { data, error } = await supabase
+          .from('registered_apps')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(4);
 
-        const productsResponse = await getProducts({ limit: 4 });
-
-        if (productsResponse.products.length === 0) {
+        if (error) {
+          console.error('Erro ao buscar produtos:', error);
           setProducts([]);
-          setLoading(false);
-          return;
+        } else {
+          setProducts(data || []);
         }
-
-        const productIds = productsResponse.products.map(p => p.id);
-        const quantitiesResponse = await getProductQuantities({ product_ids: productIds, fields: 'inventory_quantity' });
-
-        const variantQuantityMap = new Map();
-        quantitiesResponse.variants.forEach(variant => {
-          variantQuantityMap.set(variant.id, variant.inventory_quantity);
-        });
-
-        const productsWithQuantities = productsResponse.products.map(product => ({
-          ...product,
-          variants: product.variants.map(variant => ({
-            ...variant,
-            inventory_quantity: variantQuantityMap.get(variant.id) ?? variant.inventory_quantity
-          }))
-        }));
-
-        setProducts(productsWithQuantities);
-      } catch (err) {
-        setError(err.message || 'Falha ao carregar produtos em destaque');
+      } catch (error) {
+        console.error('ProductsSection: Erro ao buscar produtos:', error);
+        setProducts([]);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchFeaturedProducts();
+    fetchProducts();
   }, []);
+
+  const formatPrice = (priceInCents) => {
+    if (!priceInCents) return 'Consulte valores';
+    return `R$ ${(priceInCents / 100).toFixed(2).replace('.', ',')}`;
+  };
 
   return (
     <section className="py-20 px-4 bg-[var(--light-bg)] dark:bg-[var(--dark-bg)]">
@@ -72,17 +61,74 @@ const ProductsSection = () => {
         </motion.div>
 
         {loading ? (
-          <div className="flex justify-center items-center h-64">
-            <Loader2 className="h-12 w-12 text-blue-500 animate-spin" />
+          <div className="flex justify-center items-center py-20">
+            <Loader2 className="h-12 w-12 text-blue-500 dark:text-white animate-spin" />
           </div>
-        ) : error ? (
-          <div className="text-center text-red-500">
-            <p>Erro: {error}</p>
+        ) : products.length === 0 ? (
+          <div className="text-center py-20 text-gray-500 dark:text-gray-400">
+            <p>Nenhum produto disponível no momento.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {products.map((product, index) => (
-              <ProductCard key={product.id} product={product} index={index} />
+              <motion.div
+                key={product.id}
+                initial={{ opacity: 0, y: 50 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: index * 0.1 }}
+                viewport={{ once: true }}
+                whileHover={{ y: -10, scale: 1.02 }}
+                onClick={() => navigate(`/product/${product.id}`)}
+                className="bg-white dark:bg-[#111827]/50 backdrop-blur-sm rounded-xl p-6 border border-gray-200 dark:border-blue-500/20 hover:border-blue-400 dark:hover:border-blue-500/60 transition-all duration-300 relative flex flex-col cursor-pointer"
+              >
+                {product.image_url && (
+                  <div className="flex justify-center mb-4">
+                    <img 
+                      src={product.image_url} 
+                      alt={product.name}
+                      className="w-16 h-16 object-cover rounded-full"
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                      }}
+                    />
+                  </div>
+                )}
+
+                <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-3 text-center">
+                  {product.name}
+                </h3>
+                
+                <p className="text-gray-600 dark:text-gray-300/80 text-sm mb-4 text-center leading-relaxed flex-grow line-clamp-3">
+                  {product.description || 'Descrição não disponível'}
+                </p>
+
+                <div className="text-center mb-6">
+                  <div className="space-y-1">
+                    {product.price_monthly && (
+                      <div className="text-sm text-gray-500 dark:text-gray-400">
+                        Mensal: <span className="font-bold text-teal-500 dark:text-teal-400">{formatPrice(product.price_monthly)}</span>
+                      </div>
+                    )}
+                    {product.price_annual && (
+                      <div className="text-sm text-gray-500 dark:text-gray-400">
+                        Anual: <span className="font-bold text-teal-500 dark:text-teal-400">{formatPrice(product.price_annual)}</span>
+                      </div>
+                    )}
+                    {product.price_lifetime && (
+                      <div className="text-lg font-bold text-teal-500 dark:text-teal-400">
+                        Vitalício: {formatPrice(product.price_lifetime)}
+                      </div>
+                    )}
+                    {!product.price_monthly && !product.price_annual && !product.price_lifetime && (
+                      <span className="text-sm text-gray-500 dark:text-gray-400">Consulte valores</span>
+                    )}
+                  </div>
+                </div>
+
+                <Button className="btn-secondary w-full py-3 font-semibold rounded-lg bg-transparent btn-pulse mt-auto pointer-events-none">
+                  Saiba Mais
+                </Button>
+              </motion.div>
             ))}
           </div>
         )}

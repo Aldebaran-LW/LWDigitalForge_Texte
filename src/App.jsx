@@ -17,12 +17,11 @@ import PaginaTermos from '@/pages/PaginaTermos';
 import PaginaPrivacidade from '@/pages/PaginaPrivacidade';
 import ProductDetailPage from '@/pages/ProductDetailPage';
 import SuccessPage from '@/pages/SuccessPage';
-import FailurePage from '@/pages/FailurePage';
-import PendingPage from '@/pages/PendingPage';
+import AuthCallback from '@/pages/AuthCallback';
 import ProtectedRoute from '@/components/admin/ProtectedRoute';
 
 // Layouts
-import AdminLayout from '@/layouts/AdminLayout';
+import AdminLayout from '@/components/admin/AdminLayout';
 
 // Admin Imports
 import AdminDashboard from '@/pages/admin/AdminDashboard';
@@ -51,6 +50,7 @@ function App() {
           {/* Public Routes */}
           <Route path="/" element={<HomePage />} />
           <Route path="/produtos" element={<PaginaProdutos />} />
+          <Route path="/produtos/:id" element={<ProductDetailPage />} />
           <Route path="/product/:id" element={<ProductDetailPage />} />
           <Route path="/sobre" element={<PaginaSobre />} />
           <Route path="/login" element={<PaginaLogin />} />
@@ -59,11 +59,12 @@ function App() {
           <Route path="/esqueci-senha" element={<PaginaEsqueciSenha />} />
           <Route path="/redefinir-senha" element={<PaginaRedefinirSenha />} />
           <Route path="/carrinho" element={<PaginaCarrinho />} />
+          <Route path="/termos-de-servico" element={<PaginaTermos />} />
           <Route path="/termos-de-uso" element={<PaginaTermos />} />
+          <Route path="/politica-de-privacidade" element={<PaginaPrivacidade />} />
           <Route path="/pagina-privacidade" element={<PaginaPrivacidade />} />
           <Route path="/success" element={<SuccessPage />} />
-          <Route path="/failure" element={<FailurePage />} />
-          <Route path="/pending" element={<PendingPage />} />
+          <Route path="/auth/callback" element={<AuthCallback />} />
 
           {/* Admin Routes */}
           <Route 

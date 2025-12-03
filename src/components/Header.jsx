@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useCart } from '@/hooks/useCart';
 import ShoppingCart from '@/components/ShoppingCart';
+import { getAssetUrlFromStorage } from '@/config/assets';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -30,7 +31,7 @@ const Header = () => {
           <Link to="/" className="flex items-center" onClick={closeMenu}>
             <motion.div whileHover={{ scale: 1.05 }} className="flex items-center">
               <img
-                src="https://horizons-cdn.hostinger.com/758a5a0c-3537-4df4-a495-ab13beb5b033/afb7579835ff809c5e86f98a5b3a75b6.png"
+                src={getAssetUrlFromStorage('Logo')}
                 alt="LWDigitalForge Logo"
                 className="h-8 mr-2"
               />

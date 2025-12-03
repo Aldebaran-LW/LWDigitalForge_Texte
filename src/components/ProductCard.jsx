@@ -1,96 +1,65 @@
-
-import React, { useCallback, useMemo } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ShoppingCart, Info } from 'lucide-react';
-import { useCart } from '@/hooks/useCart';
-import { useToast } from '@/components/ui/use-toast';
+import { Info } from 'lucide-react';
 
-const placeholderImage = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjMWEyMDNkIi8+CiAgPHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzY0NzRjYSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkxXPC90ZXh0Pgo8L3N2Zz4K";
+const placeholderImage = "https://placehold.co/600x400/1e293b/white?text=Produto+Digital";
 
-const ProductCard = ({ product, index }) => {
-  const { addToCart } = useCart();
-  const { toast } = useToast();
-  const navigate = useNavigate();
-
-  const displayVariant = useMemo(() => product.variants[0], [product]);
-  const hasSale = useMemo(() => displayVariant && displayVariant.sale_price_in_cents !== null, [displayVariant]);
-  const displayPrice = useMemo(() => hasSale ? displayVariant.sale_price_formatted : displayVariant.price_formatted, [displayVariant, hasSale]);
-  const originalPrice = useMemo(() => hasSale ? displayVariant.price_formatted : null, [displayVariant, hasSale]);
-
-  const handleActionClick = useCallback(async (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    if (product.variants.length > 1) {
-      navigate(`/product/${product.id}`);
-      return;
-    }
-
-    const defaultVariant = product.variants[0];
-    const availableQuantity = defaultVariant.inventory_quantity;
-
-    try {
-      await addToCart(product, defaultVariant, 1, availableQuantity);
-      toast({
-        title: "Adicionado ao Carrinho! 🛒",
-        description: `${product.title} foi adicionado ao seu carrinho.`,
-      });
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Erro ao adicionar",
-        description: error.message,
-      });
-    }
-  }, [product, addToCart, toast, navigate]);
+const ProductCard = ({ product }) => {
+  // Lógica para exibir o menor preço disponível ("A partir de...")
+  const prices = [product.price_monthly, product.price_annual, product.price_lifetime]
+    .filter(p => p != null && p !== undefined && p > 0);
+  const minPrice = prices.length > 0 ? Math.min(...prices) : 0;
   
-  const actionText = product.variants.length > 1 ? "Ver Opções" : "Adicionar ao Carrinho";
-  const ActionIcon = product.variants.length > 1 ? Info : ShoppingCart;
+  const formatPrice = (cents) => `R$ ${(cents / 100).toFixed(2).replace('.', ',')}`;
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay: (index || 0) * 0.05 }}
-      whileHover={{ y: -10, scale: 1.02 }}
+      whileHover={{ y: -5, transition: { duration: 0.2 } }}
+      transition={{ duration: 0.3 }}
       className="bg-white dark:bg-[#111827]/50 backdrop-blur-sm rounded-xl p-6 border border-gray-200 dark:border-blue-500/20 hover:border-blue-400 dark:hover:border-blue-500/60 transition-all duration-300 flex flex-col"
     >
       <Link to={`/product/${product.id}`} className="flex flex-col h-full">
         <div className="relative mb-4">
           <img
-            src={product.image || placeholderImage}
-            alt={product.title}
+            src={product.image_url || placeholderImage}
+            alt={product.name}
             className="w-full h-56 object-cover rounded-lg"
           />
-          {product.ribbon_text && (
-            <div className="absolute top-3 left-3 bg-blue-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
-              {product.ribbon_text}
+          {product.trial_period_days && product.trial_period_days > 0 && (
+            <div className="absolute top-3 left-3 bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
+              Teste Grátis
             </div>
           )}
         </div>
 
         <h3 className="text-xl font-bold text-gray-800 dark:text-[#F9FAFB] mb-2 truncate">
-          {product.title}
+          {product.name}
         </h3>
         
-        <p className="text-gray-600 dark:text-[#F9FAFB]/70 text-sm mb-4 leading-relaxed flex-grow">
-          {product.subtitle || 'Explore os detalhes deste produto incrível.'}
+        <p className="text-gray-600 dark:text-[#F9FAFB]/70 text-sm mb-4 leading-relaxed flex-grow line-clamp-3">
+          {product.description || 'Explore os detalhes deste produto incrível.'}
         </p>
 
         <div className="text-left mb-4">
-          <span className="text-2xl font-bold text-blue-500 dark:text-blue-400">
-            {displayPrice}
-          </span>
-          {hasSale && (
-            <span className="ml-2 text-lg text-gray-400 line-through">{originalPrice}</span>
-          )}
+           {minPrice > 0 ? (
+              <div>
+                <span className="text-xs text-gray-500 uppercase">A partir de</span>
+                <div className="text-2xl font-bold text-blue-500 dark:text-blue-400">
+                    {formatPrice(minPrice)}
+                </div>
+              </div>
+           ) : (
+               <span className="text-2xl font-bold text-green-500">Grátis</span>
+           )}
         </div>
         
         <div className="mt-auto">
-          <Button onClick={handleActionClick} className="w-full btn-secondary py-3 font-semibold rounded-lg bg-transparent btn-pulse">
-            <ActionIcon className="mr-2 h-4 w-4" /> {actionText}
+          <Button className="w-full btn-secondary py-3 font-semibold rounded-lg bg-transparent btn-pulse">
+            <Info className="mr-2 h-4 w-4" /> Ver Detalhes
           </Button>
         </div>
       </Link>
@@ -99,3 +68,5 @@ const ProductCard = ({ product, index }) => {
 };
 
 export default ProductCard;
+
+

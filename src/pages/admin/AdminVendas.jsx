@@ -1,118 +1,128 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
+import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
 import { supabase } from '@/lib/customSupabaseClient';
-import { Loader2, AlertTriangle } from 'lucide-react';
-import { useToast } from '@/components/ui/use-toast';
+import { Loader2 } from 'lucide-react';
 
 const AdminVendas = () => {
   const [sales, setSales] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const { toast } = useToast();
 
-  const fetchSales = useCallback(async () => {
-    setLoading(true);
-    // Nota: Esta query busca as últimas 50 vendas. Uma implementação futura
-    // deve incluir paginação para lidar com um grande volume de dados.
-    const { data, error } = await supabase
-      .from('sales')
-      .select(`
-        id,
-        created_at,
-        total_amount,
-        user_email,
-        products (name)
-      `)
-      .order('created_at', { ascending: false })
-      .limit(50);
-
-    if (error) {
-      setError(error.message);
-      toast({ variant: 'destructive', title: 'Erro ao carregar vendas', description: error.message });
-    } else {
-      setSales(data);
-      setError(null);
-    }
-    setLoading(false);
-  }, [toast]);
+  const formatCurrency = (cents) => {
+    if (!cents || cents === 0) return 'R$ 0,00';
+    return `R$ ${(cents / 100).toFixed(2).replace('.', ',')}`;
+  };
 
   useEffect(() => {
+    const fetchSales = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('sales')
+          .select(`
+            *,
+            registered_apps (name)
+          `)
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          console.error('Erro ao buscar vendas:', error);
+          setSales([]);
+        } else {
+          const formattedSales = (data || []).map(sale => ({
+            id: sale.id,
+            customer: sale.user_email || 'N/A',
+            product: sale.registered_apps?.name || 'Produto não encontrado',
+            amount: formatCurrency(sale.total_price),
+            date: sale.created_at ? new Date(sale.created_at).toLocaleDateString('pt-BR') : 'N/A',
+            status: sale.payment_status || 'N/A',
+          }));
+          setSales(formattedSales);
+        }
+      } catch (error) {
+        console.error('Erro ao buscar vendas:', error);
+        setSales([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchSales();
-  }, [fetchSales]);
-
-  const formatPrice = (priceInCents) => {
-    if (priceInCents === null || priceInCents === undefined) return 'N/A';
-    return `R$ ${(priceInCents / 100).toFixed(2).replace('.', ',')}`;
-  };
-
-  const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-    });
-  };
+  }, []);
 
   return (
-    <div>
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-800 dark:text-white">Histórico de Vendas</h1>
-        {/* Espaço para futuros filtros ou botão de exportação */}
-      </div>
-
-      {loading ? (
-        <div className="flex justify-center items-center h-64"><Loader2 className="h-16 w-16 animate-spin text-blue-500" /></div>
-      ) : error ? (
-        <div className="bg-red-100 dark:bg-red-500/20 border-l-4 border-red-500 text-red-700 dark:text-red-300 p-4 rounded-md" role="alert">
-          <p className="font-bold flex items-center"><AlertTriangle className="mr-2"/>Erro</p>
-          <p>{error}</p>
+    <>
+      <Helmet>
+        <title>Histórico de Vendas - LWDigitalForge Admin</title>
+      </Helmet>
+      <div>
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-3xl font-bold text-gray-800 dark:text-white">Histórico de Vendas</h1>
         </div>
-      ) : (
-        <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.5 }}
-            className="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 overflow-x-auto"
-        >
-          <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
-            <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-300">
-              <tr>
-                <th scope="col" className="px-6 py-3">ID da Venda</th>
-                <th scope="col" className="px-6 py-3">Cliente (Email)</th>
-                <th scope="col" className="px-6 py-3">Produto</th>
-                <th scope="col" className="px-6 py-3">Valor Total</th>
-                <th scope="col" className="px-6 py-3">Data</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sales.length === 0 ? (
+
+        {loading ? (
+          <div className="flex justify-center items-center py-20">
+            <Loader2 className="h-12 w-12 text-blue-500 dark:text-white animate-spin" />
+          </div>
+        ) : (
+          <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.5 }}
+              className="bg-white dark:bg-[#111827]/80 rounded-lg shadow-md border border-gray-200 dark:border-white/10 overflow-x-auto"
+          >
+            <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+              <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-[#111827] dark:text-gray-400">
                 <tr>
-                  <td colSpan="5" className="text-center py-8 text-gray-500 dark:text-gray-400">Nenhuma venda encontrada.</td>
+                  <th scope="col" className="px-6 py-3">ID da Transação</th>
+                  <th scope="col" className="px-6 py-3">Email do Cliente</th>
+                  <th scope="col" className="px-6 py-3">Produto Adquirido</th>
+                  <th scope="col" className="px-6 py-3">Valor</th>
+                  <th scope="col" className="px-6 py-3">Status</th>
+                  <th scope="col" className="px-6 py-3">Data</th>
                 </tr>
-              ) : sales.map((sale, index) => (
-                <motion.tr 
-                    key={sale.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3, delay: index * 0.05 }}
-                    className="bg-white dark:bg-gray-800 border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50"
-                >
-                  <th scope="row" className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                    {sale.id}
-                  </th>
-                  <td className="px-6 py-4">{sale.user_email || 'Não identificado'}</td>
-                  <td className="px-6 py-4">{sale.products?.name || 'Produto não encontrado'}</td>
-                  <td className="px-6 py-4">{formatPrice(sale.total_amount)}</td>
-                  <td className="px-6 py-4">{formatDate(sale.created_at)}</td>
-                </motion.tr>
-              ))}
-            </tbody>
-          </table>
-        </motion.div>
-      )}
-    </div>
+              </thead>
+              <tbody>
+                {sales.length === 0 ? (
+                  <tr>
+                    <td colSpan="6" className="text-center py-8 text-gray-500 dark:text-gray-400">
+                      Nenhuma venda registrada ainda.
+                    </td>
+                  </tr>
+                ) : (
+                  sales.map((sale, index) => (
+                    <motion.tr 
+                        key={sale.id}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3, delay: index * 0.05 }}
+                        className="bg-white dark:bg-[#111827]/80 border-b dark:border-gray-700 hover:bg-gray-50/50 dark:hover:bg-white/5"
+                    >
+                      <th scope="row" className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                        #{String(sale.id).substring(0, 8)}
+                      </th>
+                      <td className="px-6 py-4">{sale.customer}</td>
+                      <td className="px-6 py-4">{sale.product}</td>
+                      <td className="px-6 py-4 font-semibold">{sale.amount}</td>
+                      <td className="px-6 py-4">
+                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                          sale.status === 'paid' || sale.status === 'Pago' 
+                            ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
+                            : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300'
+                        }`}>
+                          {sale.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">{sale.date}</td>
+                    </motion.tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </motion.div>
+        )}
+      </div>
+    </>
   );
 };
 
