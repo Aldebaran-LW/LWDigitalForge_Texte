@@ -61,7 +61,9 @@ function App() {
           <Route path="/esqueci-senha" element={<PaginaEsqueciSenha />} />
           <Route path="/redefinir-senha" element={<PaginaRedefinirSenha />} />
           <Route path="/carrinho" element={<PaginaCarrinho />} />
+          <Route path="/termos-de-servico" element={<PaginaTermos />} />
           <Route path="/termos-de-uso" element={<PaginaTermos />} />
+          <Route path="/politica-de-privacidade" element={<PaginaPrivacidade />} />
           <Route path="/pagina-privacidade" element={<PaginaPrivacidade />} />
           <Route path="/success" element={<SuccessPage />} />
           <Route path="/failure" element={<FailurePage />} />
