@@ -163,8 +163,7 @@ export const AuthProvider = ({ children }) => {
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
-          },
-          skipBrowserRedirect: false
+          }
         }
       });
 
