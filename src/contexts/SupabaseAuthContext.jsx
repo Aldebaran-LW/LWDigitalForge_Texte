@@ -156,10 +156,13 @@ export const AuthProvider = ({ children }) => {
   const signInWithGoogle = useCallback(async () => {
     setLoading(true);
     try {
+      const redirectUrl = `${window.location.origin}/auth/callback`;
+      console.log('Tentando login com Google. Redirect URL:', redirectUrl);
+      
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo: redirectUrl,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
@@ -171,21 +174,23 @@ export const AuthProvider = ({ children }) => {
         console.error('Erro no signInWithOAuth:', error);
         toast({
           variant: "destructive",
-          title: "Erro no Login",
-          description: error.message || "Não foi possível fazer login com Google.",
+          title: "Erro no Login com Google",
+          description: error.message || "Não foi possível fazer login com Google. Verifique se o OAuth está configurado no Supabase.",
         });
         setLoading(false);
         return { error };
       }
 
+      console.log('signInWithOAuth iniciado com sucesso:', data);
       // O loading será desativado quando a sessão for estabelecida
+      // ou quando o usuário retornar da página do Google
       return { error: null };
     } catch (error) {
       console.error('Erro no login com Google:', error);
       toast({
         variant: "destructive",
         title: "Erro",
-        description: "Não foi possível conectar com o Google.",
+        description: "Não foi possível conectar com o Google. Verifique sua conexão.",
       });
       setLoading(false);
       return { error };

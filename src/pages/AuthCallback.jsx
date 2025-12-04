@@ -29,28 +29,51 @@ const AuthCallback = () => {
         }
 
         if (session) {
-          const { data: profile, error: profileError } = await supabase
+          // Primeiro, verificar se há um perfil
+          let { data: profile, error: profileError } = await supabase
             .from('profiles')
             .select('full_name, role')
             .eq('id', session.user.id)
             .single();
 
-          if (profileError && profileError.code === 'PGRST116') { // Nenhum perfil encontrado
-            console.log('Novo usuário do Google. Redirecionando para cadastro.');
-            // Salvar dados do Google para pré-preencher o cadastro
-            localStorage.setItem('google_signup_data', JSON.stringify({
-              email: session.user.email,
-              full_name: session.user.user_metadata?.full_name || session.user.email.split('@')[0],
-              avatar_url: session.user.user_metadata?.avatar_url,
-            }));
-            setStatus('success');
-            setMessage('Quase lá! Complete seu cadastro...');
+          // Se não houver perfil, criar um automaticamente para usuários do Google
+          if (profileError && profileError.code === 'PGRST116') {
+            console.log('Novo usuário do Google. Criando perfil...');
+            
+            const fullName = session.user.user_metadata?.full_name || 
+                           session.user.user_metadata?.name || 
+                           session.user.email.split('@')[0];
+            
+            const { data: newProfile, error: createError } = await supabase
+              .from('profiles')
+              .insert([{
+                id: session.user.id,
+                email: session.user.email,
+                full_name: fullName,
+                role: 'USER',
+                avatar_url: session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture
+              }])
+              .select()
+              .single();
+
+            if (createError) {
+              console.error('Erro ao criar perfil:', createError);
+              setStatus('error');
+              setMessage(`Erro ao criar perfil: ${createError.message}. Redirecionando para login...`);
+              toast({
+                variant: 'destructive',
+                title: 'Erro ao Criar Perfil',
+                description: createError.message,
+              });
+              setTimeout(() => navigate('/login'), 3000);
+              return;
+            }
+            
+            profile = newProfile;
             toast({
-              title: 'Bem-vindo!',
-              description: 'Complete seu cadastro para acessar a plataforma.',
+              title: 'Perfil Criado!',
+              description: 'Seu perfil foi criado com sucesso.',
             });
-            setTimeout(() => navigate('/cadastro'), 2000);
-            return;
           } else if (profileError) {
             console.error('Erro ao buscar perfil:', profileError);
             setStatus('error');

@@ -105,18 +105,18 @@ const ProductsSection = () => {
                 <div className="text-center mb-6">
                   <div className="space-y-1">
                     {product.price_monthly && (
-                      <div className="text-sm text-gray-500 dark:text-gray-400">
-                        Mensal: <span className="font-bold text-teal-500 dark:text-teal-400">{formatPrice(product.price_monthly)}</span>
+                      <div className="text-lg font-bold text-teal-500 dark:text-teal-400">
+                        Mensal: {formatPrice(product.price_monthly)}
                       </div>
                     )}
                     {product.price_annual && (
                       <div className="text-sm text-gray-500 dark:text-gray-400">
-                        Anual: <span className="font-bold text-teal-500 dark:text-teal-400">{formatPrice(product.price_annual)}</span>
+                        Anual: <span className="font-semibold text-teal-500 dark:text-teal-400">{formatPrice(product.price_annual)}</span>
                       </div>
                     )}
                     {product.price_lifetime && (
-                      <div className="text-lg font-bold text-teal-500 dark:text-teal-400">
-                        Vitalício: {formatPrice(product.price_lifetime)}
+                      <div className="text-sm text-gray-500 dark:text-gray-400">
+                        Vitalício: <span className="font-semibold text-teal-500 dark:text-teal-400">{formatPrice(product.price_lifetime)}</span>
                       </div>
                     )}
                     {!product.price_monthly && !product.price_annual && !product.price_lifetime && (
