@@ -32,32 +32,51 @@ const AuthCallback = () => {
 
         if (session) {
           console.log('AuthCallback: Sessão estabelecida para', session.user.email);
-          setStatus('success');
           
-          // Verificar o perfil do usuário para determinar o redirecionamento
-          const { data: profile } = await supabase
+          // Verificar se o perfil do usuário existe (usuário já cadastrado)
+          const { data: profile, error: profileError } = await supabase
             .from('profiles')
             .select('role, full_name')
             .eq('id', session.user.id)
             .single();
 
-          const userRole = profile?.role || 'USER';
+          // Se o perfil não existe, é um novo usuário do Google
+          if (profileError || !profile) {
+            console.log('AuthCallback: Novo usuário detectado, redirecionando para cadastro');
+            
+            // Fazer logout da sessão temporária
+            await supabase.auth.signOut();
+            
+            // Salvar dados do Google para pré-preencher o cadastro
+            const googleData = {
+              email: session.user.email,
+              full_name: session.user.user_metadata?.full_name || session.user.user_metadata?.name || '',
+              avatar_url: session.user.user_metadata?.avatar_url || ''
+            };
+            localStorage.setItem('googleSignupData', JSON.stringify(googleData));
+            
+            toast({
+              title: "Bem-vindo!",
+              description: "Complete seu cadastro para continuar.",
+            });
+            
+            setTimeout(() => navigate('/cadastro'), 1500);
+            return;
+          }
+
+          // Usuário existe - fazer login normal
+          setStatus('success');
           const userName = profile?.full_name || session.user.email?.split('@')[0];
           
           toast({
-            title: `Bem-vindo, ${userName}!`,
+            title: `Bem-vindo de volta, ${userName}!`,
             description: "Login realizado com sucesso! Redirecionando...",
           });
           
           // Pequeno delay para mostrar o toast
           setTimeout(() => {
-            if (userRole === 'ADMIN') {
-              console.log('AuthCallback: Redirecionando para /admin/dashboard');
-              navigate('/admin/dashboard');
-            } else {
-              console.log('AuthCallback: Redirecionando para /portal/meus-produtos');
-              navigate('/portal/meus-produtos');
-            }
+            console.log('AuthCallback: Redirecionando para /portal/meus-produtos');
+            navigate('/portal/meus-produtos');
           }, 1500);
         } else {
           console.log('AuthCallback: Nenhuma sessão encontrada');
