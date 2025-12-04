@@ -1,135 +1,129 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
-import { Loader2, CheckCircle } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 
 const AuthCallback = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [status, setStatus] = useState('processing'); // processing, success, error
+  const [status, setStatus] = useState('processing'); // 'processing', 'success', 'error'
+  const [message, setMessage] = useState('Processando login...');
 
   useEffect(() => {
     const handleCallback = async () => {
       try {
-        console.log('AuthCallback: Processando autenticação...');
-        
-        // Supabase automaticamente processa o callback e estabelece a sessão
         const { data: { session }, error } = await supabase.auth.getSession();
-        
+
         if (error) {
           console.error('Erro no callback:', error);
           setStatus('error');
+          setMessage(`Erro: ${error.message}. Redirecionando para login...`);
           toast({
-            variant: "destructive",
-            title: "Erro no Login",
-            description: "Não foi possível completar o login. Tente novamente.",
+            variant: 'destructive',
+            title: 'Erro no Login',
+            description: error.message,
           });
-          
-          setTimeout(() => navigate('/login'), 2000);
+          setTimeout(() => navigate('/login'), 3000);
           return;
         }
 
         if (session) {
-          console.log('AuthCallback: Sessão estabelecida para', session.user.email);
-          
-          // Verificar se o perfil do usuário existe (usuário já cadastrado)
           const { data: profile, error: profileError } = await supabase
             .from('profiles')
-            .select('role, full_name')
+            .select('full_name, role')
             .eq('id', session.user.id)
             .single();
 
-          // Se o perfil não existe, é um novo usuário do Google
-          if (profileError || !profile) {
-            console.log('AuthCallback: Novo usuário detectado, redirecionando para cadastro');
-            
-            // Fazer logout da sessão temporária
-            await supabase.auth.signOut();
-            
+          if (profileError && profileError.code === 'PGRST116') { // Nenhum perfil encontrado
+            console.log('Novo usuário do Google. Redirecionando para cadastro.');
             // Salvar dados do Google para pré-preencher o cadastro
-            const googleData = {
+            localStorage.setItem('google_signup_data', JSON.stringify({
               email: session.user.email,
-              full_name: session.user.user_metadata?.full_name || session.user.user_metadata?.name || '',
-              avatar_url: session.user.user_metadata?.avatar_url || ''
-            };
-            localStorage.setItem('googleSignupData', JSON.stringify(googleData));
-            
+              full_name: session.user.user_metadata?.full_name || session.user.email.split('@')[0],
+              avatar_url: session.user.user_metadata?.avatar_url,
+            }));
+            setStatus('success');
+            setMessage('Quase lá! Complete seu cadastro...');
             toast({
-              title: "Bem-vindo!",
-              description: "Complete seu cadastro para continuar.",
+              title: 'Bem-vindo!',
+              description: 'Complete seu cadastro para acessar a plataforma.',
             });
-            
-            setTimeout(() => navigate('/cadastro'), 1500);
+            setTimeout(() => navigate('/cadastro'), 2000);
+            return;
+          } else if (profileError) {
+            console.error('Erro ao buscar perfil:', profileError);
+            setStatus('error');
+            setMessage(`Erro ao carregar perfil: ${profileError.message}. Redirecionando para login...`);
+            toast({
+              variant: 'destructive',
+              title: 'Erro de Perfil',
+              description: profileError.message,
+            });
+            setTimeout(() => navigate('/login'), 3000);
             return;
           }
 
-          // Usuário existe - fazer login normal
+          const userRole = profile?.role || 'USER';
+          const userName = profile?.full_name || session.user.email;
+
           setStatus('success');
-          const userName = profile?.full_name || session.user.email?.split('@')[0];
-          
+          setMessage('Login realizado com sucesso! Redirecionando...');
           toast({
-            title: `Bem-vindo de volta, ${userName}!`,
-            description: "Login realizado com sucesso! Redirecionando...",
+            title: `Bem-vindo${userName ? `, ${userName}` : ''}!`,
+            description: 'Você está sendo redirecionado para a plataforma.',
           });
-          
-          // Pequeno delay para mostrar o toast
+
           setTimeout(() => {
-            console.log('AuthCallback: Redirecionando para /portal/meus-produtos');
-            navigate('/portal/meus-produtos');
+            if (userRole === 'ADMIN') {
+              navigate('/admin/dashboard');
+            } else {
+              navigate('/portal/meus-produtos');
+            }
           }, 1500);
+
         } else {
-          console.log('AuthCallback: Nenhuma sessão encontrada');
           setStatus('error');
+          setMessage('Nenhuma sessão encontrada. Redirecionando para login...');
           setTimeout(() => navigate('/login'), 2000);
         }
       } catch (error) {
         console.error('Erro ao processar callback:', error);
         setStatus('error');
+        setMessage(`Erro inesperado: ${error.message}. Redirecionando para login...`);
         toast({
-          variant: "destructive",
-          title: "Erro",
-          description: "Ocorreu um erro inesperado. Tente novamente.",
+          variant: 'destructive',
+          title: 'Erro Inesperado',
+          description: error.message,
         });
-        setTimeout(() => navigate('/login'), 2000);
+        setTimeout(() => navigate('/login'), 3000);
       }
     };
 
     handleCallback();
   }, [navigate, toast]);
 
+  const renderContent = () => {
+    switch (status) {
+      case 'processing':
+        return <Loader2 className="h-16 w-16 animate-spin text-blue-500 mx-auto mb-4" />;
+      case 'success':
+        return <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />;
+      case 'error':
+        return <XCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />;
+      default:
+        return null;
+    }
+  };
+
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="text-center p-8 bg-white dark:bg-gray-800 rounded-lg shadow-lg">
-        {status === 'processing' && (
-          <>
-            <Loader2 className="h-16 w-16 animate-spin text-blue-500 mx-auto mb-4" />
-            <p className="text-lg text-gray-600 dark:text-gray-400">Processando login...</p>
-            <p className="text-sm text-gray-500 dark:text-gray-500 mt-2">Aguarde um momento</p>
-          </>
-        )}
-        
-        {status === 'success' && (
-          <>
-            <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
-            <p className="text-lg text-gray-600 dark:text-gray-400">Login realizado com sucesso!</p>
-            <p className="text-sm text-gray-500 dark:text-gray-500 mt-2">Redirecionando...</p>
-          </>
-        )}
-        
-        {status === 'error' && (
-          <>
-            <div className="h-16 w-16 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
-              <span className="text-red-500 text-3xl">✕</span>
-            </div>
-            <p className="text-lg text-gray-600 dark:text-gray-400">Erro no login</p>
-            <p className="text-sm text-gray-500 dark:text-gray-500 mt-2">Redirecionando...</p>
-          </>
-        )}
+      <div className="text-center p-8 bg-white dark:bg-[#111827]/50 rounded-lg shadow-xl">
+        {renderContent()}
+        <p className="text-lg text-gray-600 dark:text-gray-400">{message}</p>
       </div>
     </div>
   );
 };
 
 export default AuthCallback;
-

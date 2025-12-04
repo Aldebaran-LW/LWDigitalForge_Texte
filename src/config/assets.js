@@ -24,30 +24,20 @@ export const getAssetUrlFromStorage = (assetName) => {
       'Logo': 'Logo.png',
       'Capa': 'Capa.jpg'
     };
-    
+
     const fileName = fileMap[assetName];
-    if (!fileName) return ASSETS[assetName] || '';
-    
-    const { data } = supabase
-      .storage
+    if (!fileName) {
+      console.warn(`Asset '${assetName}' não encontrado no mapa`);
+      return ASSETS[assetName] || '';
+    }
+
+    const { data } = supabase.storage
       .from(BUCKET_NAME)
       .getPublicUrl(fileName);
-    
-    return data?.publicUrl || ASSETS[assetName] || '';
+
+    return data.publicUrl;
   } catch (error) {
-    console.error(`Erro ao obter URL do asset ${assetName}:`, error);
+    console.error(`Erro ao obter URL do asset '${assetName}':`, error);
     return ASSETS[assetName] || '';
   }
 };
-
-/**
- * Função helper para obter a URL de um asset pelo nome (síncrona)
- * @param {string} assetName - Nome do asset (ex: 'Capa', 'Logo')
- * @returns {string} URL do asset ou string vazia se não encontrado
- */
-export const getAssetUrl = (assetName) => {
-  return ASSETS[assetName] || '';
-};
-
-export default ASSETS;
-

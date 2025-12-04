@@ -1,165 +1,142 @@
 import { supabase } from '@/lib/customSupabaseClient';
 
 /**
- * Verifica se um usuário tem acesso ativo (teste ou comprado) a um produto
+ * Verifica se um usuário tem acesso a um produto (comprado ou teste ativo)
  * @param {string} userId - ID do usuário
  * @param {string} productId - ID do produto
- * @returns {Promise<{hasAccess: boolean, accessType: string, expiresAt: string}>}
+ * @returns {Promise<{hasAccess: boolean, redirectUrl: string|null}>}
  */
 export const checkUserProductAccess = async (userId, productId) => {
   try {
-    const { data, error } = await supabase
+    // Verificar se o produto foi comprado
+    const { data: purchaseData, error: purchaseError } = await supabase
       .from('user_product_access')
-      .select('*')
+      .select('registered_apps(vercel_deployment_url)')
       .eq('user_id', userId)
       .eq('product_id', productId)
+      .eq('is_trial', false)
+      .single();
+
+    if (purchaseData && !purchaseError) {
+      return { hasAccess: true, redirectUrl: purchaseData.registered_apps?.vercel_deployment_url };
+    }
+
+    // Verificar se há um teste ativo
+    const { data: trialData, error: trialError } = await supabase
+      .from('user_product_access')
+      .select('trial_ends_at, status, registered_apps(vercel_deployment_url)')
+      .eq('user_id', userId)
+      .eq('product_id', productId)
+      .eq('is_trial', true)
       .eq('status', 'active')
       .single();
 
-    if (error && error.code !== 'PGRST116') {
-      console.error('Erro ao verificar acesso:', error);
-      return { hasAccess: false, accessType: null, expiresAt: null };
+    if (trialError && trialError.code !== 'PGRST116') {
+      console.error('Erro ao verificar teste ativo:', trialError);
+      return { hasAccess: false, redirectUrl: null };
     }
 
-    if (!data) {
-      return { hasAccess: false, accessType: null, expiresAt: null };
+    if (trialData && new Date(trialData.trial_ends_at) > new Date()) {
+      return { hasAccess: true, redirectUrl: trialData.registered_apps?.vercel_deployment_url };
     }
 
-    // Verificar se o teste expirou
-    if (data.expires_at) {
-      const now = new Date();
-      const expiryDate = new Date(data.expires_at);
-      
-      if (now > expiryDate) {
-        // Atualizar status para expirado
-        await supabase
-          .from('user_product_access')
-          .update({ status: 'expired' })
-          .eq('id', data.id);
-        
-        return { hasAccess: false, accessType: 'expired', expiresAt: data.expires_at };
-      }
-    }
-
-    return {
-      hasAccess: true,
-      accessType: data.is_trial ? 'trial' : 'purchased',
-      expiresAt: data.expires_at,
-      accessLevel: data.access_level
-    };
+    return { hasAccess: false, redirectUrl: null };
   } catch (error) {
-    console.error('Erro ao verificar acesso ao produto:', error);
-    return { hasAccess: false, accessType: null, expiresAt: null };
+    console.error('Erro ao verificar acesso do usuário:', error);
+    return { hasAccess: false, redirectUrl: null };
   }
 };
 
 /**
- * Inicia um teste grátis para um produto
+ * Inicia um teste gratuito para um usuário
  * @param {string} userId - ID do usuário
- * @param {object} product - Objeto do produto
- * @returns {Promise<{success: boolean, data: object, error: string, redirectUrl: string}>}
+ * @param {string} productId - ID do produto
+ * @param {string} productName - Nome do produto
+ * @param {number} trialPeriodDays - Período de teste em dias
+ * @returns {Promise<{success: boolean, message: string, redirectUrl: string|null}>}
  */
-export const startProductTrial = async (userId, product) => {
+export const startProductTrial = async (userId, productId, productName, trialPeriodDays) => {
   try {
-    if (!product.trial_period_days || product.trial_period_days <= 0) {
-      return {
-        success: false,
-        error: 'Este produto não oferece período de teste.'
-      };
+    // Verificar se já existe um teste ou compra
+    const { hasAccess } = await checkUserProductAccess(userId, productId);
+    if (hasAccess) {
+      return { success: false, message: 'Você já possui acesso a este produto.', redirectUrl: null };
     }
 
-    // Verificar se já tem teste ativo
-    const existingAccess = await checkUserProductAccess(userId, product.id);
-    if (existingAccess.hasAccess) {
-      return {
-        success: false,
-        error: 'Você já tem acesso ativo a este produto.',
-        redirectUrl: product.vercel_deployment_url || product.github_repo_url
-      };
-    }
-
-    // Verificar se já teve teste antes (mesmo que expirado)
-    const { data: previousTrial } = await supabase
+    // Verificar se já teve um teste anterior (mesmo que expirado)
+    const { data: previousTrial, error: previousTrialError } = await supabase
       .from('user_product_access')
-      .select('*')
+      .select('id')
       .eq('user_id', userId)
-      .eq('product_id', product.id)
+      .eq('product_id', productId)
       .eq('is_trial', true)
       .single();
 
-    if (previousTrial) {
-      return {
-        success: false,
-        error: 'Você já utilizou o período de teste deste produto.'
-      };
+    if (previousTrial && !previousTrialError) {
+      return { success: false, message: 'Você já utilizou o período de teste para este produto.', redirectUrl: null };
     }
 
-    const trialStartDate = new Date();
-    const trialEndDate = new Date();
-    trialEndDate.setDate(trialEndDate.getDate() + product.trial_period_days);
+    // Calcular data de expiração
+    const trialEndsAt = new Date();
+    trialEndsAt.setDate(trialEndsAt.getDate() + trialPeriodDays);
 
-    const { data, error } = await supabase
-      .from('user_product_access')
-      .insert({
-        user_id: userId,
-        product_id: product.id,
-        product_name: product.name,
-        access_level: 'trial',
-        is_trial: true,
-        trial_started_at: trialStartDate.toISOString(),
-        trial_ends_at: trialEndDate.toISOString(),
-        expires_at: trialEndDate.toISOString(),
-        status: 'active'
-      })
-      .select()
+    // Buscar URL do produto
+    const { data: trialProduct, error: productError } = await supabase
+      .from('registered_apps')
+      .select('vercel_deployment_url')
+      .eq('id', productId)
       .single();
 
-    if (error) throw error;
+    if (productError) {
+      console.error('Erro ao buscar URL do produto para teste:', productError);
+      return { success: false, message: 'Não foi possível obter a URL do produto.', redirectUrl: null };
+    }
 
-    return {
-      success: true,
-      data: data,
-      redirectUrl: product.vercel_deployment_url || product.github_repo_url
+    // Criar registro de teste
+    const { error } = await supabase.from('user_product_access').insert({
+      user_id: userId,
+      product_id: productId,
+      product_name: productName,
+      access_level: 'trial',
+      is_trial: true,
+      trial_started_at: new Date().toISOString(),
+      trial_ends_at: trialEndsAt.toISOString(),
+      status: 'active',
+    });
+
+    if (error) {
+      console.error('Erro ao iniciar teste:', error);
+      return { success: false, message: error.message, redirectUrl: null };
+    }
+
+    return { 
+      success: true, 
+      message: `Seu teste de ${trialPeriodDays} dias para ${productName} foi iniciado!`, 
+      redirectUrl: trialProduct?.vercel_deployment_url 
     };
   } catch (error) {
     console.error('Erro ao iniciar teste:', error);
-    return {
-      success: false,
-      error: error.message || 'Não foi possível iniciar o teste.'
-    };
+    return { success: false, message: 'Erro inesperado ao iniciar teste.', redirectUrl: null };
   }
 };
 
 /**
  * Calcula o tempo restante de um teste
- * @param {string} expiresAt - Data de expiração
- * @returns {string} Tempo restante formatado
+ * @param {string} expiresAt - Data de expiração no formato ISO
+ * @returns {{total: number, days: number, hours: number, minutes: number}}
  */
 export const calculateTimeLeft = (expiresAt) => {
-  if (!expiresAt) return 'Sem limite';
-  
+  const expirationDate = new Date(expiresAt);
   const now = new Date();
-  const expiry = new Date(expiresAt);
-  const diff = expiry - now;
+  const total = expirationDate - now;
 
-  if (diff <= 0) return 'Expirado';
-
-  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-
-  if (days > 0) {
-    return `${days} dia${days > 1 ? 's' : ''}, ${hours}h`;
+  if (total <= 0) {
+    return { total: 0, days: 0, hours: 0, minutes: 0 };
   }
-  if (hours > 0) {
-    return `${hours}h ${minutes}min`;
-  }
-  return `${minutes} minuto${minutes > 1 ? 's' : ''}`;
-};
 
-export default {
-  checkUserProductAccess,
-  startProductTrial,
-  calculateTimeLeft
-};
+  const days = Math.floor(total / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((total % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  const minutes = Math.floor((total % (1000 * 60 * 60)) / (1000 * 60));
 
+  return { total, days, hours, minutes };
+};
