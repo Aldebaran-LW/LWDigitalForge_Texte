@@ -1,11 +1,12 @@
 
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, Sun, Moon, ShoppingCart as ShoppingCartIcon } from 'lucide-react';
+import { Menu, X, Sun, Moon, ShoppingCart as ShoppingCartIcon, User, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useCart } from '@/hooks/useCart';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
 import ShoppingCart from '@/components/ShoppingCart';
 import { getAssetUrlFromStorage } from '@/config/assets';
 
@@ -14,10 +15,18 @@ const Header = () => {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const { theme, toggleTheme } = useTheme();
   const { cartItems } = useCart();
+  const { user, profile, signOut } = useAuth();
+  const navigate = useNavigate();
 
   const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
   const closeMenu = () => setIsMenuOpen(false);
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate('/');
+    closeMenu();
+  };
 
   return (
     <>
@@ -46,9 +55,25 @@ const Header = () => {
             <Link to="/" className="text-gray-700 dark:text-[#F9FAFB] hover:text-[#3B82F6] transition-colors duration-300">Início</Link>
             <Link to="/produtos" className="text-gray-700 dark:text-[#F9FAFB] hover:text-[#3B82F6] transition-colors duration-300">Produtos</Link>
             <Link to="/sobre" className="text-gray-700 dark:text-[#F9FAFB] hover:text-[#3B82F6] transition-colors duration-300">Sobre</Link>
-            <Button asChild className="btn-primary px-6 py-2 rounded-lg font-semibold">
-              <Link to="/login">Portal do Cliente</Link>
-            </Button>
+            
+            {user ? (
+              <>
+                <Button asChild className="btn-primary px-6 py-2 rounded-lg font-semibold">
+                  <Link to="/portal/meus-produtos">
+                    <User size={16} className="mr-2" />
+                    {profile?.full_name || 'Minha Conta'}
+                  </Link>
+                </Button>
+                <button onClick={handleLogout} className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors" title="Sair">
+                  <LogOut size={20} />
+                </button>
+              </>
+            ) : (
+              <Button asChild className="btn-primary px-6 py-2 rounded-lg font-semibold">
+                <Link to="/login">Portal do Cliente</Link>
+              </Button>
+            )}
+            
             <button onClick={() => setIsCartOpen(true)} className="relative p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
               <ShoppingCartIcon size={20} />
               {totalItems > 0 && (
@@ -98,6 +123,21 @@ const Header = () => {
               <Link to="/" onClick={closeMenu} className="block w-full text-left py-2 text-gray-700 dark:text-[#F9FAFB] hover:text-[#3B82F6]">Início</Link>
               <Link to="/produtos" onClick={closeMenu} className="block w-full text-left py-2 text-gray-700 dark:text-[#F9FAFB] hover:text-[#3B82F6]">Produtos</Link>
               <Link to="/sobre" onClick={closeMenu} className="block w-full text-left py-2 text-gray-700 dark:text-[#F9FAFB] hover:text-[#3B82F6]">Sobre</Link>
+              
+              {user ? (
+                <>
+                  <Link to="/portal/meus-produtos" onClick={closeMenu} className="block w-full text-left py-2 text-gray-700 dark:text-[#F9FAFB] hover:text-[#3B82F6]">
+                    <User size={16} className="inline mr-2" />
+                    {profile?.full_name || 'Minha Conta'}
+                  </Link>
+                  <button onClick={handleLogout} className="block w-full text-left py-2 text-gray-700 dark:text-[#F9FAFB] hover:text-[#3B82F6]">
+                    <LogOut size={16} className="inline mr-2" />
+                    Sair
+                  </button>
+                </>
+              ) : (
+                <Link to="/login" onClick={closeMenu} className="block w-full text-left py-2 text-gray-700 dark:text-[#F9FAFB] hover:text-[#3B82F6]">Portal do Cliente</Link>
+              )}
               <Button asChild className="w-full btn-primary py-3 rounded-lg font-semibold">
                 <Link to="/login" onClick={closeMenu}>Portal do Cliente</Link>
               </Button>
