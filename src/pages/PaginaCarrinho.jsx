@@ -2,7 +2,7 @@ import React from 'react';
 import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { useCart } from '@/contexts/CartContext';
+import { useCart } from '@/hooks/useCart';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
 import { Trash2, ShoppingCart } from 'lucide-react';

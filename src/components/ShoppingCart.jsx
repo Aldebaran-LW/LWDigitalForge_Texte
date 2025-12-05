@@ -33,10 +33,10 @@ const ShoppingCart = ({ isCartOpen, setIsCartOpen }) => {
       }
 
       const { id } = data;
-      const publicKey = process.env.REACT_APP_MERCADOPAGO_PUBLIC_KEY;
+      const publicKey = import.meta.env.VITE_MERCADOPAGO_PUBLIC_KEY;
 
       if (!publicKey) {
-        throw new Error('Chave pública do Mercado Pago não configurada.');
+        throw new Error('Chave pública do Mercado Pago não configurada. Configure VITE_MERCADOPAGO_PUBLIC_KEY no arquivo .env');
       }
 
       const mercadopago = new window.MercadoPago(publicKey, {
