@@ -288,7 +288,60 @@ LWDigitalForge_Texte/
 
 ## 🌐 Deploy
 
-### **Deploy no Vercel (Recomendado)**
+### **Deploy Automático via GitHub Actions (Recomendado)**
+
+O projeto está configurado com GitHub Actions para deploy automático na Vercel.
+
+#### **1. Configurar Secrets no GitHub**
+
+1. Acesse seu repositório no GitHub
+2. Vá em **Settings** → **Secrets and variables** → **Actions**
+3. Adicione os seguintes secrets:
+
+   **Secrets do Vercel:**
+   - `VERCEL_TOKEN`: Token de acesso do Vercel
+     - Obtenha em: [Vercel Settings → Tokens](https://vercel.com/account/tokens)
+   - `VERCEL_ORG_ID`: ID da organização no Vercel
+     - Obtenha em: [Vercel Settings → General](https://vercel.com/account/general)
+   - `VERCEL_PROJECT_ID`: ID do projeto no Vercel
+     - Obtenha no arquivo `.vercel/project.json` após primeiro deploy manual, ou no dashboard do Vercel
+
+   **Secrets de Ambiente (para build):**
+   - `VITE_SUPABASE_URL`: URL do seu projeto Supabase
+   - `VITE_SUPABASE_ANON_KEY`: Chave anônima do Supabase
+   - `VITE_MERCADOPAGO_PUBLIC_KEY`: Chave pública do Mercado Pago
+
+#### **2. Primeiro Deploy Manual (para obter IDs)**
+
+1. **Instale o Vercel CLI:**
+   ```bash
+   npm i -g vercel
+   ```
+
+2. **Faça login:**
+   ```bash
+   vercel login
+   ```
+
+3. **Deploy inicial:**
+   ```bash
+   vercel
+   ```
+
+4. **Após o deploy, obtenha os IDs:**
+   - O arquivo `.vercel/project.json` será criado com os IDs
+   - Ou acesse o dashboard do Vercel para obter os IDs
+
+5. **Adicione os IDs como secrets no GitHub** (conforme passo 1)
+
+#### **3. Deploy Automático**
+
+Após configurar os secrets, o deploy será automático a cada push na branch `main`:
+- O workflow `.github/workflows/vercel_deploy.yml` será executado
+- O build será feito com as variáveis de ambiente configuradas
+- O deploy será feito automaticamente na Vercel
+
+### **Deploy Manual no Vercel (Alternativa)**
 
 1. **Conecte seu repositório GitHub ao Vercel:**
    - Acesse [vercel.com](https://vercel.com/)
@@ -297,7 +350,7 @@ LWDigitalForge_Texte/
 
 2. **Configure as variáveis de ambiente:**
    - No painel do Vercel, vá em **Settings** → **Environment Variables**
-   - Adicione todas as variáveis do arquivo `.env`:
+   - Adicione todas as variáveis:
      ```
      VITE_SUPABASE_URL
      VITE_SUPABASE_ANON_KEY
@@ -322,6 +375,12 @@ O arquivo `vercel.json` já está configurado para SPA routing:
   ]
 }
 ```
+
+### **Troubleshooting do Deploy**
+
+- **Erro de build:** Verifique se todas as variáveis de ambiente estão configuradas
+- **Erro de secrets:** Verifique se os secrets do GitHub Actions estão configurados corretamente
+- **Deploy não executa:** Verifique se o workflow está na branch `main` e se os secrets estão configurados
 
 ---
 
@@ -379,4 +438,6 @@ Este projeto é privado e proprietário. Todos os direitos reservados.
 **⭐ Se este projeto foi útil, considere dar uma estrela! ⭐**
 
 </div>
+
+
 

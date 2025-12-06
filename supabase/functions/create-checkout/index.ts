@@ -5,6 +5,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import { MercadoPagoConfig, Preference } from "npm:mercadopago@2.1.1";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -141,23 +142,73 @@ serve(async (req) => {
       );
     }
 
-    // TODO: Integrar com gateway de pagamento (Mercado Pago, Stripe, etc)
-    // Por enquanto, retorna apenas o ID da compra
-    // Em produção, você deve criar uma sessão de checkout no gateway escolhido
+    // Integrar com Mercado Pago
+    const accessToken = Deno.env.get("MERCADOPAGO_ACCESS_TOKEN");
+    if (!accessToken) {
+      console.error("MERCADOPAGO_ACCESS_TOKEN não configurado");
+      return new Response(
+        JSON.stringify({ error: "Configuração de pagamento não disponível" }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        purchaseId: purchase.id,
-        message: "Compra criada com sucesso. Aguardando pagamento.",
-        // TODO: Adicionar checkout_url do gateway de pagamento
-        // checkout_url: "https://gateway.com/checkout/session_id"
-      }),
-      {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
-    );
+    try {
+      // Configurar Mercado Pago
+      const client = new MercadoPagoConfig({ accessToken });
+      const preference = new Preference(client);
+
+      // Obter URL base do site (pode ser configurada via variável de ambiente ou usar padrão)
+      const siteUrl = Deno.env.get("SITE_URL") || "https://seu-site.com";
+
+      // Criar preferência de pagamento
+      const preferenceData = {
+        items: [
+          {
+            title: app.name,
+            quantity: 1,
+            currency_id: "BRL",
+            unit_price: amount / 100, // Converter centavos para Reais
+          },
+        ],
+        external_reference: purchase.id.toString(), // Liga o pagamento ao ID da tabela user_purchases
+        back_urls: {
+          success: `${siteUrl}/success`,
+          failure: `${siteUrl}/carrinho`,
+          pending: `${siteUrl}/carrinho`,
+        },
+        auto_return: "approved" as const,
+      };
+
+      const mpResponse = await preference.create({ body: preferenceData });
+
+      // Retornar o ID da preferência do Mercado Pago para o Frontend
+      return new Response(
+        JSON.stringify({
+          success: true,
+          purchaseId: purchase.id,
+          preferenceId: mpResponse.id, // O Frontend precisa disto para abrir o checkout
+        }),
+        {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    } catch (mpError) {
+      console.error("Erro ao criar preferência no Mercado Pago:", mpError);
+      return new Response(
+        JSON.stringify({ 
+          error: "Erro ao processar pagamento",
+          details: mpError.message 
+        }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
   } catch (error) {
     console.error("Erro na Edge Function:", error);
     return new Response(
@@ -169,4 +220,6 @@ serve(async (req) => {
     );
   }
 });
+
+
 

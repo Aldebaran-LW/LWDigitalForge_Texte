@@ -89,3 +89,6 @@ touch supabase/migrations/20250104120000_add_categories_table.sql
 - ✅ Teste em ambiente local/dev antes de produção
 - ✅ Faça backup antes de aplicar migrations críticas
 
+
+
+

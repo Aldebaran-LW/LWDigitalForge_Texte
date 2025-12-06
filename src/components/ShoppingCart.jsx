@@ -6,12 +6,16 @@ import { useCart } from '@/hooks/useCart';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useToast } from '@/components/ui/use-toast';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { useNavigate } from 'react-router-dom';
 
 const placeholderImage = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjMzc0MTUxIi8+CiAgPHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzlDQTNBRiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPk5vIEltYWdlPC90ZXh0Pgo8L3N2Zz4K";
 
 const ShoppingCart = ({ isCartOpen, setIsCartOpen }) => {
   const { toast } = useToast();
   const { cartItems, removeFromCart, updateQuantity, getCartTotal, clearCart } = useCart();
+  const { user } = useAuth();
+  const navigate = useNavigate();
 
   const handleCheckout = useCallback(async () => {
     if (cartItems.length === 0) {
@@ -23,36 +27,98 @@ const ShoppingCart = ({ isCartOpen, setIsCartOpen }) => {
       return;
     }
 
+    // Verificar se o usuário está autenticado
+    if (!user) {
+      toast({
+        title: 'Login necessário',
+        description: 'Por favor, faça login para finalizar a compra.',
+        variant: 'destructive',
+      });
+      setIsCartOpen(false);
+      navigate('/login');
+      return;
+    }
+
     try {
-      const { data, error } = await supabase.functions.invoke('create-checkout', {
-        body: { products: cartItems.map(item => ({ id: item.product.id, quantity: item.quantity })) },
-      });
+      // Processar cada item do carrinho
+      // O variant.id tem o formato: ${product.id}_${selectedPrice} onde selectedPrice é 'monthly', 'annual', ou 'lifetime'
+      for (const item of cartItems) {
+        let purchaseType = 'LIFETIME'; // padrão
+        
+        // Extrair o tipo de compra do variant.id (formato: ${product.id}_monthly, ${product.id}_annual, etc.)
+        if (item.variant.id) {
+          const idParts = item.variant.id.split('_');
+          if (idParts.length > 1) {
+            const type = idParts[idParts.length - 1].toLowerCase();
+            if (type === 'monthly') {
+              purchaseType = 'MONTHLY';
+            } else if (type === 'annual') {
+              purchaseType = 'ANNUAL';
+            } else if (type === 'lifetime') {
+              purchaseType = 'LIFETIME';
+            }
+          }
+        }
+        
+        // Fallback: tentar extrair do variant.title se o ID não tiver o formato esperado
+        if (purchaseType === 'LIFETIME' && item.variant.title) {
+          const titleLower = item.variant.title.toLowerCase();
+          if (titleLower.includes('mensal')) {
+            purchaseType = 'MONTHLY';
+          } else if (titleLower.includes('anual')) {
+            purchaseType = 'ANNUAL';
+          }
+        }
 
-      if (error) {
-        throw error;
+        const { data, error } = await supabase.functions.invoke('create-checkout', {
+          body: { 
+            appId: item.product.id,
+            purchaseType: purchaseType
+          },
+        });
+
+        if (error) {
+          throw error;
+        }
+
+        if (!data?.preferenceId) {
+          throw new Error('Preference ID não retornado pelo servidor');
+        }
+
+        // Verificar se o Mercado Pago SDK está carregado
+        if (!window.MercadoPago) {
+          throw new Error('SDK do Mercado Pago não carregado. Por favor, recarregue a página.');
+        }
+
+        const publicKey = import.meta.env.VITE_MERCADOPAGO_PUBLIC_KEY;
+        if (!publicKey) {
+          throw new Error('Chave pública do Mercado Pago não configurada.');
+        }
+
+        // Inicializar Mercado Pago e abrir checkout
+        const mercadopago = new window.MercadoPago(publicKey, {
+          locale: 'pt-BR',
+        });
+
+        mercadopago.checkout({
+          preference: {
+            id: data.preferenceId
+          }
+        });
       }
 
-      const { id } = data;
-      const publicKey = import.meta.env.VITE_MERCADOPAGO_PUBLIC_KEY;
-
-      if (!publicKey) {
-        throw new Error('Chave pública do Mercado Pago não configurada. Configure VITE_MERCADOPAGO_PUBLIC_KEY no arquivo .env');
-      }
-
-      const mercadopago = new window.MercadoPago(publicKey, {
-        locale: 'pt-BR',
-      });
-
-      mercadopago.checkout({ preference: { id } });
+      // Limpar o carrinho após iniciar o checkout
+      clearCart();
 
     } catch (error) {
+      console.error('Erro no checkout:', error);
       toast({
         title: 'Erro no Checkout',
-        description: 'Houve um problema ao iniciar o checkout. Por favor, tente novamente.',
+        description: error.message || 'Houve um problema ao iniciar o checkout. Por favor, tente novamente.',
         variant: 'destructive',
       });
     }
-  }, [cartItems, toast]);
+  }, [cartItems, toast, clearCart, user, navigate, setIsCartOpen]);
 
   return (
     <AnimatePresence>
@@ -92,7 +158,7 @@ const ShoppingCart = ({ isCartOpen, setIsCartOpen }) => {
                       <h3 className="font-semibold text-gray-800 dark:text-white">{item.product.title}</h3>
                       <p className="text-sm text-gray-600 dark:text-gray-300">{item.variant.title}</p>
                       <p className="text-sm text-blue-500 dark:text-blue-400 font-bold">
-                        {item.variant.sale_price_formatted || item.variant.price_formatted}
+                        {item.variant.sale_price_formatted || item.variant.price_formatted || `R$ ${((item.variant.sale_price_in_cents ?? item.variant.price_in_cents) / 100).toFixed(2).replace('.', ',')}`}
                       </p>
                     </div>
                     <div className="flex flex-col items-end gap-2">

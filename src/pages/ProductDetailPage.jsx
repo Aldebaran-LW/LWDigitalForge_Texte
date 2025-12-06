@@ -111,6 +111,7 @@ const ProductDetailPage = () => {
             title: variantName,
             price_in_cents: price,
             price_formatted: `R$ ${(price / 100).toFixed(2).replace('.', ',')}`,
+            currency_info: { code: 'BRL', symbol: 'R$', template: '$1' },
             inventory_quantity: 999,
             manage_inventory: false
         }]

@@ -9,7 +9,8 @@ A função `create-checkout`:
 2. ✅ Busca informações do produto
 3. ✅ Calcula preço baseado no tipo de compra
 4. ✅ Cria registro de compra pendente no banco
-5. 🚧 **TODO:** Integrar com gateway de pagamento (Mercado Pago/Stripe)
+5. ✅ Integra com Mercado Pago para criar preferência de pagamento
+6. ✅ Retorna preferenceId para o frontend abrir o checkout
 
 ## 🚀 Como Usar
 
@@ -55,8 +56,15 @@ const data = await response.json();
 {
   "success": true,
   "purchaseId": "uuid-da-compra",
-  "message": "Compra criada com sucesso. Aguardando pagamento."
+  "preferenceId": "1234567890-abc-def-ghi"
 }
+```
+
+O `preferenceId` deve ser usado no frontend para abrir o checkout do Mercado Pago:
+
+```javascript
+const mercadopago = new window.MercadoPago(publicKey, { locale: 'pt-BR' });
+mercadopago.checkout({ preference: { id: data.preferenceId } });
 ```
 
 ### **Erros Possíveis**
@@ -81,65 +89,49 @@ const data = await response.json();
 ## 🔧 Variáveis de Ambiente
 
 A função usa automaticamente:
-- `SUPABASE_URL` - URL do projeto
-- `SUPABASE_SERVICE_ROLE_KEY` - Chave de serviço
+- `SUPABASE_URL` - URL do projeto (configurado automaticamente)
+- `SUPABASE_SERVICE_ROLE_KEY` - Chave de serviço (configurado automaticamente)
 
-Estas são configuradas automaticamente pelo Supabase.
+**Variáveis que você precisa configurar no Supabase:**
 
-## 🚧 Próximos Passos
+1. **MERCADOPAGO_ACCESS_TOKEN** (obrigatório)
+   - Acesse: Supabase Dashboard → Project Settings → Edge Functions → Secrets
+   - Adicione: `MERCADOPAGO_ACCESS_TOKEN` com seu Access Token do Mercado Pago
+   - O token geralmente começa com `APP_USR-` (produção) ou `TEST-` (sandbox)
 
-### **Integração com Gateway de Pagamento**
+2. **SITE_URL** (opcional)
+   - URL base do seu site para as URLs de retorno do checkout
+   - Padrão: `https://seu-site.com` (se não configurado)
+   - Exemplo: `https://lwdigitalforge.com`
 
-Para finalizar a implementação, você deve:
-
-1. **Escolher um gateway:**
-   - Mercado Pago (Brasil)
-   - Stripe (Internacional)
-   - Outro de sua preferência
-
-2. **Adicionar SDK do gateway:**
-
-```typescript
-// Para Mercado Pago
-import MercadoPago from "https://esm.sh/mercadopago@1.5.15";
-
-// Para Stripe
-import Stripe from "https://esm.sh/stripe@13.11.0";
+**Como configurar no Supabase CLI:**
+```bash
+npx supabase secrets set MERCADOPAGO_ACCESS_TOKEN=seu_token_aqui
+npx supabase secrets set SITE_URL=https://seu-site.com
 ```
 
-3. **Criar sessão de checkout:**
+## ✅ Integração com Mercado Pago
 
-```typescript
-// Exemplo com Stripe
-const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!);
+A integração com Mercado Pago está **completa**! A função:
 
-const session = await stripe.checkout.sessions.create({
-  payment_method_types: ['card'],
-  line_items: [{
-    price_data: {
-      currency: 'brl',
-      product_data: {
-        name: app.name,
-        description: app.description,
-      },
-      unit_amount: amount, // valor em centavos
-    },
-    quantity: 1,
-  }],
-  mode: purchaseType === 'LIFETIME' ? 'payment' : 'subscription',
-  success_url: `${YOUR_DOMAIN}/success?session_id={CHECKOUT_SESSION_ID}`,
-  cancel_url: `${YOUR_DOMAIN}/cancel`,
-  metadata: {
-    purchase_id: purchase.id,
-  },
-});
+1. ✅ Cria preferência de pagamento no Mercado Pago
+2. ✅ Vincula o pagamento ao registro `user_purchases` via `external_reference`
+3. ✅ Configura URLs de retorno (success, failure, pending)
+4. ✅ Retorna `preferenceId` para o frontend
 
-return { checkout_url: session.url };
-```
+### **Integração Completa**
 
-4. **Configurar webhook:**
-   - Criar outra Edge Function para receber notificações do gateway
-   - Atualizar status da compra quando pagamento for confirmado
+✅ **Webhook implementado:** `supabase/functions/mercadopago-webhook`
+- Recebe notificações do Mercado Pago
+- Atualiza status das compras automaticamente
+- Calcula `expires_at` para assinaturas
+
+✅ **Página de Sucesso:** `src/pages/SuccessPage.jsx`
+- Verifica status do pagamento
+- Mostra mensagens apropriadas (aprovado, pendente, rejeitado)
+- Redireciona para produtos após pagamento aprovado
+
+📚 **Documentação de Testes:** Veja `supabase/functions/TESTING.md` para guia completo de testes em sandbox.
 
 ## 📚 Recursos
 
@@ -161,4 +153,6 @@ curl -i --location --request POST 'http://localhost:54321/functions/v1/create-ch
   --header 'Content-Type: application/json' \
   --data '{"appId":"uuid","purchaseType":"MONTHLY"}'
 ```
+
+
 

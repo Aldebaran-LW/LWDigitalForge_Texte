@@ -1,0 +1,49 @@
+name: Backup Migrations
+
+# Workflow de segurança: cria backup automático das migrations
+on:
+  push:
+    branches:
+      - main
+      - feat/supabase-registered-apps-integration
+    paths:
+      - 'supabase/migrations/**'
+  workflow_dispatch:
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Buscar todo o histórico
+
+      - name: Create Backup Artifact
+        run: |
+          echo "📦 Criando backup das migrations..."
+          mkdir -p backup-migrations
+          
+          # Copiar todas as migrations
+          if [ -d "supabase/migrations" ]; then
+            cp -r supabase/migrations backup-migrations/
+            echo "✅ Migrations copiadas"
+          else
+            echo "⚠️ Pasta supabase/migrations não encontrada"
+          fi
+          
+          # Criar arquivo de informações
+          echo "Backup criado em: $(date)" > backup-migrations/backup-info.txt
+          echo "Branch: ${{ github.ref_name }}" >> backup-migrations/backup-info.txt
+          echo "Commit: ${{ github.sha }}" >> backup-migrations/backup-info.txt
+          
+          # Listar migrations
+          echo "Migrations incluídas:" >> backup-migrations/backup-info.txt
+          ls -la supabase/migrations/*.sql 2>/dev/null || echo "Nenhuma migration" >> backup-migrations/backup-info.txt
+
+      - name: Upload Backup Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: migrations-backup-${{ github.ref_name }}-${{ github.sha }}
+          path: backup-migrations/
+          retention-days: 90 # Manter backup por 90 dias

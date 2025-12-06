@@ -238,3 +238,6 @@ COMMENT ON TABLE public.registered_apps IS 'Produtos/aplicativos disponíveis na
 COMMENT ON TABLE public.user_purchases IS 'Histórico de compras dos usuários';
 COMMENT ON TABLE public.user_trials IS 'Períodos de teste dos usuários para produtos';
 
+
+
+

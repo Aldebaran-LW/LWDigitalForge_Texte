@@ -1,0 +1,48 @@
+name: Deploy to Vercel
+
+on:
+  push:
+    branches:
+      - main # Branch principal
+      - feat/supabase-registered-apps-integration # Branch de feature
+  workflow_dispatch: # Permite execução manual
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.19.1' # Versão do seu .nvmrc
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build project
+        run: npm run build
+        env:
+          # Variáveis de ambiente necessárias para o build
+          # Para branch main: usa secrets de produção
+          # Para branch de feature: usa secrets de desenvolvimento (se configurados) ou produção
+          VITE_SUPABASE_URL: ${{ github.ref == 'refs/heads/main' && secrets.VITE_SUPABASE_URL || (secrets.VITE_SUPABASE_URL_DEV || secrets.VITE_SUPABASE_URL) }}
+          VITE_SUPABASE_ANON_KEY: ${{ github.ref == 'refs/heads/main' && secrets.VITE_SUPABASE_ANON_KEY || (secrets.VITE_SUPABASE_ANON_KEY_DEV || secrets.VITE_SUPABASE_ANON_KEY) }}
+          VITE_MERCADOPAGO_PUBLIC_KEY: ${{ secrets.VITE_MERCADOPAGO_PUBLIC_KEY }}
+          # Nota: Se VITE_SUPABASE_URL_DEV e VITE_SUPABASE_ANON_KEY_DEV estiverem configurados,
+          # serão usados para branches de feature. Caso contrário, usa os de produção.
+
+      - name: Deploy to Vercel
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          vercel-args: ${{ github.ref == 'refs/heads/main' && '--prod' || '--preview' }}
+          working-directory: ./
+
+
