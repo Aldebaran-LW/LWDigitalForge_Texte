@@ -49,3 +49,5 @@ git push origin main
 
 Há alguns diretórios bloqueados localmente (`assets`, `scripts`). O merge via GitHub web interface é a opção mais segura neste caso.
 
+
+

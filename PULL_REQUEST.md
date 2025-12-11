@@ -96,3 +96,5 @@ Consulte os arquivos de documentação adicionados para:
 **Base**: `main`  
 **Compare**: `feat/supabase-registered-apps-integration`
 
+
+
