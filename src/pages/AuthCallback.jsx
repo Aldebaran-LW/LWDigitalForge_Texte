@@ -37,12 +37,24 @@ const AuthCallback = () => {
             .single();
 
           // Se não houver perfil, criar um automaticamente para usuários do Google
+          // Isso é um fallback caso o trigger do banco não tenha funcionado
           if (profileError && profileError.code === 'PGRST116') {
-            console.log('Novo usuário do Google. Criando perfil...');
+            console.log('Novo usuário detectado. Criando perfil...');
             
+            // Captura nome completo de múltiplas fontes (Google OAuth pode usar diferentes campos)
             const fullName = session.user.user_metadata?.full_name || 
-                           session.user.user_metadata?.name || 
-                           session.user.email.split('@')[0];
+                           session.user.user_metadata?.name ||
+                           session.user.raw_user_meta_data?.full_name ||
+                           session.user.raw_user_meta_data?.name ||
+                           session.user.email?.split('@')[0] || 
+                           'Usuário';
+            
+            // Captura avatar de múltiplas fontes
+            const avatarUrl = session.user.user_metadata?.avatar_url || 
+                            session.user.user_metadata?.picture ||
+                            session.user.raw_user_meta_data?.avatar_url ||
+                            session.user.raw_user_meta_data?.picture ||
+                            null;
             
             const { data: newProfile, error: createError } = await supabase
               .from('profiles')
@@ -51,7 +63,7 @@ const AuthCallback = () => {
                 email: session.user.email,
                 full_name: fullName,
                 role: 'USER',
-                avatar_url: session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture
+                avatar_url: avatarUrl
               }])
               .select()
               .single();
