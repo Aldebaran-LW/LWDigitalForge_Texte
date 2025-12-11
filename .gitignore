@@ -150,3 +150,7 @@ vite.config.ts.timestamp-*
 
 # Vercel
 .vercel
+
+# Scripts com tokens do GitHub
+criar-pr.ps1
+criar-pr-simples.ps1
