@@ -24,16 +24,16 @@ Execute no PowerShell (como Administrador se necessário):
 .\criar-pr.ps1
 ```
 
-**Token configurado:** `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`
+**⚠️ Token:** Configure seu token do GitHub (não commitar tokens no repositório)
 
 ---
 
 ## 🔧 Opção Manual via PowerShell
 
-Execute este comando diretamente:
+Execute este comando diretamente (substitua `SEU_TOKEN_AQUI` pelo seu token):
 
 ```powershell
-$token = "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"
+$token = "SEU_TOKEN_AQUI"
 $body = Get-Content PULL_REQUEST.md -Raw
 $json = @{
     title = "Merge feat/supabase-registered-apps-integration: migração completa para sistema próprio de produtos"
