@@ -15,8 +15,8 @@ const SuccessPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [loading, setLoading] = useState(true);
-  const [paymentStatus, setPaymentStatus] = useState<'approved' | 'pending' | 'rejected' | null>(null);
-  const [purchase, setPurchase] = useState<any>(null);
+  const [paymentStatus, setPaymentStatus] = useState(null);
+  const [purchase, setPurchase] = useState(null);
 
   useEffect(() => {
     // Limpar carrinho quando a página carregar
@@ -38,7 +38,7 @@ const SuccessPage = () => {
     verifyPaymentStatus(paymentId, status, preferenceId);
   }, [searchParams, clearCart]);
 
-  const verifyPaymentStatus = async (paymentId: string | null, status: string | null, preferenceId: string | null) => {
+  const verifyPaymentStatus = async (paymentId, status, preferenceId) => {
     try {
       if (!user) {
         toast({
