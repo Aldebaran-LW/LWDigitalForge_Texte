@@ -3,72 +3,210 @@ import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { UserPlus, Trash2, Loader2 } from 'lucide-react';
+import { 
+  UserPlus, 
+  Trash2, 
+  Loader2, 
+  ShieldCheck, 
+  CalendarDays, 
+  Ban,
+  Settings2
+} from 'lucide-react';
+import { 
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { toast } from '@/components/ui/use-toast';
 import { supabase } from '@/lib/customSupabaseClient';
 
 const AdminUsuarios = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  
+  // Estados para o Modal de Licenças
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [isLicenseModalOpen, setIsLicenseModalOpen] = useState(false);
+  const [products, setProducts] = useState([]);
+  const [selectedProduct, setSelectedProduct] = useState('');
+  const [actionType, setActionType] = useState('trial'); // 'trial', 'lifetime', 'revoke'
+  const [trialDays, setTrialDays] = useState(7);
+  const [processingAction, setProcessingAction] = useState(false);
 
   useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        // Tentar usar a função RPC primeiro
-        const { data: usersData, error: rpcError } = await supabase
-          .rpc('get_users_with_emails');
-
-        if (!rpcError && usersData && Array.isArray(usersData)) {
-          const formattedUsers = usersData.map(user => ({
-            id: user.id,
-            email: user.email || `ID: ${user.id.substring(0, 8)}...`,
-            fullName: user.full_name || 'Sem nome',
-            phone: user.phone || 'Sem telefone',
-            role: user.role || 'USER',
-            joinDate: 'Data não disponível',
-          }));
-          setUsers(formattedUsers);
-          setLoading(false);
-          return;
-        }
-
-        // Log do erro RPC se houver
-        if (rpcError) {
-          console.warn('Erro ao usar função RPC, usando fallback:', rpcError);
-        }
-
-        // Fallback: buscar apenas perfis
-        const { data: profiles, error: profilesError } = await supabase
-          .from('profiles')
-          .select('*')
-          .order('id', { ascending: false });
-
-        if (profilesError) {
-          console.error('Erro ao buscar perfis:', profilesError);
-          setUsers([]);
-          return;
-        }
-
-        const formattedUsers = (profiles || []).map(profile => ({
-          id: profile.id,
-          email: `ID: ${profile.id.substring(0, 8)}...`,
-          fullName: profile.full_name || 'Sem nome',
-          phone: profile.phone || 'Sem telefone',
-          role: profile.role || 'USER',
-          joinDate: 'Data não disponível',
-        }));
-
-        setUsers(formattedUsers);
-      } catch (error) {
-        console.error('Erro ao buscar usuários:', error);
-        setUsers([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchUsers();
+    fetchProducts();
   }, []);
+
+  const fetchUsers = async () => {
+    try {
+      // Tentar usar a função RPC primeiro
+      const { data: usersData, error: rpcError } = await supabase
+        .rpc('get_users_with_emails');
+
+      if (!rpcError && usersData && Array.isArray(usersData)) {
+        const formattedUsers = usersData.map(user => ({
+          id: user.id,
+          email: user.email || `ID: ${user.id.substring(0, 8)}...`,
+          fullName: user.full_name || 'Sem nome',
+          phone: user.phone || 'Sem telefone',
+          role: user.role || 'USER',
+          createdAt: user.created_at || new Date().toISOString(),
+        }));
+        setUsers(formattedUsers);
+        setLoading(false);
+        return;
+      }
+
+      // Log do erro RPC se houver
+      if (rpcError) {
+        console.warn('Erro ao usar função RPC, usando fallback:', rpcError);
+      }
+
+      // Fallback: buscar apenas perfis
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (profilesError) {
+        console.error('Erro ao buscar perfis:', profilesError);
+        toast({
+          variant: "destructive",
+          title: "Erro",
+          description: "Falha ao carregar lista de usuários."
+        });
+        setUsers([]);
+        return;
+      }
+
+      const formattedUsers = (profiles || []).map(profile => ({
+        id: profile.id,
+        email: profile.email || `ID: ${profile.id.substring(0, 8)}...`,
+        fullName: profile.full_name || 'Sem nome',
+        phone: profile.phone || 'Sem telefone',
+        role: profile.role || 'USER',
+        createdAt: profile.created_at || new Date().toISOString(),
+      }));
+
+      setUsers(formattedUsers);
+    } catch (error) {
+      console.error('Erro ao buscar usuários:', error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Falha ao carregar lista de usuários."
+      });
+      setUsers([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchProducts = async () => {
+    const { data } = await supabase
+      .from('registered_apps')
+      .select('id, name')
+      .eq('is_active', true);
+    if (data) setProducts(data);
+  };
+
+  const handleOpenLicenseModal = (user) => {
+    setSelectedUser(user);
+    setSelectedProduct('');
+    setActionType('trial');
+    setTrialDays(7);
+    setIsLicenseModalOpen(true);
+  };
+
+  const handleExecuteAction = async () => {
+    if (!selectedProduct || !selectedUser) {
+      toast({ variant: "destructive", title: "Erro", description: "Selecione um produto." });
+      return;
+    }
+
+    setProcessingAction(true);
+    try {
+      // 1. AÇÃO: CONCEDER VITALÍCIO
+      if (actionType === 'lifetime') {
+        // Remove trials existentes para evitar conflito
+        await supabase
+            .from('user_trials')
+            .delete()
+            .match({ user_id: selectedUser.id, app_id: selectedProduct });
+
+        // Insere compra vitalícia
+        const { error } = await supabase.from('user_purchases').insert({
+          user_id: selectedUser.id,
+          app_id: selectedProduct,
+          purchase_type: 'LIFETIME',
+          status: 'APPROVED',
+          amount_paid: 0, // Admin grant
+          payment_method: 'ADMIN_GRANT',
+          expires_at: null // Nunca expira
+        });
+
+        if (error) throw error;
+        toast({ title: "Sucesso", description: `Acesso VITALÍCIO concedido a ${selectedUser.fullName}.` });
+      } 
+      
+      // 2. AÇÃO: DEFINIR PERÍODO DE TESTE (TRIAL)
+      else if (actionType === 'trial') {
+        const expiresAt = new Date();
+        expiresAt.setDate(expiresAt.getDate() + parseInt(trialDays));
+
+        // Upsert na tabela de trials
+        const { error } = await supabase.from('user_trials').upsert({
+          user_id: selectedUser.id,
+          app_id: selectedProduct,
+          started_at: new Date().toISOString(),
+          expires_at: expiresAt.toISOString(),
+          is_active: true
+        }, { onConflict: 'user_id, app_id' });
+
+        if (error) throw error;
+        toast({ title: "Sucesso", description: `Trial de ${trialDays} dias configurado.` });
+      } 
+      
+      // 3. AÇÃO: REVOGAR ACESSO
+      else if (actionType === 'revoke') {
+        // Desativa trials
+        await supabase.from('user_trials')
+          .update({ is_active: false, expires_at: new Date().toISOString() })
+          .match({ user_id: selectedUser.id, app_id: selectedProduct });
+
+        // Cancela compras/assinaturas
+        await supabase.from('user_purchases')
+          .update({ status: 'CANCELLED', expires_at: new Date().toISOString() })
+          .match({ user_id: selectedUser.id, app_id: selectedProduct });
+
+        toast({ title: "Revogado", description: "Todo acesso ao produto foi removido deste usuário." });
+      }
+
+      setIsLicenseModalOpen(false);
+    } catch (error) {
+      console.error(error);
+      toast({ 
+        variant: "destructive", 
+        title: "Erro na operação", 
+        description: error.message || "Não foi possível atualizar a licença." 
+      });
+    } finally {
+      setProcessingAction(false);
+    }
+  };
 
   const handleCreateTestAccount = () => {
     toast({
@@ -100,13 +238,13 @@ const AdminUsuarios = () => {
             transition={{ delay: 0.2 }}
             className="mb-8 p-6 bg-white dark:bg-[#111827]/80 rounded-lg shadow-md border border-gray-200 dark:border-white/10"
         >
-            <h2 className="text-xl font-semibold mb-4">Gerenciar Contas de Teste</h2>
+            <h2 className="text-xl font-semibold mb-4">Ações Rápidas</h2>
             <div className="flex flex-col sm:flex-row gap-4">
                 <Button onClick={handleCreateTestAccount} className="btn-primary">
-                    <UserPlus className="mr-2 h-4 w-4" /> Criar Conta de Teste
+                    <UserPlus className="mr-2 h-4 w-4" /> Criar Conta Fake
                 </Button>
                 <Button onClick={handleRemoveTestAccount} variant="destructive">
-                    <Trash2 className="mr-2 h-4 w-4" /> Remover Conta de Teste
+                    <Trash2 className="mr-2 h-4 w-4" /> Limpar Contas Fake
                 </Button>
             </div>
         </motion.div>
@@ -125,10 +263,10 @@ const AdminUsuarios = () => {
             <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
               <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-[#111827] dark:text-gray-400">
                 <tr>
-                  <th scope="col" className="px-6 py-3">Nome</th>
-                  <th scope="col" className="px-6 py-3">Email/ID</th>
-                  <th scope="col" className="px-6 py-3">Telefone</th>
-                  <th scope="col" className="px-6 py-3">Tipo de Conta</th>
+                  <th scope="col" className="px-6 py-3">Nome / ID</th>
+                  <th scope="col" className="px-6 py-3">Contato</th>
+                  <th scope="col" className="px-6 py-3">Tipo</th>
+                  <th scope="col" className="px-6 py-3 text-right">Ações</th>
                 </tr>
               </thead>
               <tbody>
@@ -148,18 +286,36 @@ const AdminUsuarios = () => {
                         className="bg-white dark:bg-[#111827]/80 border-b dark:border-gray-700 hover:bg-gray-50/50 dark:hover:bg-white/5"
                     >
                       <th scope="row" className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                        {user.fullName}
+                        <div className="flex flex-col">
+                          <span>{user.fullName}</span>
+                          <span className="text-xs text-gray-400 font-mono">{user.id.substring(0,8)}...</span>
+                        </div>
                       </th>
-                      <td className="px-6 py-4">{user.email}</td>
-                      <td className="px-6 py-4">{user.phone}</td>
+                      <td className="px-6 py-4">
+                        <div className="flex flex-col">
+                          <span>{user.email}</span>
+                          <span className="text-xs text-gray-400">{user.phone}</span>
+                        </div>
+                      </td>
                       <td className="px-6 py-4">
                         <span className={`px-2 py-1 text-xs font-medium rounded-full ${
                           user.role === 'ADMIN'
                             ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300'
                             : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
                         }`}>
-                          {user.role === 'ADMIN' ? 'Administrador' : 'Usuário'}
+                          {user.role}
                         </span>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleOpenLicenseModal(user)}
+                          className="hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                        >
+                          <Settings2 className="h-4 w-4 mr-2" />
+                          Gerenciar Licença
+                        </Button>
                       </td>
                     </motion.tr>
                   ))
@@ -169,6 +325,104 @@ const AdminUsuarios = () => {
           </motion.div>
         )}
       </div>
+
+      {/* Modal de Gerenciamento de Licenças */}
+      <Dialog open={isLicenseModalOpen} onOpenChange={setIsLicenseModalOpen}>
+        <DialogContent className="sm:max-w-[425px] bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800">
+          <DialogHeader>
+            <DialogTitle>Gerenciar Acesso</DialogTitle>
+            <DialogDescription>
+              Alterar permissões para <b>{selectedUser?.fullName}</b>
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid gap-4 py-4">
+            
+            {/* Seleção de Produto */}
+            <div className="grid gap-2">
+              <Label>Produto / App</Label>
+              <Select value={selectedProduct} onValueChange={setSelectedProduct}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o produto..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {products.map(p => (
+                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Seleção de Ação */}
+            <div className="grid gap-2">
+              <Label>Tipo de Ação</Label>
+              <div className="grid grid-cols-3 gap-2">
+                <Button 
+                  type="button"
+                  variant={actionType === 'trial' ? 'default' : 'outline'}
+                  className={actionType === 'trial' ? 'bg-blue-600' : ''}
+                  onClick={() => setActionType('trial')}
+                >
+                  <CalendarDays className="h-4 w-4 mr-1" /> Trial
+                </Button>
+                <Button 
+                  type="button"
+                  variant={actionType === 'lifetime' ? 'default' : 'outline'}
+                  className={actionType === 'lifetime' ? 'bg-green-600' : ''}
+                  onClick={() => setActionType('lifetime')}
+                >
+                  <ShieldCheck className="h-4 w-4 mr-1" /> Vitalício
+                </Button>
+                <Button 
+                  type="button"
+                  variant={actionType === 'revoke' ? 'default' : 'outline'}
+                  className={actionType === 'revoke' ? 'bg-red-600 hover:bg-red-700' : 'hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20'}
+                  onClick={() => setActionType('revoke')}
+                >
+                  <Ban className="h-4 w-4 mr-1" /> Revogar
+                </Button>
+              </div>
+            </div>
+
+            {/* Configuração de Dias (Apenas para Trial) */}
+            {actionType === 'trial' && (
+              <div className="grid gap-2">
+                <Label>Duração (dias)</Label>
+                <Input 
+                  type="number" 
+                  value={trialDays} 
+                  onChange={(e) => setTrialDays(e.target.value)}
+                  min="1"
+                  max="365"
+                />
+                <p className="text-xs text-gray-500">
+                  Isso irá estender ou reduzir o acesso a partir de hoje.
+                </p>
+              </div>
+            )}
+            
+            {actionType === 'lifetime' && (
+              <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-md text-sm text-green-700 dark:text-green-300">
+                O usuário terá acesso permanente a este produto sem data de expiração.
+              </div>
+            )}
+
+            {actionType === 'revoke' && (
+              <div className="p-3 bg-red-50 dark:bg-red-900/20 rounded-md text-sm text-red-700 dark:text-red-300">
+                Isso cancelará qualquer assinatura ativa e expirará trials imediatamente.
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsLicenseModalOpen(false)}>Cancelar</Button>
+            <Button onClick={handleExecuteAction} disabled={processingAction || !selectedProduct}>
+              {processingAction && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Salvar Alterações
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };
