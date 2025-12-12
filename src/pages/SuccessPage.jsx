@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { CheckCircle, XCircle, Clock, ArrowRight, Loader2 } from 'lucide-react';
 import { useCart } from '../hooks/useCart';
@@ -18,27 +18,7 @@ const SuccessPage = () => {
   const [paymentStatus, setPaymentStatus] = useState(null);
   const [purchase, setPurchase] = useState(null);
 
-  useEffect(() => {
-    // Limpar carrinho quando a página carregar
-    clearCart();
-
-    // Verificar parâmetros da URL do Mercado Pago
-    const paymentId = searchParams.get('payment_id');
-    const status = searchParams.get('status');
-    const preferenceId = searchParams.get('preference_id');
-
-    if (!paymentId && !preferenceId) {
-      // Se não há parâmetros, apenas mostrar mensagem genérica
-      setLoading(false);
-      setPaymentStatus('approved');
-      return;
-    }
-
-    // Verificar status do pagamento
-    verifyPaymentStatus(paymentId, status, preferenceId);
-  }, [searchParams, clearCart]);
-
-  const verifyPaymentStatus = async (paymentId, status, preferenceId) => {
+  const verifyPaymentStatus = useCallback(async (paymentId, status, preferenceId) => {
     try {
       if (!user) {
         toast({
@@ -111,7 +91,27 @@ const SuccessPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, toast, navigate]);
+
+  useEffect(() => {
+    // Limpar carrinho quando a página carregar
+    clearCart();
+
+    // Verificar parâmetros da URL do Mercado Pago
+    const paymentId = searchParams.get('payment_id');
+    const status = searchParams.get('status');
+    const preferenceId = searchParams.get('preference_id');
+
+    if (!paymentId && !preferenceId) {
+      // Se não há parâmetros, apenas mostrar mensagem genérica
+      setLoading(false);
+      setPaymentStatus('approved');
+      return;
+    }
+
+    // Verificar status do pagamento
+    verifyPaymentStatus(paymentId, status, preferenceId);
+  }, [searchParams, clearCart, verifyPaymentStatus]);
 
   if (loading) {
     return (
