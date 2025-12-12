@@ -136,11 +136,10 @@ const Header = () => {
                   </button>
                 </>
               ) : (
-                <Link to="/login" onClick={closeMenu} className="block w-full text-left py-2 text-gray-700 dark:text-[#F9FAFB] hover:text-[#3B82F6]">Portal do Cliente</Link>
+                <Button asChild className="w-full btn-primary py-3 rounded-lg font-semibold">
+                  <Link to="/login" onClick={closeMenu}>Portal do Cliente</Link>
+                </Button>
               )}
-              <Button asChild className="w-full btn-primary py-3 rounded-lg font-semibold">
-                <Link to="/login" onClick={closeMenu}>Portal do Cliente</Link>
-              </Button>
               <div className="pt-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
                 <button onClick={toggleTheme} className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
                   {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
