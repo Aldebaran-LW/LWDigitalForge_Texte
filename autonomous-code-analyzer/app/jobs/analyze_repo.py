@@ -143,4 +143,14 @@ def analyze_repo(
         if run_id is not None:
             _finish_run(run_id, status, summary, findings)
 
-    return {"ok": status == "success", "repo_url": norm_url, "ref": ref, "status": status, "summary": summary, "findings_count": len(findings)}
+    # Para resposta HTTP: inclui um preview dos achados; o full já fica no Supabase quando configurado.
+    preview = findings[:50]
+    return {
+        "ok": status == "success",
+        "repo_url": norm_url,
+        "ref": ref,
+        "status": status,
+        "summary": summary,
+        "findings_count": len(findings),
+        "findings_preview": preview,
+    }
