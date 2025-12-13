@@ -1,19 +1,18 @@
 from __future__ import annotations
 
-import os
-import re
 import shutil
 import tempfile
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
+from urllib.parse import urlparse
 
-import httpx
 from git import Repo
 
 from app.settings import settings
 from app.supabase_client import get_supabase
 from app.analyzers.basic import run_basic_checks
+from app.analyzers.github_actions import run_github_actions_checks
 
 
 @dataclass
@@ -31,6 +30,45 @@ def _normalize_repo_url(repo_url: str | None, owner: str | None, repo: str | Non
     if owner and repo:
         return f"https://github.com/{owner}/{repo}"
     return None
+
+
+def _parse_github_owner_repo(repo_url: str) -> tuple[str, str] | None:
+    """Extrai owner/repo de URLs https://github.com/owner/repo(.git)."""
+    try:
+        u = urlparse(repo_url)
+    except Exception:  # noqa: BLE001
+        return None
+    if u.netloc.lower() != "github.com":
+        return None
+    parts = [p for p in u.path.split("/") if p]
+    if len(parts) < 2:
+        return None
+    owner = parts[0]
+    repo = parts[1]
+    if repo.endswith(".git"):
+        repo = repo[:-4]
+    return owner, repo
+
+
+def _auth_repo_url_if_needed(repo_url: str) -> str:
+    """Se for GitHub e tiver token, injeta auth no clone (sem alterar o repo_url persistido)."""
+    if not settings.github_token:
+        return repo_url
+    parsed = _parse_github_owner_repo(repo_url)
+    if not parsed:
+        return repo_url
+    owner, repo = parsed
+    # 'x-access-token' funciona com GitHub HTTPS
+    return f"https://x-access-token:{settings.github_token}@github.com/{owner}/{repo}.git"
+
+
+def _redact_secrets(msg: str) -> str:
+    """Evita vazamento de tokens em logs/findings."""
+    if settings.github_token and settings.github_token in msg:
+        msg = msg.replace(settings.github_token, "***REDACTED***")
+    if settings.supabase_service_role_key and settings.supabase_service_role_key in msg:
+        msg = msg.replace(settings.supabase_service_role_key, "***REDACTED***")
+    return msg
 
 
 def _list_repos_to_analyze() -> list[str]:
@@ -80,7 +118,8 @@ def _finish_run(run_id: int, status: str, summary: dict, findings: list[dict]):
 def _clone_repo(repo_url: str, ref: str | None) -> Path:
     tmpdir = Path(tempfile.mkdtemp(prefix="aca_"))
     # Shallow clone para reduzir custo no serverless
-    repo = Repo.clone_from(repo_url, tmpdir.as_posix(), depth=1)
+    clone_url = _auth_repo_url_if_needed(repo_url)
+    repo = Repo.clone_from(clone_url, tmpdir.as_posix(), depth=1)
     if ref:
         repo.git.fetch("--depth", "1", "origin", ref)
         repo.git.checkout(ref)
@@ -118,6 +157,13 @@ def analyze_repo(
     }
 
     try:
+        gh = _parse_github_owner_repo(norm_url)
+        if gh:
+            owner2, repo2 = gh
+            ga = run_github_actions_checks(owner2, repo2)
+            summary.update(ga.get("summary", {}))
+            findings.extend(ga.get("findings", []))
+
         checkout_dir = _clone_repo(norm_url, ref)
         basic = run_basic_checks(checkout_dir, max_files=settings.analysis_max_files, max_bytes=settings.analysis_max_bytes)
         summary.update(basic.get("summary", {}))
@@ -128,7 +174,7 @@ def analyze_repo(
             {
                 "severity": "high",
                 "code": "ANALYSIS_EXCEPTION",
-                "message": str(e),
+                "message": _redact_secrets(str(e)),
                 "path": None,
                 "line": None,
                 "meta": {},
