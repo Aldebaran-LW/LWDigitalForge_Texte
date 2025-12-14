@@ -3,6 +3,7 @@ import React, { createContext, useContext, useEffect, useState, useCallback, use
 import { supabase } from '@/lib/customSupabaseClient';
 import { useToast } from '@/components/ui/use-toast';
 import { useNavigate } from 'react-router-dom';
+import { syncSupabaseToFirebase, setupFirebaseAuthListener } from '@/lib/syncFirebaseSupabase';
 
 const AuthContext = createContext(undefined);
 
@@ -75,7 +76,13 @@ export const AuthProvider = ({ children }) => {
       }
     );
 
-    return () => subscription.unsubscribe();
+    // Configurar listener do Firebase para sincronização bidirecional
+    const unsubscribeFirebase = setupFirebaseAuthListener();
+
+    return () => {
+      subscription.unsubscribe();
+      unsubscribeFirebase();
+    };
   }, [handleSession]);
 
   const signUp = useCallback(async (fullName, phone, email, password) => {
@@ -91,8 +98,8 @@ export const AuthProvider = ({ children }) => {
       }
     });
     
-    setLoading(false);
     if (error) {
+        setLoading(false);
         toast({
             variant: "destructive",
             title: "Falha no Cadastro",
@@ -101,6 +108,23 @@ export const AuthProvider = ({ children }) => {
         return { error };
     }
 
+    // Sincronizar com Firebase após cadastro bem-sucedido no Supabase
+    if (data.user && password) {
+      try {
+        const syncResult = await syncSupabaseToFirebase(data.user, password);
+        if (syncResult.success) {
+          console.log('✅ Usuário sincronizado com Firebase:', syncResult.message);
+        } else {
+          console.warn('⚠️ Aviso na sincronização com Firebase:', syncResult.error);
+          // Não bloqueia o cadastro se a sincronização falhar
+        }
+      } catch (syncError) {
+        console.error('❌ Erro na sincronização com Firebase:', syncError);
+        // Não bloqueia o cadastro se a sincronização falhar
+      }
+    }
+
+    setLoading(false);
     toast({
         title: "Cadastro Quase Concluído!",
         description: "Enviamos um link de confirmação para o seu e-mail. Por favor, verifique sua caixa de entrada.",
@@ -138,6 +162,17 @@ export const AuthProvider = ({ children }) => {
       const userProfile = await fetchUserProfile(data.user);
       const userRole = userProfile?.role || 'USER';
 
+      // Tentar sincronizar com Firebase após login (sem bloquear se falhar)
+      try {
+        const syncResult = await syncSupabaseToFirebase(data.user, password);
+        if (syncResult.success) {
+          console.log('✅ Usuário sincronizado com Firebase após login');
+        }
+      } catch (syncError) {
+        console.warn('⚠️ Aviso na sincronização com Firebase:', syncError);
+        // Não bloqueia o login se a sincronização falhar
+      }
+
       toast({
         title: `Bem-vindo${userProfile?.full_name ? `, ${userProfile.full_name}` : ''}!`,
         description: "Login realizado com sucesso! Redirecionando...",
@@ -156,10 +191,13 @@ export const AuthProvider = ({ children }) => {
   const signInWithGoogle = useCallback(async () => {
     setLoading(true);
     try {
+      const redirectUrl = `${window.location.origin}/auth/callback`;
+      console.log('Tentando login com Google. Redirect URL:', redirectUrl);
+      
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo: redirectUrl,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
@@ -171,21 +209,23 @@ export const AuthProvider = ({ children }) => {
         console.error('Erro no signInWithOAuth:', error);
         toast({
           variant: "destructive",
-          title: "Erro no Login",
-          description: error.message || "Não foi possível fazer login com Google.",
+          title: "Erro no Login com Google",
+          description: error.message || "Não foi possível fazer login com Google. Verifique se o OAuth está configurado no Supabase.",
         });
         setLoading(false);
         return { error };
       }
 
+      console.log('signInWithOAuth iniciado com sucesso:', data);
       // O loading será desativado quando a sessão for estabelecida
+      // ou quando o usuário retornar da página do Google
       return { error: null };
     } catch (error) {
       console.error('Erro no login com Google:', error);
       toast({
         variant: "destructive",
         title: "Erro",
-        description: "Não foi possível conectar com o Google.",
+        description: "Não foi possível conectar com o Google. Verifique sua conexão.",
       });
       setLoading(false);
       return { error };

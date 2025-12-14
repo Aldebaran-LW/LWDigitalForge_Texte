@@ -78,16 +78,16 @@ const PaginaCadastro = () => {
         <title>Criar Conta - LWDigitalForge</title>
         <meta name="description" content="Crie sua conta para acessar nossos produtos e serviços." />
       </Helmet>
-      <div className="min-h-[calc(100vh-14rem)] flex items-center justify-center py-12 px-4">
+      <div className="min-h-[calc(100vh-14rem)] flex items-center justify-center py-6 sm:py-8 md:py-12 px-4 sm:px-6">
         <motion.div
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="w-full max-w-md p-8 space-y-6 bg-white dark:bg-[#111827]/50 rounded-2xl shadow-lg border border-gray-200 dark:border-blue-500/20"
+          className="w-full max-w-md p-6 sm:p-7 md:p-8 space-y-5 sm:space-y-6 bg-white dark:bg-[#111827]/50 rounded-xl sm:rounded-2xl shadow-lg border border-gray-200 dark:border-blue-500/20"
         >
           <div className="text-center">
-            <h1 className="text-3xl font-bold text-gradient">Criar Nova Conta</h1>
-            <p className="mt-2 text-gray-600 dark:text-gray-300">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gradient">Criar Nova Conta</h1>
+            <p className="mt-2 text-sm sm:text-base text-gray-600 dark:text-gray-300">
               {fromGoogle ? 'Complete seu cadastro para continuar' : 'Junte-se a nós e automatize seu sucesso.'}
             </p>
             {fromGoogle && (
@@ -114,57 +114,57 @@ const PaginaCadastro = () => {
               </div>
             )}
           </div>
-          <form className="space-y-4" onSubmit={handleSubmit}>
+          <form className="space-y-3 sm:space-y-4" onSubmit={handleSubmit}>
             <div>
-              <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nome Completo</label>
+              <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2">Nome Completo</label>
               <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                <input id="fullName" name="fullName" type="text" autoComplete="name" required value={fullName} onChange={(e) => setFullName(e.target.value)} className="w-full pl-10 p-2 text-gray-700 dark:text-white bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500" />
+                <User className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <input id="fullName" name="fullName" type="text" autoComplete="name" required value={fullName} onChange={(e) => setFullName(e.target.value)} className="w-full pl-10 sm:pl-12 px-3 sm:px-4 py-2.5 sm:py-3 text-base text-gray-700 dark:text-white bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-h-[48px]" placeholder="Seu nome completo" />
               </div>
             </div>
 
             <div>
-              <label htmlFor="phone" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Telefone</label>
+              <label htmlFor="phone" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2">Telefone</label>
               <div className="relative">
-                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                <input id="phone" name="phone" type="tel" autoComplete="tel" required value={phone} onChange={(e) => setPhone(e.target.value)} className="w-full pl-10 p-2 text-gray-700 dark:text-white bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500" placeholder="(XX) XXXXX-XXXX" />
+                <Phone className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <input id="phone" name="phone" type="tel" autoComplete="tel" required value={phone} onChange={(e) => setPhone(e.target.value)} className="w-full pl-10 sm:pl-12 px-3 sm:px-4 py-2.5 sm:py-3 text-base text-gray-700 dark:text-white bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-h-[48px]" placeholder="(XX) XXXXX-XXXX" />
               </div>
             </div>
 
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">E-mail</label>
-              <input id="email" name="email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} disabled={fromGoogle} className="w-full p-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 disabled:opacity-60 disabled:cursor-not-allowed" />
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2">E-mail</label>
+              <input id="email" name="email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} disabled={fromGoogle} className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-base bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-60 disabled:cursor-not-allowed min-h-[48px]" placeholder="seu@email.com" />
             </div>
 
             <div className="relative">
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Senha</label>
-              <input id="password" name="password" type={showPassword ? 'text' : 'password'} autoComplete="new-password" required placeholder="Mínimo 6 caracteres" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full p-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 pr-10" />
-              <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 top-6 flex items-center px-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2">Senha</label>
+              <input id="password" name="password" type={showPassword ? 'text' : 'password'} autoComplete="new-password" required placeholder="Mínimo 6 caracteres" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-base bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 pr-12 min-h-[48px]" />
+              <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 top-8 sm:top-9 flex items-center px-3 sm:px-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 min-h-[48px] min-w-[48px]" aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}>
                 {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
               </button>
             </div>
 
             <div className="relative">
-              <label htmlFor="confirm-password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Confirmar Senha</label>
-              <input id="confirm-password" name="confirm-password" type={showConfirmPassword ? 'text' : 'password'} autoComplete="new-password" required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="w-full p-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 pr-10" />
-              <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute inset-y-0 right-0 top-6 flex items-center px-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+              <label htmlFor="confirm-password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2">Confirmar Senha</label>
+              <input id="confirm-password" name="confirm-password" type={showConfirmPassword ? 'text' : 'password'} autoComplete="new-password" required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-base bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 pr-12 min-h-[48px]" placeholder="Confirme sua senha" />
+              <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute inset-y-0 right-0 top-8 sm:top-9 flex items-center px-3 sm:px-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 min-h-[48px] min-w-[48px]" aria-label={showConfirmPassword ? 'Ocultar senha' : 'Mostrar senha'}>
                 {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
               </button>
             </div>
             
             <div className="pt-2">
-              <Button type="submit" className="w-full btn-primary" disabled={loading}>
+              <Button type="submit" className="w-full btn-primary min-h-[48px] text-base sm:text-lg font-semibold" disabled={loading}>
                 {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                 {loading ? 'Criando conta...' : 'Criar Conta'}
               </Button>
             </div>
           </form>
 
-          <p className="text-center text-sm text-gray-600 dark:text-gray-400">
+          <p className="text-center text-xs sm:text-sm text-gray-600 dark:text-gray-400">
             Já tem uma conta?{' '}
             <Link
               to="/login"
-              className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300"
+              className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 min-h-[44px] inline-flex items-center"
             >
               Faça login
             </Link>

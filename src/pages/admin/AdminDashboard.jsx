@@ -79,37 +79,37 @@ const AdminDashboard = () => {
       <Helmet>
         <title>Dashboard - LWDigitalForge Admin</title>
       </Helmet>
-      <div className="container mx-auto">
+      <div className="container mx-auto px-4 sm:px-6">
         <motion.h1 
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="text-3xl font-bold text-gray-800 dark:text-white mb-8"
+            className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-white mb-6 sm:mb-8"
         >
             Dashboard
         </motion.h1>
 
         {loading ? (
-          <div className="flex justify-center items-center py-20">
-            <Loader2 className="h-12 w-12 text-blue-500 dark:text-white animate-spin" />
+          <div className="flex justify-center items-center py-12 sm:py-16 md:py-20">
+            <Loader2 className="h-10 w-10 sm:h-12 sm:w-12 text-blue-500 dark:text-white animate-spin" />
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 md:gap-6">
             {stats.map((stat, index) => (
               <motion.div
                 key={stat.title}
                 initial={{ opacity: 0, y: 50 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
-                className="bg-white dark:bg-[#111827]/80 p-6 rounded-lg shadow-md border border-gray-200 dark:border-white/10"
+                className="bg-white dark:bg-[#111827]/80 p-4 sm:p-5 md:p-6 rounded-lg shadow-md border border-gray-200 dark:border-white/10 hover:shadow-lg transition-shadow"
               >
                 <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{stat.title}</p>
-                    <p className="text-3xl font-bold text-gray-800 dark:text-white mt-1">{stat.value}</p>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400 mb-1 sm:mb-2">{stat.title}</p>
+                    <p className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-white truncate">{stat.value}</p>
                   </div>
-                  <div className={`p-3 rounded-full ${stat.bgColor} ${stat.color}`}>
-                    <stat.icon className="h-6 w-6" />
+                  <div className={`p-2 sm:p-3 rounded-full ${stat.bgColor} ${stat.color} flex-shrink-0 ml-2 sm:ml-3`}>
+                    <stat.icon className="h-5 w-5 sm:h-6 sm:w-6" />
                   </div>
                 </div>
               </motion.div>

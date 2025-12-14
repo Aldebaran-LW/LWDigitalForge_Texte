@@ -29,17 +29,19 @@ export const CartProvider = ({ children }) => {
 
   const addToCart = useCallback((product, variant, quantity, availableQuantity) => {
     return new Promise((resolve, reject) => {
+      setCartItems(prevItems => {
+        // Verificar estoque se necessário
       if (variant.manage_inventory) {
-        const existingItem = cartItems.find(item => item.variant.id === variant.id);
+          const existingItem = prevItems.find(item => item.variant.id === variant.id);
         const currentCartQuantity = existingItem ? existingItem.quantity : 0;
         if ((currentCartQuantity + quantity) > availableQuantity) {
           const error = new Error(`Not enough stock for ${product.title} (${variant.title}). Only ${availableQuantity} left.`);
           reject(error);
-          return;
+            return prevItems; // Retornar estado anterior em caso de erro
         }
       }
 
-      setCartItems(prevItems => {
+        // Adicionar ou atualizar item no carrinho
         const existingItem = prevItems.find(item => item.variant.id === variant.id);
         if (existingItem) {
           return prevItems.map(item =>
@@ -52,17 +54,22 @@ export const CartProvider = ({ children }) => {
       });
       resolve();
     });
-  }, [cartItems]);
+  }, []);
 
   const removeFromCart = useCallback((variantId) => {
     setCartItems(prevItems => prevItems.filter(item => item.variant.id !== variantId));
   }, []);
 
   const updateQuantity = useCallback((variantId, quantity) => {
+    if (quantity < 1) {
+      // Se a quantidade for menor que 1, remover o item do carrinho
+      setCartItems(prevItems => prevItems.filter(item => item.variant.id !== variantId));
+      return;
+    }
     setCartItems(prevItems =>
       prevItems.map(item =>
         item.variant.id === variantId ? { ...item, quantity } : item
-      ).filter(item => item.quantity > 0)
+      )
     );
   }, []);
 
@@ -74,10 +81,14 @@ export const CartProvider = ({ children }) => {
     if (cartItems.length === 0) {
       return formatCurrency(0, { code: 'BRL', symbol: 'R$', template: '$1' });
     }
-    return formatCurrency(cartItems.reduce((total, item) => {
+    const totalInCents = cartItems.reduce((total, item) => {
       const price = item.variant.sale_price_in_cents ?? item.variant.price_in_cents;
       return total + price * item.quantity;
-    }, 0), cartItems[0]?.variant.currency_info);
+    }, 0);
+    
+    // Usar currency_info do variant se disponível, senão usar BRL como padrão
+    const currencyInfo = cartItems[0]?.variant.currency_info || { code: 'BRL', symbol: 'R$', template: '$1' };
+    return formatCurrency(totalInCents, currencyInfo);
   }, [cartItems]);
 
   const value = useMemo(() => ({
