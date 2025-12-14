@@ -337,3 +337,4 @@ Você está trabalhando em um projeto React + Vite para a **LWDigitalForge**, um
 
 **OBJETIVO FINAL:** Criar um visual moderno, profissional e atraente que mantenha todas as funcionalidades existentes e melhore significativamente a experiência do usuário através de design, animações e visualizações.
 
+

@@ -14,3 +14,4 @@ export const getAssetUrlFromStorage = (assetName) => {
   return assets[assetName] || `/Logo.png`;
 };
 
+

@@ -87,3 +87,4 @@ COMMENT ON FUNCTION public.mark_profile_firebase_synced IS
 --    o cadastro/login do usuário no sistema principal.
 -- 
 -- ========================================
+

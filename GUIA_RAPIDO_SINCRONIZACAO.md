@@ -127,3 +127,4 @@ Esta implementação demonstra:
 **Pronto para usar!** 🚀
 
 Se tiver dúvidas, consulte a documentação completa ou verifique os logs no console do navegador.
+

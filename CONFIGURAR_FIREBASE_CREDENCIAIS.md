@@ -143,3 +143,4 @@ Consulte `GUIA_RAPIDO_SINCRONIZACAO.md` para mais detalhes.
 ---
 
 **Precisa de ajuda?** Verifique os logs no console do navegador ou consulte a documentação completa em `SINCRONIZACAO_FIREBASE_SUPABASE.md`.
+

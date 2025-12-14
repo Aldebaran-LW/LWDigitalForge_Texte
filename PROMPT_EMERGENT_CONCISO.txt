@@ -148,3 +148,4 @@ CHECKLIST:
 
 OBJETIVO: Visual moderno, profissional e interativo mantendo funcionalidades, foco em admin e portal, animações sutis, mais interatividade.
 
+

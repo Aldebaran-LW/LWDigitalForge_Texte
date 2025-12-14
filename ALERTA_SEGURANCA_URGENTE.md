@@ -160,3 +160,4 @@ Você já tem tudo que precisa com Supabase. Instalar Firebase agora seria:
 **Severidade**: 🔴 CRÍTICA  
 **Ação**: Revogar credenciais IMEDIATAMENTE
 
+

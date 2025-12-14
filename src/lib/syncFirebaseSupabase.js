@@ -310,3 +310,4 @@ export const setupFirebaseAuthListener = () => {
 
   return unsubscribe;
 };
+

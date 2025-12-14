@@ -266,3 +266,4 @@ O sistema verifica se o usuário já existe antes de criar, evitando duplicaçõ
 ---
 
 **Última atualização:** 2025-01-06
+

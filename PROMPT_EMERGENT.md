@@ -270,3 +270,4 @@ Este é um projeto React + Vite de e-commerce para produtos digitais (bots Teleg
 
 **OBJETIVO:** Criar um visual moderno, profissional e interativo que mantém todas as funcionalidades, com foco especial nas áreas administrativas e do portal do usuário, usando animações sutis e aumentando a interatividade.
 
+

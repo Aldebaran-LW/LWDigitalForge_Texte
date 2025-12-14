@@ -152,3 +152,4 @@ Antes do merge, confirme:
 - [x] Main não será quebrado
 
 **Tudo verificado e seguro!** ✅
+

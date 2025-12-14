@@ -93,3 +93,4 @@ Captura nome completo e avatar do Google OAuth quando disponível.';
 --    - Redirect URIs: https://[seu-projeto-ref].supabase.co/auth/v1/callback
 -- ========================================
 
+

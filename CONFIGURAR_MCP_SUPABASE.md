@@ -91,3 +91,4 @@ Com o MCP do Supabase configurado, você poderá:
 - [Documentação do MCP Supabase](https://github.com/supabase/mcp-server-supabase)
 - [Documentação do Supabase](https://supabase.com/docs)
 
+

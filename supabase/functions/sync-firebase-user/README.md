@@ -44,3 +44,4 @@ supabase functions deploy sync-firebase-user
   3. Implementar a criação de usuário no Firebase
 
 - A sincronização também pode ser feita no frontend quando o usuário faz login/cadastro, que é a abordagem atual implementada.
+

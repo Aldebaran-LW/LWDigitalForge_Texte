@@ -76,3 +76,4 @@ Se quiser usar variáveis de ambiente (recomendado para produção):
 ---
 
 **✅ TUDO PRONTO PARA MERGE SEGURO!**
+
