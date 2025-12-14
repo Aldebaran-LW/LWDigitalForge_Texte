@@ -236,3 +236,4 @@ A função `handle_new_user()` captura automaticamente:
 ---
 
 **Última atualização**: 2025-01-05
+

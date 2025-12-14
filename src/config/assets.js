@@ -13,3 +13,4 @@ export const getAssetUrlFromStorage = (assetName) => {
   // Retorna a URL do asset ou uma URL padrão se não encontrado
   return assets[assetName] || `/Logo.png`;
 };
+

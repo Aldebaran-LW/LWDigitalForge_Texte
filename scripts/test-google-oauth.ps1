@@ -50,3 +50,4 @@ Write-Host "📝 PRÓXIMOS PASSOS:" -ForegroundColor Cyan
 Write-Host "1. Revise os resultados dos testes acima" -ForegroundColor White
 Write-Host "2. Execute os testes manuais descritos em TESTES_GOOGLE_OAUTH.md" -ForegroundColor White
 Write-Host "3. Configure o Google OAuth seguindo CONFIGURAR_GOOGLE_OAUTH.md`n" -ForegroundColor White
+

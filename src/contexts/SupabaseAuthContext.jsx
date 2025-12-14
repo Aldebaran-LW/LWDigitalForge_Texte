@@ -3,6 +3,7 @@ import React, { createContext, useContext, useEffect, useState, useCallback, use
 import { supabase } from '@/lib/customSupabaseClient';
 import { useToast } from '@/components/ui/use-toast';
 import { useNavigate } from 'react-router-dom';
+import { syncSupabaseToFirebase, setupFirebaseAuthListener } from '@/lib/syncFirebaseSupabase';
 
 const AuthContext = createContext(undefined);
 
@@ -75,7 +76,13 @@ export const AuthProvider = ({ children }) => {
       }
     );
 
-    return () => subscription.unsubscribe();
+    // Configurar listener do Firebase para sincronização bidirecional
+    const unsubscribeFirebase = setupFirebaseAuthListener();
+
+    return () => {
+      subscription.unsubscribe();
+      unsubscribeFirebase();
+    };
   }, [handleSession]);
 
   const signUp = useCallback(async (fullName, phone, email, password) => {
@@ -91,8 +98,8 @@ export const AuthProvider = ({ children }) => {
       }
     });
     
-    setLoading(false);
     if (error) {
+        setLoading(false);
         toast({
             variant: "destructive",
             title: "Falha no Cadastro",
@@ -101,6 +108,23 @@ export const AuthProvider = ({ children }) => {
         return { error };
     }
 
+    // Sincronizar com Firebase após cadastro bem-sucedido no Supabase
+    if (data.user && password) {
+      try {
+        const syncResult = await syncSupabaseToFirebase(data.user, password);
+        if (syncResult.success) {
+          console.log('✅ Usuário sincronizado com Firebase:', syncResult.message);
+        } else {
+          console.warn('⚠️ Aviso na sincronização com Firebase:', syncResult.error);
+          // Não bloqueia o cadastro se a sincronização falhar
+        }
+      } catch (syncError) {
+        console.error('❌ Erro na sincronização com Firebase:', syncError);
+        // Não bloqueia o cadastro se a sincronização falhar
+      }
+    }
+
+    setLoading(false);
     toast({
         title: "Cadastro Quase Concluído!",
         description: "Enviamos um link de confirmação para o seu e-mail. Por favor, verifique sua caixa de entrada.",
@@ -137,6 +161,17 @@ export const AuthProvider = ({ children }) => {
     if (data.user) {
       const userProfile = await fetchUserProfile(data.user);
       const userRole = userProfile?.role || 'USER';
+
+      // Tentar sincronizar com Firebase após login (sem bloquear se falhar)
+      try {
+        const syncResult = await syncSupabaseToFirebase(data.user, password);
+        if (syncResult.success) {
+          console.log('✅ Usuário sincronizado com Firebase após login');
+        }
+      } catch (syncError) {
+        console.warn('⚠️ Aviso na sincronização com Firebase:', syncError);
+        // Não bloqueia o login se a sincronização falhar
+      }
 
       toast({
         title: `Bem-vindo${userProfile?.full_name ? `, ${userProfile.full_name}` : ''}!`,

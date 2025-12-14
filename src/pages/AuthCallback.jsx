@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
 import { Loader2, CheckCircle, XCircle } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
+import { syncGoogleOAuthToFirebase } from '@/lib/syncFirebaseSupabase';
 
 const AuthCallback = () => {
   const navigate = useNavigate();
@@ -101,6 +102,21 @@ const AuthCallback = () => {
 
           const userRole = profile?.role || 'USER';
           const userName = profile?.full_name || session.user.email;
+
+          // Sincronizar com Firebase após login com Google OAuth
+          try {
+            const syncResult = await syncGoogleOAuthToFirebase(session.user);
+            if (syncResult.success) {
+              console.log('✅ Usuário sincronizado com Firebase após Google OAuth');
+            } else if (syncResult.requiresBackendSync) {
+              console.log('ℹ️ Sincronização será feita via Edge Function no backend');
+            } else {
+              console.warn('⚠️ Aviso na sincronização com Firebase:', syncResult.error);
+            }
+          } catch (syncError) {
+            console.warn('⚠️ Erro na sincronização com Firebase:', syncError);
+            // Não bloqueia o login se a sincronização falhar
+          }
 
           setStatus('success');
           setMessage('Login realizado com sucesso! Redirecionando...');

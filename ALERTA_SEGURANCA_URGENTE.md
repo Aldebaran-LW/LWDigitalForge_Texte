@@ -7,6 +7,8 @@
 ### 🔴 Credenciais Expostas:
 
 1. **Firebase Config (API Keys)** - Expostas
+   - `AIzaSyDDkqKtL4VtaykNWCho9Ozj3mTRKQNEUPQ` (anterior)
+   - `AIzaSyAobYGR1bKf1LdoybP4FXnHIXqYhvZqvMI` (nova - exposta agora)
 2. **Firebase Access Token** - Exposto
 3. **Firebase Service Account Private Key** - **CRÍTICO - EXPOSTO**
 4. **Private Key ID** - Exposto
@@ -157,3 +159,4 @@ Você já tem tudo que precisa com Supabase. Instalar Firebase agora seria:
 **Data do alerta**: 2025-01-05  
 **Severidade**: 🔴 CRÍTICA  
 **Ação**: Revogar credenciais IMEDIATAMENTE
+

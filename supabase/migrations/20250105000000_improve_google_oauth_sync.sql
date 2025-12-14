@@ -92,3 +92,4 @@ Captura nome completo e avatar do Google OAuth quando disponível.';
 --    - JavaScript origins: https://[seu-projeto-ref].supabase.co
 --    - Redirect URIs: https://[seu-projeto-ref].supabase.co/auth/v1/callback
 -- ========================================
+
