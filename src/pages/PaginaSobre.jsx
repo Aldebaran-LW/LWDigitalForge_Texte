@@ -10,18 +10,18 @@ const PaginaSobre = () => {
         <title>Sobre Nós - LWDigitalForge</title>
         <meta name="description" content="Conheça a história e a missão da LWDigitalForge, sua parceira em automação e produtividade." />
       </Helmet>
-      <div className="py-28 px-4 bg-[#F9FAFB] dark:bg-[#0D1117]">
+      <div className="py-12 sm:py-16 md:py-20 lg:py-28 px-4 sm:px-6 bg-[#F9FAFB] dark:bg-[#0D1117]">
         <div className="container mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="text-center mb-16"
+            className="text-center mb-10 sm:mb-12 md:mb-16"
           >
-            <h1 className="text-4xl md:text-5xl font-bold mb-6 text-gradient">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-4 sm:mb-6 text-gradient px-2">
               Nossa História
             </h1>
-            <p className="text-xl text-gray-600 dark:text-[#F9FAFB]/80 max-w-3xl mx-auto">
+            <p className="text-base sm:text-lg md:text-xl text-gray-600 dark:text-[#F9FAFB]/80 max-w-3xl mx-auto px-2">
               Nascemos da paixão por tecnologia e da busca incessante por eficiência.
             </p>
           </motion.div>
@@ -30,40 +30,40 @@ const PaginaSobre = () => {
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
-            className="max-w-4xl mx-auto bg-white dark:bg-[#0D1117]/50 p-8 rounded-xl border border-gray-200 dark:border-[#3B82F6]/20"
+            className="max-w-4xl mx-auto bg-white dark:bg-[#0D1117]/50 p-4 sm:p-6 md:p-8 rounded-xl border border-gray-200 dark:border-[#3B82F6]/20"
           >
-            <p className="text-lg text-gray-700 dark:text-[#F9FAFB]/90 mb-6 leading-relaxed">
+            <p className="text-sm sm:text-base md:text-lg text-gray-700 dark:text-[#F9FAFB]/90 mb-4 sm:mb-6 leading-relaxed">
               A LWDigitalForge começou como um pequeno projeto paralelo, uma ideia simples: "E se pudéssemos automatizar as tarefas chatas e repetitivas que consomem nosso tempo?". O que era um hobby rapidamente se tornou uma obsessão. Vimos o poder transformador da automação em nossas próprias vidas e soubemos que precisávamos compartilhar isso com o mundo.
             </p>
-            <p className="text-lg text-gray-700 dark:text-[#F9FAFB]/90 leading-relaxed">
+            <p className="text-sm sm:text-base md:text-lg text-gray-700 dark:text-[#F9FAFB]/90 leading-relaxed">
               Hoje, somos uma equipe dedicada de desenvolvedores, designers e estrategistas com a missão de criar ferramentas que não apenas economizam tempo, mas também capacitam pessoas e empresas a alcançarem seu verdadeiro potencial. Acreditamos que a tecnologia deve trabalhar para nós, liberando nossa criatividade e foco para o que realmente importa.
             </p>
           </motion.div>
 
-          <div className="grid md:grid-cols-3 gap-8 mt-16 text-center">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8 mt-10 sm:mt-12 md:mt-16 text-center">
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.4 }}>
-              <div className="p-8 bg-white dark:bg-[#0D1117]/50 rounded-xl border border-gray-200 dark:border-[#14B8A6]/20">
-                <Target className="mx-auto text-[#3B82F6]" size={40} />
-                <h3 className="text-2xl font-bold my-4">Nossa Missão</h3>
-                <p className="text-gray-600 dark:text-[#F9FAFB]/70">
+              <div className="p-6 sm:p-7 md:p-8 bg-white dark:bg-[#0D1117]/50 rounded-xl border border-gray-200 dark:border-[#14B8A6]/20">
+                <Target className="mx-auto text-[#3B82F6] w-10 h-10 sm:w-12 sm:h-12" size={40} />
+                <h3 className="text-xl sm:text-2xl font-bold my-3 sm:my-4">Nossa Missão</h3>
+                <p className="text-sm sm:text-base text-gray-600 dark:text-[#F9FAFB]/70">
                   Democratizar a automação, tornando-a acessível e fácil de usar para todos.
                 </p>
               </div>
             </motion.div>
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.5 }}>
-              <div className="p-8 bg-white dark:bg-[#0D1117]/50 rounded-xl border border-gray-200 dark:border-[#14B8A6]/20">
-                <Zap className="mx-auto text-[#14B8A6]" size={40} />
-                <h3 className="text-2xl font-bold my-4">Nossa Visão</h3>
-                <p className="text-gray-600 dark:text-[#F9FAFB]/70">
+              <div className="p-6 sm:p-7 md:p-8 bg-white dark:bg-[#0D1117]/50 rounded-xl border border-gray-200 dark:border-[#14B8A6]/20">
+                <Zap className="mx-auto text-[#14B8A6] w-10 h-10 sm:w-12 sm:h-12" size={40} />
+                <h3 className="text-xl sm:text-2xl font-bold my-3 sm:my-4">Nossa Visão</h3>
+                <p className="text-sm sm:text-base text-gray-600 dark:text-[#F9FAFB]/70">
                   Ser a principal referência em soluções de produtividade inteligente no mercado.
                 </p>
               </div>
             </motion.div>
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.6 }}>
-              <div className="p-8 bg-white dark:bg-[#0D1117]/50 rounded-xl border border-gray-200 dark:border-[#14B8A6]/20">
-                <Users className="mx-auto text-[#D946EF]" size={40} />
-                <h3 className="text-2xl font-bold my-4">Nossos Valores</h3>
-                <p className="text-gray-600 dark:text-[#F9FAFB]/70">
+              <div className="p-6 sm:p-7 md:p-8 bg-white dark:bg-[#0D1117]/50 rounded-xl border border-gray-200 dark:border-[#14B8A6]/20">
+                <Users className="mx-auto text-[#D946EF] w-10 h-10 sm:w-12 sm:h-12" size={40} />
+                <h3 className="text-xl sm:text-2xl font-bold my-3 sm:my-4">Nossos Valores</h3>
+                <p className="text-sm sm:text-base text-gray-600 dark:text-[#F9FAFB]/70">
                   Inovação, simplicidade, foco no cliente e integridade em tudo que fazemos.
                 </p>
               </div>

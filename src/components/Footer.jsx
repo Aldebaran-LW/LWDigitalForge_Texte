@@ -22,8 +22,8 @@ const Footer = () => {
 
   return (
     <footer className="bg-[#0D1117] border-t border-[#3B82F6]/20">
-      <div className="container mx-auto px-4 py-12 relative">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+      <div className="container mx-auto px-4 sm:px-6 py-8 sm:py-10 md:py-12 relative">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8 mb-6 sm:mb-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -41,20 +41,21 @@ const Footer = () => {
                 LWDigitalForge
               </span>
             </Link>
-            <p className="text-[#F9FAFB]/70 mb-6 max-w-md leading-relaxed">
+            <p className="text-sm sm:text-base text-[#F9FAFB]/70 mb-4 sm:mb-6 max-w-md leading-relaxed">
               Transformamos ideias em soluções automatizadas que impulsionam sua produtividade. 
               Especialistas em bots Telegram e planilhas inteligentes.
             </p>
             
-            <div className="flex space-x-4">
+            <div className="flex space-x-3 sm:space-x-4">
               {socialLinks.map((social) => (
                 <motion.button
                   key={social.name}
                   onClick={() => handleSocialClick(social.name)}
                   whileHover={{ scale: 1.1, y: -2 }}
                   whileTap={{ scale: 0.95 }}
-                  className="w-10 h-10 bg-gradient-to-br from-[#2563EB]/10 to-[#14B8A6]/10 rounded-full flex items-center justify-center border border-transparent hover:border-current transition-all duration-300"
+                  className="w-10 h-10 sm:w-11 sm:h-11 bg-gradient-to-br from-[#2563EB]/10 to-[#14B8A6]/10 rounded-full flex items-center justify-center border border-transparent hover:border-current transition-all duration-300 min-h-[44px] min-w-[44px]"
                   style={{ color: social.color }}
+                  aria-label={social.name}
                 >
                   <social.icon size={20} />
                 </motion.button>
@@ -68,13 +69,13 @@ const Footer = () => {
             transition={{ duration: 0.3, delay: 0.1 }}
             viewport={{ once: true }}
           >
-            <span className="text-lg font-semibold text-[#F9FAFB] mb-4 block">
+            <span className="text-base sm:text-lg font-semibold text-[#F9FAFB] mb-3 sm:mb-4 block">
               Links Rápidos
             </span>
-            <ul className="space-y-3">
-              <li><Link to="/produtos" className="text-[#F9FAFB]/70 hover:text-[#3B82F6] transition-colors duration-300">Produtos</Link></li>
-              <li><Link to="/sobre" className="text-[#F9FAFB]/70 hover:text-[#3B82F6] transition-colors duration-300">Sobre Nós</Link></li>
-              <li><Link to="/contato-orcamento" className="text-[#F9FAFB]/70 hover:text-[#3B82F6] transition-colors duration-300">Contato</Link></li>
+            <ul className="space-y-2 sm:space-y-3">
+              <li><Link to="/produtos" className="text-sm sm:text-base text-[#F9FAFB]/70 hover:text-[#3B82F6] transition-colors duration-300 py-1 block min-h-[44px] flex items-center">Produtos</Link></li>
+              <li><Link to="/sobre" className="text-sm sm:text-base text-[#F9FAFB]/70 hover:text-[#3B82F6] transition-colors duration-300 py-1 block min-h-[44px] flex items-center">Sobre Nós</Link></li>
+              <li><Link to="/contato-orcamento" className="text-sm sm:text-base text-[#F9FAFB]/70 hover:text-[#3B82F6] transition-colors duration-300 py-1 block min-h-[44px] flex items-center">Contato</Link></li>
             </ul>
           </motion.div>
 
@@ -84,12 +85,12 @@ const Footer = () => {
             transition={{ duration: 0.3, delay: 0.2 }}
             viewport={{ once: true }}
           >
-            <span className="text-lg font-semibold text-[#F9FAFB] mb-4 block">
+            <span className="text-base sm:text-lg font-semibold text-[#F9FAFB] mb-3 sm:mb-4 block">
               Legal
             </span>
-            <ul className="space-y-3">
-              <li><Link to="/termos-de-servico" className="text-[#F9FAFB]/70 hover:text-[#3B82F6] transition-colors duration-300">Termos de Serviço</Link></li>
-              <li><Link to="/politica-de-privacidade" className="text-[#F9FAFB]/70 hover:text-[#3B82F6] transition-colors duration-300">Política de Privacidade</Link></li>
+            <ul className="space-y-2 sm:space-y-3">
+              <li><Link to="/termos-de-servico" className="text-sm sm:text-base text-[#F9FAFB]/70 hover:text-[#3B82F6] transition-colors duration-300 py-1 block min-h-[44px] flex items-center">Termos de Serviço</Link></li>
+              <li><Link to="/politica-de-privacidade" className="text-sm sm:text-base text-[#F9FAFB]/70 hover:text-[#3B82F6] transition-colors duration-300 py-1 block min-h-[44px] flex items-center">Política de Privacidade</Link></li>
             </ul>
           </motion.div>
         </div>

@@ -6,7 +6,7 @@ import { getAssetUrlFromStorage } from '@/config/assets';
 
 const HeroSection = () => {
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20">
+    <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20 pb-12 md:pb-20">
       <div className="absolute inset-0">
         <img
           src={getAssetUrlFromStorage('Capa')}
@@ -16,7 +16,7 @@ const HeroSection = () => {
         <div className="absolute inset-0 bg-gradient-to-t from-[var(--light-bg)] dark:from-[var(--dark-bg)] via-transparent to-transparent" />
       </div>
 
-      <div className="container mx-auto px-4 text-center relative z-10">
+      <div className="container mx-auto px-4 sm:px-6 text-center relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
@@ -27,7 +27,7 @@ const HeroSection = () => {
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.3, delay: 0.4 }}
-            className="text-5xl md:text-7xl font-bold mb-6 text-gradient leading-tight"
+            className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold mb-4 sm:mb-6 text-gradient leading-tight px-2"
           >
             Automação Inteligente
           </motion.h1>
@@ -36,7 +36,7 @@ const HeroSection = () => {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: 0.6 }}
-            className="text-2xl md:text-4xl font-semibold mb-8 text-gray-800 dark:text-[#F9FAFB]"
+            className="text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl font-semibold mb-6 sm:mb-8 text-gray-800 dark:text-[#F9FAFB] px-2"
           >
             Bots e Ferramentas que Trabalham por Você
           </motion.h2>
@@ -45,7 +45,7 @@ const HeroSection = () => {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: 0.8 }}
-            className="text-lg md:text-xl mb-12 text-gray-600 dark:text-[#F9FAFB]/80 max-w-2xl mx-auto leading-relaxed"
+            className="text-base sm:text-lg md:text-xl mb-8 sm:mb-10 md:mb-12 text-gray-600 dark:text-[#F9FAFB]/80 max-w-2xl mx-auto leading-relaxed px-2"
           >
             Transforme sua produtividade com soluções automatizadas que funcionam 24/7. 
             Bots Telegram inteligentes e planilhas Excel que fazem o trabalho pesado por você.
@@ -55,13 +55,13 @@ const HeroSection = () => {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: 1 }}
-            className="flex flex-col sm:flex-row gap-4 justify-center items-center"
+            className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center px-2"
           >
-            <Button asChild className="btn-primary px-8 py-4 text-lg font-semibold rounded-lg pulse-glow">
+            <Button asChild className="btn-primary w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-semibold rounded-lg pulse-glow min-h-[48px]">
               <Link to="/produtos">Ver Nossas Soluções</Link>
             </Button>
             
-            <Button asChild className="btn-secondary px-8 py-4 text-lg font-semibold rounded-lg bg-transparent">
+            <Button asChild className="btn-secondary w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-semibold rounded-lg bg-transparent min-h-[48px]">
               <Link to="/contato-orcamento">Fale Conosco</Link>
             </Button>
           </motion.div>

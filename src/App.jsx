@@ -42,10 +42,10 @@ function App() {
   const isAuthRoute = location.pathname.startsWith('/admin') || location.pathname.startsWith('/portal');
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+    <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 overflow-x-hidden">
       {!isAuthRoute && <Header />}
       
-      <main className={`flex-grow ${!isAuthRoute ? 'pt-20' : ''}`}>
+      <main className={`flex-grow ${!isAuthRoute ? 'pt-16 sm:pt-20' : ''}`}>
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<HomePage />} />
