@@ -24,3 +24,4 @@ DROP FUNCTION IF EXISTS public.mark_profile_firebase_synced(UUID, TEXT);
 -- ========================================
 -- Migration concluída
 -- ========================================
+
