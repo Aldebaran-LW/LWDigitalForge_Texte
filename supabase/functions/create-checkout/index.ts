@@ -81,15 +81,20 @@ serve(async (req) => {
       );
     }
 
-    // Determinar preço baseado no tipo de compra
-    let price = app.price_lifetime || 0;
-    if (purchaseType === "MONTHLY" && app.price_monthly) {
-      price = app.price_monthly;
-    } else if (purchaseType === "ANNUAL" && app.price_annual) {
-      price = app.price_annual;
+    // Determinar preço baseado no tipo de compra (valores armazenados em CENTAVOS)
+    const normalizedPurchaseType =
+      purchaseType === "MONTHLY" || purchaseType === "ANNUAL" || purchaseType === "LIFETIME"
+        ? purchaseType
+        : "LIFETIME";
+
+    let priceInCents = app.price_lifetime || 0;
+    if (normalizedPurchaseType === "MONTHLY" && app.price_monthly) {
+      priceInCents = app.price_monthly;
+    } else if (normalizedPurchaseType === "ANNUAL" && app.price_annual) {
+      priceInCents = app.price_annual;
     }
 
-    if (!price || price <= 0) {
+    if (!priceInCents || priceInCents <= 0) {
       return new Response(
         JSON.stringify({ error: "Preço não configurado para este tipo de compra" }),
         {
@@ -121,9 +126,10 @@ serve(async (req) => {
       .insert({
         user_id: user.id,
         app_id: appId,
-        purchase_type: purchaseType,
+        purchase_type: normalizedPurchaseType,
         status: "PENDING",
-        amount: price,
+        amount_paid: priceInCents,
+        payment_method: "MERCADOPAGO",
       })
       .select()
       .single();
@@ -146,7 +152,8 @@ serve(async (req) => {
         {
           title: app.name,
           quantity: 1,
-          unit_price: price,
+          // Mercado Pago espera valor em REAIS (BRL), não centavos.
+          unit_price: Number((priceInCents / 100).toFixed(2)),
           currency_id: "BRL",
         },
       ],

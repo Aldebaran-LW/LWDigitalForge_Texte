@@ -18,10 +18,11 @@ const AdminVendas = () => {
     const fetchSales = async () => {
       try {
         const { data, error } = await supabase
-          .from('sales')
+          .from('user_purchases')
           .select(`
             *,
-            registered_apps (name)
+            registered_apps:app_id (name),
+            profiles:user_id (email)
           `)
           .order('created_at', { ascending: false });
 
@@ -29,13 +30,13 @@ const AdminVendas = () => {
           console.error('Erro ao buscar vendas:', error);
           setSales([]);
         } else {
-          const formattedSales = (data || []).map(sale => ({
-            id: sale.id,
-            customer: sale.user_email || 'N/A',
-            product: sale.registered_apps?.name || 'Produto não encontrado',
-            amount: formatCurrency(sale.total_price),
-            date: sale.created_at ? new Date(sale.created_at).toLocaleDateString('pt-BR') : 'N/A',
-            status: sale.payment_status || 'N/A',
+          const formattedSales = (data || []).map((purchase) => ({
+            id: purchase.id,
+            customer: purchase.profiles?.email || 'N/A',
+            product: purchase.registered_apps?.name || 'Produto não encontrado',
+            amount: formatCurrency(purchase.amount_paid),
+            date: purchase.created_at ? new Date(purchase.created_at).toLocaleDateString('pt-BR') : 'N/A',
+            status: purchase.status || 'N/A',
           }));
           setSales(formattedSales);
         }
@@ -115,7 +116,7 @@ const AdminVendas = () => {
                         <td className="px-3 sm:px-4 md:px-6 py-3 sm:py-4 font-semibold whitespace-nowrap">{sale.amount}</td>
                         <td className="px-3 sm:px-4 md:px-6 py-3 sm:py-4">
                           <span className={`px-2 py-1 text-xs font-medium rounded-full whitespace-nowrap ${
-                            sale.status === 'paid' || sale.status === 'Pago' 
+                            sale.status === 'APPROVED' || sale.status === 'paid' || sale.status === 'Pago' 
                               ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
                               : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300'
                           }`}>

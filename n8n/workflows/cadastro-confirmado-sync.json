@@ -1,0 +1,142 @@
+{
+  "name": "Cadastro confirmado (sync Supabase Auth -> tabela public)",
+  "nodes": [
+    {
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            {
+              "mode": "everyX",
+              "value": 5,
+              "unit": "minutes"
+            }
+          ]
+        }
+      },
+      "id": "cron_1",
+      "name": "Cron (5 min)",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [
+        260,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{$env.SUPABASE_URL}}/auth/v1/admin/users?per_page=1000",
+        "method": "GET",
+        "authentication": "none",
+        "headerParametersUi": {
+          "parameter": [
+            {
+              "name": "apikey",
+              "value": "={{$env.SUPABASE_SERVICE_ROLE_KEY}}"
+            },
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.SUPABASE_SERVICE_ROLE_KEY}}"
+            }
+          ]
+        }
+      },
+      "id": "http_list_users",
+      "name": "Listar usuários (Admin)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        520,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Filtra usuários com email confirmado e prepara payload de upsert\nconst users = items[0].json?.users || [];\nconst confirmed = users\n  .filter(u => u?.email_confirmed_at)\n  .map(u => ({\n    user_id: u.id,\n    confirmed_at: u.email_confirmed_at,\n    source: u.app_metadata?.provider ? String(u.app_metadata.provider).toUpperCase() : 'EMAIL',\n    meta: { email: u.email }\n  }));\n\nreturn confirmed.map(c => ({ json: c }));"
+      },
+      "id": "fn_filter",
+      "name": "Preparar confirmações",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 2,
+      "position": [
+        780,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{$env.SUPABASE_URL}}/rest/v1/user_registration_confirmations?on_conflict=user_id",
+        "method": "POST",
+        "authentication": "none",
+        "jsonParameters": true,
+        "headerParametersUi": {
+          "parameter": [
+            {
+              "name": "apikey",
+              "value": "={{$env.SUPABASE_SERVICE_ROLE_KEY}}"
+            },
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.SUPABASE_SERVICE_ROLE_KEY}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "resolution=merge-duplicates"
+            }
+          ]
+        },
+        "bodyParametersJson": "={{JSON.stringify($json)}}"
+      },
+      "id": "http_upsert",
+      "name": "Upsert confirmações",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        1040,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Cron (5 min)": {
+      "main": [
+        [
+          {
+            "node": "Listar usuários (Admin)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Listar usuários (Admin)": {
+      "main": [
+        [
+          {
+            "node": "Preparar confirmações",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar confirmações": {
+      "main": [
+        [
+          {
+            "node": "Upsert confirmações",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionTimeout": 3600
+  }
+}

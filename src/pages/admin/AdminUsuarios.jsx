@@ -150,7 +150,7 @@ const AdminUsuarios = () => {
             .match({ user_id: selectedUser.id, app_id: selectedProduct });
 
         // Insere compra vitalícia
-        const { error } = await supabase.from('user_purchases').insert({
+        const { data: purchase, error } = await supabase.from('user_purchases').insert({
           user_id: selectedUser.id,
           app_id: selectedProduct,
           purchase_type: 'LIFETIME',
@@ -158,9 +158,24 @@ const AdminUsuarios = () => {
           amount_paid: 0, // Admin grant
           payment_method: 'ADMIN_GRANT',
           expires_at: null // Nunca expira
-        });
+        }).select().single();
 
         if (error) throw error;
+
+        // Garante "direito de acesso" (para liberar portal/tools)
+        const { error: accessError } = await supabase.from('user_product_access').upsert({
+          user_id: selectedUser.id,
+          product_id: selectedProduct,
+          is_trial: false,
+          status: 'active',
+          access_level: 'lifetime',
+          expires_at: null,
+          purchase_id: purchase?.id || null,
+          source: 'ADMIN',
+          notes: 'Acesso vitalício concedido manualmente pelo admin',
+        }, { onConflict: 'user_id,product_id,is_trial' });
+        if (accessError) throw accessError;
+
         toast({ title: "Sucesso", description: `Acesso VITALÍCIO concedido a ${selectedUser.fullName}.` });
       } 
       
@@ -179,6 +194,23 @@ const AdminUsuarios = () => {
         }, { onConflict: 'user_id, app_id' });
 
         if (error) throw error;
+
+        // Garante registro em user_product_access (usado pelo PortalTestes + checkUserProductAccess)
+        const { error: accessError } = await supabase.from('user_product_access').upsert({
+          user_id: selectedUser.id,
+          product_id: selectedProduct,
+          product_name: null,
+          access_level: 'trial',
+          is_trial: true,
+          trial_started_at: new Date().toISOString(),
+          trial_ends_at: expiresAt.toISOString(),
+          expires_at: expiresAt.toISOString(),
+          status: 'active',
+          source: 'ADMIN',
+          notes: `Trial configurado manualmente (${trialDays} dias)`,
+        }, { onConflict: 'user_id,product_id,is_trial' });
+        if (accessError) throw accessError;
+
         toast({ title: "Sucesso", description: `Trial de ${trialDays} dias configurado.` });
       } 
       
@@ -193,6 +225,11 @@ const AdminUsuarios = () => {
         await supabase.from('user_purchases')
           .update({ status: 'CANCELLED', expires_at: new Date().toISOString() })
           .match({ user_id: selectedUser.id, app_id: selectedProduct });
+
+        // Revoga acessos no "entitlement" central
+        await supabase.from('user_product_access')
+          .update({ status: 'revoked', trial_ends_at: new Date().toISOString(), expires_at: new Date().toISOString(), notes: 'Acesso revogado manualmente pelo admin' })
+          .match({ user_id: selectedUser.id, product_id: selectedProduct });
 
         toast({ title: "Revogado", description: "Todo acesso ao produto foi removido deste usuário." });
       }

@@ -1,0 +1,291 @@
+{
+  "name": "Admin (manual) -> conceder trial/vitalício",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "admin-grant-access",
+        "httpMethod": "POST",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "webhook_1",
+      "name": "Webhook (admin)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        220,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Espera { user_id, product_id, action, trial_days? }\nconst { user_id, product_id, action } = $json;\nif (!user_id || !product_id || !action) throw new Error('Campos obrigatórios: user_id, product_id, action');\nconst trial_days = Number($json.trial_days || 7);\nreturn [{ json: { user_id, product_id, action, trial_days } }];"
+      },
+      "id": "fn_norm",
+      "name": "Normalizar input",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 2,
+      "position": [
+        500,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "switches": {
+          "switch": [
+            {
+              "value": "={{$json.action}}",
+              "case": "trial"
+            },
+            {
+              "value": "={{$json.action}}",
+              "case": "lifetime"
+            },
+            {
+              "value": "={{$json.action}}",
+              "case": "revoke"
+            }
+          ]
+        }
+      },
+      "id": "switch_action",
+      "name": "Tipo de ação",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 2,
+      "position": [
+        760,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "const d = new Date();\nd.setDate(d.getDate() + $json.trial_days);\nreturn [{ json: { ...$json, expires_at: d.toISOString() } }];"
+      },
+      "id": "fn_trial_date",
+      "name": "Calcular expiração trial",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 2,
+      "position": [
+        1020,
+        180
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{$env.SUPABASE_URL}}/rest/v1/user_product_access?on_conflict=user_id,product_id,is_trial",
+        "method": "POST",
+        "authentication": "none",
+        "jsonParameters": true,
+        "headerParametersUi": {
+          "parameter": [
+            {
+              "name": "apikey",
+              "value": "={{$env.SUPABASE_SERVICE_ROLE_KEY}}"
+            },
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.SUPABASE_SERVICE_ROLE_KEY}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "resolution=merge-duplicates"
+            }
+          ]
+        },
+        "bodyParametersJson": "={{JSON.stringify({\n  user_id: $json.user_id,\n  product_id: $json.product_id,\n  is_trial: true,\n  status: 'active',\n  access_level: 'trial',\n  trial_started_at: new Date().toISOString(),\n  trial_ends_at: $json.expires_at,\n  expires_at: $json.expires_at,\n  source: 'N8N',\n  notes: `Trial concedido via n8n (${ $json.trial_days } dias)`\n})}}"
+      },
+      "id": "http_trial",
+      "name": "Conceder trial (user_product_access)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        1280,
+        180
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{$env.SUPABASE_URL}}/rest/v1/user_product_access?on_conflict=user_id,product_id,is_trial",
+        "method": "POST",
+        "authentication": "none",
+        "jsonParameters": true,
+        "headerParametersUi": {
+          "parameter": [
+            {
+              "name": "apikey",
+              "value": "={{$env.SUPABASE_SERVICE_ROLE_KEY}}"
+            },
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.SUPABASE_SERVICE_ROLE_KEY}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "resolution=merge-duplicates"
+            }
+          ]
+        },
+        "bodyParametersJson": "={{JSON.stringify({\n  user_id: $json.user_id,\n  product_id: $json.product_id,\n  is_trial: false,\n  status: 'active',\n  access_level: 'lifetime',\n  expires_at: null,\n  source: 'N8N',\n  notes: 'Acesso vitalício concedido via n8n'\n})}}"
+      },
+      "id": "http_lifetime",
+      "name": "Conceder vitalício (user_product_access)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        1020,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{$env.SUPABASE_URL}}/rest/v1/user_product_access?user_id=eq.{{$json.user_id}}&product_id=eq.{{$json.product_id}}",
+        "method": "PATCH",
+        "authentication": "none",
+        "jsonParameters": true,
+        "headerParametersUi": {
+          "parameter": [
+            {
+              "name": "apikey",
+              "value": "={{$env.SUPABASE_SERVICE_ROLE_KEY}}"
+            },
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.SUPABASE_SERVICE_ROLE_KEY}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "bodyParametersJson": "={{JSON.stringify({ status: 'revoked', expires_at: new Date().toISOString(), trial_ends_at: new Date().toISOString(), notes: 'Revogado via n8n' })}}"
+      },
+      "id": "http_revoke",
+      "name": "Revogar (user_product_access)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        1020,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok: true } }}",
+        "options": {}
+      },
+      "id": "respond",
+      "name": "Responder",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1540,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook (admin)": {
+      "main": [
+        [
+          {
+            "node": "Normalizar input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalizar input": {
+      "main": [
+        [
+          {
+            "node": "Tipo de ação",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tipo de ação": {
+      "main": [
+        [
+          {
+            "node": "Calcular expiração trial",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Conceder vitalício (user_product_access)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Revogar (user_product_access)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calcular expiração trial": {
+      "main": [
+        [
+          {
+            "node": "Conceder trial (user_product_access)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Conceder trial (user_product_access)": {
+      "main": [
+        [
+          {
+            "node": "Responder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Conceder vitalício (user_product_access)": {
+      "main": [
+        [
+          {
+            "node": "Responder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Revogar (user_product_access)": {
+      "main": [
+        [
+          {
+            "node": "Responder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false
+}

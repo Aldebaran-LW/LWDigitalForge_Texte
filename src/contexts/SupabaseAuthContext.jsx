@@ -16,6 +16,23 @@ export const AuthProvider = ({ children }) => {
   const [role, setRole] = useState(null);
   const [profile, setProfile] = useState(null);
 
+  const markCadastroConfirmado = useCallback(async (userId, source = 'SESSION') => {
+    if (!userId) return;
+    try {
+      await supabase.from('user_registration_confirmations').upsert(
+        {
+          user_id: userId,
+          confirmed_at: new Date().toISOString(),
+          source,
+        },
+        { onConflict: 'user_id' }
+      );
+    } catch (e) {
+      // Não bloquear login por falha de auditoria
+      console.warn('Falha ao registrar cadastro confirmado:', e);
+    }
+  }, []);
+
   const fetchUserProfile = useCallback(async (user) => {
     if (!user) {
       setRole(null);
@@ -57,12 +74,13 @@ export const AuthProvider = ({ children }) => {
     setUser(currentUser);
     if (currentUser) {
       await fetchUserProfile(currentUser);
+      await markCadastroConfirmado(currentUser.id, 'SESSION');
     } else {
       setRole(null);
       setProfile(null);
     }
     setLoading(false);
-  }, [fetchUserProfile]);
+  }, [fetchUserProfile, markCadastroConfirmado]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -142,6 +160,8 @@ export const AuthProvider = ({ children }) => {
       const userProfile = await fetchUserProfile(data.user);
       const userRole = userProfile?.role || 'USER';
 
+      await markCadastroConfirmado(data.user.id, 'LOGIN');
+
       toast({
         title: `Bem-vindo${userProfile?.full_name ? `, ${userProfile.full_name}` : ''}!`,
         description: "Login realizado com sucesso! Redirecionando...",
@@ -155,7 +175,7 @@ export const AuthProvider = ({ children }) => {
     }
     
     return { error: null };
-  }, [toast, navigate, fetchUserProfile]);
+  }, [toast, navigate, fetchUserProfile, markCadastroConfirmado]);
 
   const signInWithGoogle = useCallback(async () => {
     setLoading(true);

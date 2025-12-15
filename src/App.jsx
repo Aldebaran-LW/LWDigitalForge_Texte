@@ -30,9 +30,10 @@ import AdminFormularioProduto from '@/pages/admin/AdminFormularioProduto';
 import AdminVendas from '@/pages/admin/AdminVendas';
 import AdminUsuarios from '@/pages/admin/AdminUsuarios';
 import AdminTiposDeProduto from '@/pages/admin/AdminTiposDeProduto';
+import AdminAlertas from '@/pages/admin/AdminAlertas';
 
 // Portal Imports
-// import PortalLayout from '@/layouts/PortalLayout'; // Futuramente
+import PortalLayout from '@/components/portal/PortalLayout';
 import PortalMeusProdutos from '@/pages/portal/PortalMeusProdutos';
 import PortalTestes from '@/pages/portal/PortalTestes';
 import PortalPagamentos from '@/pages/portal/PortalPagamentos';
@@ -79,12 +80,19 @@ function App() {
             <Route path="tipos-produto" element={<AdminTiposDeProduto />} />
             <Route path="vendas" element={<AdminVendas />} />
             <Route path="usuarios" element={<AdminUsuarios />} />
+            <Route path="alertas" element={<AdminAlertas />} />
           </Route>
 
-          {/* Customer Portal Routes (ainda sem layout unificado) */}
-          <Route path="/portal/meus-produtos" element={<PortalMeusProdutos />} />
-          <Route path="/portal/testes" element={<PortalTestes />} />
-          <Route path="/portal/pagamentos" element={<PortalPagamentos />} />
+          {/* Customer Portal Routes */}
+          <Route
+            path="/portal"
+            element={<ProtectedRoute><PortalLayout /></ProtectedRoute>}
+          >
+            <Route index element={<Navigate to="/portal/meus-produtos" replace />} />
+            <Route path="meus-produtos" element={<PortalMeusProdutos />} />
+            <Route path="testes" element={<PortalTestes />} />
+            <Route path="pagamentos" element={<PortalPagamentos />} />
+          </Route>
 
         </Routes>
       </main>

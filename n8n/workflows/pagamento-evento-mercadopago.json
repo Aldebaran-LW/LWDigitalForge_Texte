@@ -1,0 +1,219 @@
+{
+  "name": "Pagamento (evento) -> conferir compra -> alertar/admin",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "mp-payment-event",
+        "httpMethod": "POST",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "webhook_1",
+      "name": "Webhook (evento pagamento)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        220,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Espera payload do Edge Function mercadopago-webhook\n// { purchaseId, status, paymentId, userId, appId, mpStatus }\nif (!$json.purchaseId) throw new Error('purchaseId ausente');\nreturn items;"
+      },
+      "id": "fn_validate",
+      "name": "Validar payload",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 2,
+      "position": [
+        480,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{$env.SUPABASE_URL}}/rest/v1/user_purchases?id=eq.{{$json.purchaseId}}&select=id,user_id,app_id,status,purchase_type,amount_paid,expires_at",
+        "method": "GET",
+        "authentication": "none",
+        "headerParametersUi": {
+          "parameter": [
+            {
+              "name": "apikey",
+              "value": "={{$env.SUPABASE_SERVICE_ROLE_KEY}}"
+            },
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.SUPABASE_SERVICE_ROLE_KEY}}"
+            }
+          ]
+        }
+      },
+      "id": "http_get_purchase",
+      "name": "Buscar compra (Supabase)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        740,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "const rows = items[0].json || [];\nconst purchase = rows[0];\nif (!purchase) throw new Error('Compra não encontrada no Supabase');\nreturn [{ json: purchase }];"
+      },
+      "id": "fn_pick",
+      "name": "Normalizar compra",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 2,
+      "position": [
+        1000,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.status}}",
+              "operation": "equal",
+              "value2": "APPROVED"
+            }
+          ]
+        }
+      },
+      "id": "if_approved",
+      "name": "Se aprovado",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1260,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{$env.SUPABASE_URL}}/rest/v1/admin_alerts",
+        "method": "POST",
+        "authentication": "none",
+        "jsonParameters": true,
+        "headerParametersUi": {
+          "parameter": [
+            {
+              "name": "apikey",
+              "value": "={{$env.SUPABASE_SERVICE_ROLE_KEY}}"
+            },
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.SUPABASE_SERVICE_ROLE_KEY}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "bodyParametersJson": "={{JSON.stringify({\n  source: 'n8n:pagamento-evento',\n  severity: 'INFO',\n  title: 'Evento de pagamento recebido',\n  message: `Compra ${$json.id} atualizada: ${$json.status}`,\n  related_user_id: $json.user_id,\n  related_purchase_id: $json.id,\n  meta: { purchase_type: $json.purchase_type, amount_paid: $json.amount_paid }\n})}}"
+      },
+      "id": "http_log_info",
+      "name": "Log info (admin_alerts)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        1520,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok: true } }}",
+        "options": {}
+      },
+      "id": "respond_ok",
+      "name": "Responder",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1780,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook (evento pagamento)": {
+      "main": [
+        [
+          {
+            "node": "Validar payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validar payload": {
+      "main": [
+        [
+          {
+            "node": "Buscar compra (Supabase)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar compra (Supabase)": {
+      "main": [
+        [
+          {
+            "node": "Normalizar compra",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalizar compra": {
+      "main": [
+        [
+          {
+            "node": "Se aprovado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Se aprovado": {
+      "main": [
+        [
+          {
+            "node": "Log info (admin_alerts)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Responder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log info (admin_alerts)": {
+      "main": [
+        [
+          {
+            "node": "Responder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false
+}

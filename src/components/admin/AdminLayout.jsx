@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Package, ShoppingCart, Users, LogOut, Tag, Menu, X } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingCart, Users, LogOut, Tag, Menu, X, Bell } from 'lucide-react';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import ThemeToggle from '@/components/ThemeToggle';
 import { getAssetUrlFromStorage } from '@/config/assets';
@@ -18,6 +18,7 @@ const AdminLayout = () => {
     { href: '/admin/tipos-de-produto', icon: Tag, label: 'Tipos de Produto' },
     { href: '/admin/vendas', icon: ShoppingCart, label: 'Vendas' },
     { href: '/admin/usuarios', icon: Users, label: 'Usuários' },
+    { href: '/admin/alertas', icon: Bell, label: 'Alertas' },
   ];
 
   return (

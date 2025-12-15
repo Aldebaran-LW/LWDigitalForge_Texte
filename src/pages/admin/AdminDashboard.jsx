@@ -36,18 +36,20 @@ const AdminDashboard = () => {
           console.error('Erro ao buscar usuários:', usersError);
         }
 
-        // Buscar total de vendas e receita
-        const { data: salesData, error: salesError } = await supabase
-          .from('sales')
-          .select('total_price');
+        // Buscar receita total (compras aprovadas)
+        const { data: purchasesData, error: purchasesError } = await supabase
+          .from('user_purchases')
+          .select('amount_paid')
+          .eq('status', 'APPROVED');
 
-        if (salesError) {
-          console.error('Erro ao buscar vendas:', salesError);
+        if (purchasesError) {
+          console.error('Erro ao buscar compras:', purchasesError);
         }
 
-        const totalRevenue = salesData && Array.isArray(salesData) 
-          ? salesData.reduce((sum, sale) => sum + (sale.total_price || 0), 0) 
-          : 0;
+        const totalRevenue =
+          purchasesData && Array.isArray(purchasesData)
+            ? purchasesData.reduce((sum, p) => sum + (p.amount_paid || 0), 0)
+            : 0;
 
         // Buscar total de produtos
         const { count: totalProducts, error: productsError } = await supabase

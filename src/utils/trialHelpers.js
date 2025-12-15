@@ -101,7 +101,9 @@ export const startProductTrial = async (userId, productId, productName, trialPer
       is_trial: true,
       trial_started_at: new Date().toISOString(),
       trial_ends_at: trialEndsAt.toISOString(),
+      expires_at: trialEndsAt.toISOString(),
       status: 'active',
+      source: 'TRIAL',
     });
 
     if (error) {

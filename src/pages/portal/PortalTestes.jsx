@@ -121,7 +121,7 @@ const PortalTestes = () => {
             {trials.map((trial, index) => {
               const product = trial.registered_apps;
               const isActive = trial.status === 'active';
-              const timeLeft = calculateTimeLeft(trial.expires_at);
+              const timeLeft = calculateTimeLeft(trial.trial_ends_at || trial.expires_at);
               const isExpired = timeLeft === 'Expirado';
 
               return (
