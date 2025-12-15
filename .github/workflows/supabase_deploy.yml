@@ -23,6 +23,32 @@ jobs:
         with:
           version: latest
 
+      - name: Validate Supabase Secrets
+        run: |
+          set -euo pipefail
+          echo "🔐 Validando secrets do Supabase..."
+          if [ -z "${SUPABASE_PROJECT_REF:-}" ]; then
+            echo "❌ SUPABASE_PROJECT_REF não configurado (GitHub Secrets)."
+            exit 1
+          fi
+          if [ -z "${SUPABASE_DB_PASSWORD:-}" ]; then
+            echo "❌ SUPABASE_DB_PASSWORD não configurado (GitHub Secrets)."
+            echo "   (O log atual mostra que ele está vazio; o Supabase CLI precisa dele para db push.)"
+            exit 1
+          fi
+          if [ -z "${SUPABASE_ACCESS_TOKEN:-}" ]; then
+            echo "❌ SUPABASE_ACCESS_TOKEN não configurado (GitHub Secrets)."
+            exit 1
+          fi
+          case "${SUPABASE_ACCESS_TOKEN}" in
+            sbp_*) echo "✅ SUPABASE_ACCESS_TOKEN parece válido (sbp_…)" ;;
+            *)
+              echo "❌ SUPABASE_ACCESS_TOKEN inválido."
+              echo "   Gere um Access Token em: Supabase Account → Access Tokens (formato sbp_...)."
+              exit 1
+              ;;
+          esac
+
       - name: Link Supabase Project
         run: supabase link --project-ref $SUPABASE_PROJECT_REF
         env:

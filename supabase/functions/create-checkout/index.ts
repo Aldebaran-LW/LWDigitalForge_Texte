@@ -20,10 +20,22 @@ serve(async (req) => {
   }
 
   try {
-    // Inicializar cliente Supabase
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    // Inicializar cliente Supabase usando ANON + JWT do usuário (RLS)
+    // Isso evita depender de SERVICE_ROLE_KEY nesta function.
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
+    if (!supabaseUrl || !supabaseAnonKey) {
+      return new Response(
+        JSON.stringify({
+          error:
+            "Configuração Supabase ausente (SUPABASE_URL / SUPABASE_ANON_KEY).",
+        }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
 
     // Obter token de autenticação do usuário
     const authHeader = req.headers.get("Authorization");
@@ -36,6 +48,14 @@ serve(async (req) => {
         }
       );
     }
+
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      global: {
+        headers: {
+          Authorization: authHeader,
+        },
+      },
+    });
 
     // Verificar usuário autenticado
     const token = authHeader.replace("Bearer ", "");
@@ -64,6 +84,11 @@ serve(async (req) => {
       );
     }
 
+    const allowedPurchaseTypes = new Set(["MONTHLY", "ANNUAL", "LIFETIME", "TRIAL"]);
+    const normalizedPurchaseType = allowedPurchaseTypes.has(purchaseType)
+      ? purchaseType
+      : "LIFETIME";
+
     // Buscar informações do produto/app
     const { data: app, error: appError } = await supabase
       .from("registered_apps")
@@ -82,14 +107,14 @@ serve(async (req) => {
     }
 
     // Determinar preço baseado no tipo de compra
-    let price = app.price_lifetime || 0;
-    if (purchaseType === "MONTHLY" && app.price_monthly) {
-      price = app.price_monthly;
-    } else if (purchaseType === "ANNUAL" && app.price_annual) {
-      price = app.price_annual;
+    let priceInCents = app.price_lifetime || 0;
+    if (normalizedPurchaseType === "MONTHLY" && app.price_monthly) {
+      priceInCents = app.price_monthly;
+    } else if (normalizedPurchaseType === "ANNUAL" && app.price_annual) {
+      priceInCents = app.price_annual;
     }
 
-    if (!price || price <= 0) {
+    if (!priceInCents || priceInCents <= 0) {
       return new Response(
         JSON.stringify({ error: "Preço não configurado para este tipo de compra" }),
         {
@@ -121,9 +146,10 @@ serve(async (req) => {
       .insert({
         user_id: user.id,
         app_id: appId,
-        purchase_type: purchaseType,
+        purchase_type: normalizedPurchaseType,
         status: "PENDING",
-        amount: price,
+        payment_method: "MERCADOPAGO",
+        amount_paid: priceInCents,
       })
       .select()
       .single();
@@ -141,12 +167,14 @@ serve(async (req) => {
 
     // Criar preferência de pagamento com external_reference = purchase.id
     const origin = req.headers.get("origin") || "https://lwdigitalforge.com";
+    // IMPORTANTE: MercadoPago espera unit_price no valor da moeda (ex: R$ 10.90), não em centavos.
+    const unitPrice = Number((priceInCents / 100).toFixed(2));
     const preferenceData = {
       items: [
         {
           title: app.name,
           quantity: 1,
-          unit_price: price,
+          unit_price: unitPrice,
           currency_id: "BRL",
         },
       ],

@@ -13,6 +13,48 @@ const AuthCallback = () => {
   useEffect(() => {
     const handleCallback = async () => {
       try {
+        // Supabase OAuth (padrão: PKCE) retorna com `?code=...` e precisa trocar por sessão.
+        // Em alguns cenários (implicit flow / sessão já persistida), o code não existe.
+        const url = new URL(window.location.href);
+        const callbackError =
+          url.searchParams.get('error_description') ||
+          url.searchParams.get('error') ||
+          null;
+
+        if (callbackError) {
+          const decoded = decodeURIComponent(callbackError);
+          setStatus('error');
+          setMessage(`Erro: ${decoded}. Redirecionando para login...`);
+          toast({
+            variant: 'destructive',
+            title: 'Erro no Login',
+            description: decoded,
+          });
+          setTimeout(() => navigate('/login'), 3000);
+          return;
+        }
+
+        if (url.searchParams.get('code')) {
+          const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(
+            window.location.href
+          );
+
+          if (exchangeError) {
+            console.error('Erro ao trocar code por sessão:', exchangeError);
+            setStatus('error');
+            setMessage(
+              `Erro: ${exchangeError.message}. Redirecionando para login...`
+            );
+            toast({
+              variant: 'destructive',
+              title: 'Erro no Login',
+              description: exchangeError.message,
+            });
+            setTimeout(() => navigate('/login'), 3000);
+            return;
+          }
+        }
+
         const { data: { session }, error } = await supabase.auth.getSession();
 
         if (error) {
