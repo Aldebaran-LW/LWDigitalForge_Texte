@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Package, ShoppingCart, Users, LogOut, Tag, Menu, X } from 'lucide-react';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
@@ -11,11 +11,26 @@ const AdminLayout = () => {
   const { signOut } = useAuth();
   const location = useLocation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(() => {
+    // Tailwind `lg` breakpoint = 1024px
+    if (typeof window === 'undefined') return true;
+    return window.matchMedia('(min-width: 1024px)').matches;
+  });
+
+  useEffect(() => {
+    const media = window.matchMedia('(min-width: 1024px)');
+    const onChange = (e) => setIsDesktop(e.matches);
+    // garantir estado inicial consistente
+    setIsDesktop(media.matches);
+    media.addEventListener('change', onChange);
+    return () => media.removeEventListener('change', onChange);
+  }, []);
 
   const navLinks = [
     { href: '/admin/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { href: '/admin/produtos', icon: Package, label: 'Produtos' },
-    { href: '/admin/tipos-de-produto', icon: Tag, label: 'Tipos de Produto' },
+    // rota existente no App.jsx: /admin/tipos-produto
+    { href: '/admin/tipos-produto', icon: Tag, label: 'Tipos de Produto' },
     { href: '/admin/vendas', icon: ShoppingCart, label: 'Vendas' },
     { href: '/admin/usuarios', icon: Users, label: 'Usuários' },
   ];
@@ -49,7 +64,9 @@ const AdminLayout = () => {
         <motion.aside
           initial={false}
           animate={{
-            x: isSidebarOpen ? 0 : '-100%',
+            // no desktop o menu deve ficar sempre visível;
+            // no mobile, desliza conforme o estado.
+            x: isDesktop ? 0 : (isSidebarOpen ? 0 : '-100%'),
           }}
           transition={{ type: 'spring', stiffness: 300, damping: 30 }}
           className={`fixed lg:static inset-y-0 left-0 w-64 flex-shrink-0 bg-white dark:bg-gray-800 p-4 sm:p-6 flex flex-col justify-between z-40 lg:z-auto ${
