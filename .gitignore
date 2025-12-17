@@ -151,6 +151,9 @@ vite.config.ts.timestamp-*
 # Vercel
 .vercel
 
+# Dumps temporários (não commitar)
+public_schema.sql
+
 # Scripts com tokens do GitHub
 criar-pr.ps1
 criar-pr-simples.ps1
