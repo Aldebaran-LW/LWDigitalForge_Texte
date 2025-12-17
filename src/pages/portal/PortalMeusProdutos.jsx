@@ -22,7 +22,6 @@ const PortalMeusProdutos = () => {
       }
 
       try {
-        const nowIso = new Date().toISOString();
         // Buscar produtos comprados pelo usuário
         const { data: purchases, error: purchasesError } = await supabase
           .from('user_purchases')
@@ -31,9 +30,7 @@ const PortalMeusProdutos = () => {
             registered_apps (*)
           `)
           .eq('user_id', user.id)
-          .eq('status', 'APPROVED')
-          // assinatura válida (expires_at > now) ou lifetime (expires_at null)
-          .or(`expires_at.is.null,expires_at.gt.${nowIso}`);
+          .eq('status', 'APPROVED');
 
         if (purchasesError) {
           console.error('Erro ao buscar compras:', purchasesError);
@@ -44,9 +41,16 @@ const PortalMeusProdutos = () => {
           });
           setMyProducts([]);
         } else {
+          const now = new Date();
           // Mapear compras para produtos
           const products = (purchases || [])
-            .map(purchase => purchase.registered_apps)
+            .filter((purchase) => {
+              // lifetime (expires_at null) ou assinatura válida (expires_at no futuro)
+              if (!purchase?.expires_at) return true;
+              const expiresAt = new Date(purchase.expires_at);
+              return expiresAt > now;
+            })
+            .map((purchase) => purchase.registered_apps)
             .filter(Boolean);
           setMyProducts(products);
         }
