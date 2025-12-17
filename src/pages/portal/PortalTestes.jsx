@@ -25,10 +25,13 @@ const PortalTestes = () => {
       setLoading(true);
       try {
         const { data, error } = await supabase
-          .from('user_product_access')
+          .from('user_trials')
           .select(`
-            *,
-            registered_apps:product_id (
+            id,
+            started_at,
+            expires_at,
+            is_active,
+            registered_apps:app_id (
               id,
               name,
               description,
@@ -41,8 +44,7 @@ const PortalTestes = () => {
             )
           `)
           .eq('user_id', user.id)
-          .eq('is_trial', true)
-          .order('created_at', { ascending: false });
+          .order('started_at', { ascending: false });
 
         if (error) throw error;
 
@@ -120,9 +122,9 @@ const PortalTestes = () => {
           <div className="space-y-3 sm:space-y-4">
             {trials.map((trial, index) => {
               const product = trial.registered_apps;
-              const isActive = trial.status === 'active';
               const timeLeft = calculateTimeLeft(trial.expires_at);
               const isExpired = timeLeft === 'Expirado';
+              const isActive = Boolean(trial.is_active) && !isExpired;
 
               return (
                 <motion.div
@@ -146,7 +148,7 @@ const PortalTestes = () => {
                     <div className="flex-grow min-w-0">
                       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4 mb-3 sm:mb-4">
                         <div className="flex-1 min-w-0">
-                          <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-1">{product?.name || trial.product_name}</h3>
+                          <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-1">{product?.name || 'Produto'}</h3>
                           <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 line-clamp-2">{product?.description}</p>
                         </div>
                         {isExpired ? (
@@ -166,7 +168,7 @@ const PortalTestes = () => {
                       </div>
 
                       <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-                        {!isExpired && (
+                        {isActive && (
                           <Button 
                             onClick={() => handleAccessProduct(trial)}
                             className="bg-blue-600 hover:bg-blue-700 min-h-[44px] text-sm sm:text-base w-full sm:w-auto"
@@ -185,7 +187,7 @@ const PortalTestes = () => {
                         </Link>
                       </div>
 
-                      {!isExpired && product && (
+                      {isActive && product && (
                         <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-gray-200 dark:border-gray-700">
                           <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">Preços disponíveis:</p>
                           <div className="flex flex-wrap gap-2 text-xs sm:text-sm">

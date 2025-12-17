@@ -173,7 +173,7 @@ const ProductDetailPage = () => {
           toast({
             variant: "destructive",
             title: "Erro",
-            description: result.error,
+            description: result.error || "Não foi possível iniciar o teste.",
           });
         }
       }

@@ -4,119 +4,177 @@ import { supabase } from '@/lib/customSupabaseClient';
  * Verifica se um usuário tem acesso a um produto (comprado ou teste ativo)
  * @param {string} userId - ID do usuário
  * @param {string} productId - ID do produto
- * @returns {Promise<{hasAccess: boolean, redirectUrl: string|null}>}
+ * @returns {Promise<{hasAccess: boolean, accessType: 'purchase'|'trial'|null, redirectUrl: string|null}>}
  */
 export const checkUserProductAccess = async (userId, productId) => {
   try {
-    // Verificar se o produto foi comprado
-    const { data: purchaseData, error: purchaseError } = await supabase
-      .from('user_product_access')
-      .select('registered_apps(vercel_deployment_url)')
-      .eq('user_id', userId)
-      .eq('product_id', productId)
-      .eq('is_trial', false)
-      .single();
+    const nowIso = new Date().toISOString();
 
-    if (purchaseData && !purchaseError) {
-      return { hasAccess: true, redirectUrl: purchaseData.registered_apps?.vercel_deployment_url };
+    // 1) Compras aprovadas (lifetime ou assinatura ainda válida)
+    const { data: purchaseData, error: purchaseError } = await supabase
+      .from('user_purchases')
+      .select(
+        `
+        id,
+        purchase_type,
+        status,
+        expires_at,
+        registered_apps ( vercel_deployment_url )
+      `
+      )
+      .eq('user_id', userId)
+      .eq('app_id', productId)
+      .eq('status', 'APPROVED')
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    if (purchaseError) {
+      console.error('Erro ao verificar compra:', purchaseError);
+    } else if (purchaseData && purchaseData.length > 0) {
+      const purchase = purchaseData[0];
+      const isValid =
+        !purchase.expires_at || new Date(purchase.expires_at).toISOString() > nowIso;
+      if (isValid) {
+        return {
+          hasAccess: true,
+          accessType: 'purchase',
+          redirectUrl: purchase.registered_apps?.vercel_deployment_url || null,
+        };
+      }
     }
 
-    // Verificar se há um teste ativo
+    // 2) Trial ativo (user_trials)
     const { data: trialData, error: trialError } = await supabase
-      .from('user_product_access')
-      .select('trial_ends_at, status, registered_apps(vercel_deployment_url)')
+      .from('user_trials')
+      .select(
+        `
+        expires_at,
+        is_active,
+        registered_apps ( vercel_deployment_url )
+      `
+      )
       .eq('user_id', userId)
-      .eq('product_id', productId)
-      .eq('is_trial', true)
-      .eq('status', 'active')
-      .single();
+      .eq('app_id', productId)
+      .eq('is_active', true)
+      .limit(1);
 
     if (trialError && trialError.code !== 'PGRST116') {
-      console.error('Erro ao verificar teste ativo:', trialError);
-      return { hasAccess: false, redirectUrl: null };
+      console.error('Erro ao verificar trial:', trialError);
+      return { hasAccess: false, accessType: null, redirectUrl: null };
     }
 
-    if (trialData && new Date(trialData.trial_ends_at) > new Date()) {
-      return { hasAccess: true, redirectUrl: trialData.registered_apps?.vercel_deployment_url };
+    if (trialData && trialData.length > 0) {
+      const trial = trialData[0];
+      if (trial?.expires_at && new Date(trial.expires_at).toISOString() > nowIso) {
+        return {
+          hasAccess: true,
+          accessType: 'trial',
+          redirectUrl: trial.registered_apps?.vercel_deployment_url || null,
+        };
+      }
     }
 
-    return { hasAccess: false, redirectUrl: null };
+    return { hasAccess: false, accessType: null, redirectUrl: null };
   } catch (error) {
     console.error('Erro ao verificar acesso do usuário:', error);
-    return { hasAccess: false, redirectUrl: null };
+    return { hasAccess: false, accessType: null, redirectUrl: null };
   }
 };
 
 /**
  * Inicia um teste gratuito para um usuário
- * @param {string} userId - ID do usuário
- * @param {string} productId - ID do produto
- * @param {string} productName - Nome do produto
- * @param {number} trialPeriodDays - Período de teste em dias
- * @returns {Promise<{success: boolean, message: string, redirectUrl: string|null}>}
+ * Suporta duas assinaturas:
+ * - startProductTrial(userId, product)
+ * - startProductTrial(userId, productId, productName, trialPeriodDays)
+ * @returns {Promise<{success: boolean, redirectUrl: string|null, error?: string}>}
  */
-export const startProductTrial = async (userId, productId, productName, trialPeriodDays) => {
+export const startProductTrial = async (userId, productOrId, productName, trialPeriodDays) => {
   try {
+    const product =
+      productOrId && typeof productOrId === 'object'
+        ? productOrId
+        : {
+            id: productOrId,
+            name: productName,
+            trial_period_days: trialPeriodDays,
+          };
+
+    const resolvedProductId = product?.id;
+    const resolvedProductName = product?.name || productName || 'Produto';
+    const resolvedTrialDays = Number(product?.trial_period_days ?? trialPeriodDays ?? 0);
+
+    if (!resolvedProductId) {
+      return { success: false, error: 'Produto inválido para iniciar teste.', redirectUrl: null };
+    }
+
+    if (!resolvedTrialDays || resolvedTrialDays <= 0) {
+      return { success: false, error: 'Este produto não possui teste grátis.', redirectUrl: null };
+    }
+
     // Verificar se já existe um teste ou compra
-    const { hasAccess } = await checkUserProductAccess(userId, productId);
+    const { hasAccess, redirectUrl } = await checkUserProductAccess(userId, resolvedProductId);
     if (hasAccess) {
-      return { success: false, message: 'Você já possui acesso a este produto.', redirectUrl: null };
+      return { success: false, error: 'Você já possui acesso a este produto.', redirectUrl };
     }
 
     // Verificar se já teve um teste anterior (mesmo que expirado)
     const { data: previousTrial, error: previousTrialError } = await supabase
-      .from('user_product_access')
+      .from('user_trials')
       .select('id')
       .eq('user_id', userId)
-      .eq('product_id', productId)
-      .eq('is_trial', true)
-      .single();
+      .eq('app_id', resolvedProductId)
+      .limit(1);
 
-    if (previousTrial && !previousTrialError) {
-      return { success: false, message: 'Você já utilizou o período de teste para este produto.', redirectUrl: null };
+    if (previousTrialError && previousTrialError.code !== 'PGRST116') {
+      console.error('Erro ao verificar trial anterior:', previousTrialError);
+      return { success: false, error: previousTrialError.message, redirectUrl: null };
+    }
+
+    if (previousTrial && Array.isArray(previousTrial) && previousTrial.length > 0) {
+      return {
+        success: false,
+        error: 'Você já utilizou o período de teste para este produto.',
+        redirectUrl: null,
+      };
     }
 
     // Calcular data de expiração
     const trialEndsAt = new Date();
-    trialEndsAt.setDate(trialEndsAt.getDate() + trialPeriodDays);
+    trialEndsAt.setDate(trialEndsAt.getDate() + resolvedTrialDays);
 
     // Buscar URL do produto
     const { data: trialProduct, error: productError } = await supabase
       .from('registered_apps')
       .select('vercel_deployment_url')
-      .eq('id', productId)
+      .eq('id', resolvedProductId)
       .single();
 
     if (productError) {
       console.error('Erro ao buscar URL do produto para teste:', productError);
-      return { success: false, message: 'Não foi possível obter a URL do produto.', redirectUrl: null };
+      return { success: false, error: 'Não foi possível obter a URL do produto.', redirectUrl: null };
     }
 
     // Criar registro de teste
-    const { error } = await supabase.from('user_product_access').insert({
+    const { error } = await supabase.from('user_trials').insert({
       user_id: userId,
-      product_id: productId,
-      product_name: productName,
-      access_level: 'trial',
-      is_trial: true,
-      trial_started_at: new Date().toISOString(),
-      trial_ends_at: trialEndsAt.toISOString(),
-      status: 'active',
+      app_id: resolvedProductId,
+      started_at: new Date().toISOString(),
+      expires_at: trialEndsAt.toISOString(),
+      is_active: true,
     });
 
     if (error) {
       console.error('Erro ao iniciar teste:', error);
-      return { success: false, message: error.message, redirectUrl: null };
+      return { success: false, error: error.message, redirectUrl: null };
     }
 
     return { 
       success: true, 
-      message: `Seu teste de ${trialPeriodDays} dias para ${productName} foi iniciado!`, 
       redirectUrl: trialProduct?.vercel_deployment_url 
     };
   } catch (error) {
     console.error('Erro ao iniciar teste:', error);
-    return { success: false, message: 'Erro inesperado ao iniciar teste.', redirectUrl: null };
+    return { success: false, error: 'Erro inesperado ao iniciar teste.', redirectUrl: null };
   }
 };
 

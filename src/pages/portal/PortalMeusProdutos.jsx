@@ -22,6 +22,7 @@ const PortalMeusProdutos = () => {
       }
 
       try {
+        const nowIso = new Date().toISOString();
         // Buscar produtos comprados pelo usuário
         const { data: purchases, error: purchasesError } = await supabase
           .from('user_purchases')
@@ -29,7 +30,10 @@ const PortalMeusProdutos = () => {
             *,
             registered_apps (*)
           `)
-          .eq('user_id', user.id);
+          .eq('user_id', user.id)
+          .eq('status', 'APPROVED')
+          // assinatura válida (expires_at > now) ou lifetime (expires_at null)
+          .or(`expires_at.is.null,expires_at.gt.${nowIso}`);
 
         if (purchasesError) {
           console.error('Erro ao buscar compras:', purchasesError);
