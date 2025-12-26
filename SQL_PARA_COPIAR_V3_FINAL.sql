@@ -4,14 +4,15 @@
 -- Versão 3: Remove verificação de admin das políticas SELECT
 -- ========================================
 
--- Remover todas as funções anteriores
-DROP FUNCTION IF EXISTS public.is_admin(UUID);
-DROP FUNCTION IF EXISTS public.is_admin();
-
--- Remover TODAS as políticas problemáticas
+-- IMPORTANTE: Remover políticas PRIMEIRO (elas dependem da função)
+-- Remover TODAS as políticas problemáticas ANTES de remover a função
 DROP POLICY IF EXISTS "Admins podem ver todos os perfis" ON public.profiles;
 DROP POLICY IF EXISTS "Admins podem fazer tudo em apps" ON public.registered_apps;
 DROP POLICY IF EXISTS "Admins podem ver todas as compras" ON public.user_purchases;
+
+-- Agora podemos remover as funções (as políticas já foram removidas)
+DROP FUNCTION IF EXISTS public.is_admin(UUID) CASCADE;
+DROP FUNCTION IF EXISTS public.is_admin() CASCADE;
 
 -- SOLUÇÃO SIMPLIFICADA: Remover verificação de admin das políticas SELECT
 -- Para admins, vamos usar uma abordagem diferente (verificação no código ou política separada)
