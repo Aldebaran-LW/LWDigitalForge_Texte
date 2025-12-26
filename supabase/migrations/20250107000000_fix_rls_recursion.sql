@@ -9,11 +9,12 @@ DROP POLICY IF EXISTS "Admins podem fazer tudo em apps" ON public.registered_app
 DROP POLICY IF EXISTS "Admins podem ver todas as compras" ON public.user_purchases;
 
 -- Criar função helper para verificar se usuário é admin (evita recursão)
+-- SECURITY DEFINER permite que a função bypass RLS ao acessar profiles
 CREATE OR REPLACE FUNCTION public.is_admin(user_id UUID)
 RETURNS BOOLEAN AS $$
 BEGIN
-  -- Verifica diretamente na tabela auth.users sem usar RLS
-  -- Usa uma função que não depende de políticas RLS
+  -- Verifica diretamente na tabela profiles sem passar por RLS
+  -- SECURITY DEFINER executa com privilégios do criador da função
   RETURN EXISTS (
     SELECT 1 
     FROM public.profiles
@@ -22,7 +23,7 @@ BEGIN
     LIMIT 1
   );
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
 
 -- Recriar política para admins verem todos os perfis (sem recursão)
 CREATE POLICY "Admins podem ver todos os perfis"
