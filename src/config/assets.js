@@ -1,17 +1,21 @@
 /**
- * Função para obter a URL de um asset armazenado na pasta public
- * @param {string} assetName - Nome do asset (sem extensão)
- * @returns {string} - URL do asset
+ * Configuração centralizada de assets do Supabase Storage
+ * Mapeia URLs do Supabase para nomes simples para facilitar a manutenção
  */
-export const getAssetUrlFromStorage = (assetName) => {
-  // Mapeamento de nomes de assets para seus arquivos na pasta public
-  const assets = {
-    'Logo': '/Logo.png',
-    'Capa': '/Logo.png', // Usando Logo como fallback se Capa não existir
-  };
 
-  // Retorna a URL do asset ou uma URL padrão se não encontrado
-  return assets[assetName] || `/Logo.png`;
+export const ASSETS = {
+  Capa: 'https://wwwwyuwighdehmvnolrl.supabase.co/storage/v1/object/public/assets-publicos/Capa.jpg',
+  Logo: 'https://wwwwyuwighdehmvnolrl.supabase.co/storage/v1/object/public/assets-publicos/Logo.png',
 };
 
+/**
+ * Função helper para obter a URL de um asset pelo nome
+ * @param {string} assetName - Nome do asset (ex: 'Capa', 'Logo')
+ * @returns {string} URL do asset ou string vazia se não encontrado
+ */
+export const getAssetUrl = (assetName) => {
+  return ASSETS[assetName] || '';
+};
+
+export default ASSETS;
 

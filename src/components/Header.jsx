@@ -8,7 +8,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { useCart } from '@/hooks/useCart';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import ShoppingCart from '@/components/ShoppingCart';
-import { getAssetUrlFromStorage } from '@/config/assets';
+import { getAssetUrl } from '@/config/assets';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -40,7 +40,7 @@ const Header = () => {
           <Link to="/" className="flex items-center min-h-[44px] min-w-[44px]" onClick={closeMenu}>
             <motion.div whileHover={{ scale: 1.05 }} className="flex items-center">
               <img
-                src={getAssetUrlFromStorage('Logo')}
+                src={getAssetUrl('Logo')}
                 alt="LWDigitalForge Logo"
                 className="h-7 sm:h-8 mr-2"
               />

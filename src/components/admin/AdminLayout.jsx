@@ -4,7 +4,7 @@ import { Outlet, Link, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Package, ShoppingCart, Users, LogOut, Tag, Menu, X } from 'lucide-react';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import ThemeToggle from '@/components/ThemeToggle';
-import { getAssetUrlFromStorage } from '@/config/assets';
+import { getAssetUrl } from '@/config/assets';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const AdminLayout = () => {
@@ -59,7 +59,7 @@ const AdminLayout = () => {
           <div className="flex-1 overflow-y-auto">
             <div className="flex items-center gap-2 mb-6 sm:mb-8 md:mb-10">
               <img
-                src={getAssetUrlFromStorage('Logo')}
+                src={getAssetUrl('Logo')}
                 alt="LWDigitalForge Logo"
                 className="h-7 sm:h-8"
               />
