@@ -55,3 +55,4 @@ CREATE POLICY "Admins podem ver todas as compras"
         public.is_admin() OR user_id = auth.uid()
     );
 
+

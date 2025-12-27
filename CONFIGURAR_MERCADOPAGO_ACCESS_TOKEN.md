@@ -206,3 +206,4 @@ const payment = new Payment(client);
 - Você não está usando webhooks ainda
 - Processa pagamentos manualmente
 - Apenas inicia o checkout (usa apenas chave pública)
+

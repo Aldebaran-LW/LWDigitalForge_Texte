@@ -94,3 +94,4 @@ Captura nome completo e avatar do Google OAuth quando disponível.';
 -- ========================================
 
 
+

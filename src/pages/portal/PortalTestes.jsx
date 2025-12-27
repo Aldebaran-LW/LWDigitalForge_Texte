@@ -25,10 +25,10 @@ const PortalTestes = () => {
       setLoading(true);
       try {
         const { data, error } = await supabase
-          .from('user_product_access')
+          .from('user_trials')
           .select(`
             *,
-            registered_apps:product_id (
+            registered_apps:app_id (
               id,
               name,
               description,
@@ -41,8 +41,8 @@ const PortalTestes = () => {
             )
           `)
           .eq('user_id', user.id)
-          .eq('is_trial', true)
-          .order('created_at', { ascending: false });
+          .eq('is_active', true)
+          .order('started_at', { ascending: false });
 
         if (error) throw error;
 
@@ -146,7 +146,7 @@ const PortalTestes = () => {
                     <div className="flex-grow min-w-0">
                       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4 mb-3 sm:mb-4">
                         <div className="flex-1 min-w-0">
-                          <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-1">{product?.name || trial.product_name}</h3>
+                          <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-1">{product?.name || 'Produto'}</h3>
                           <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 line-clamp-2">{product?.description}</p>
                         </div>
                         {isExpired ? (
@@ -200,7 +200,7 @@ const PortalTestes = () => {
                               </span>
                             )}
                             {product.price_lifetime && (
-                              <span className="bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-2 py-1 rounded font-semibold whitespace-nowrap">
+                              <span className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-2 py-1 rounded font-semibold whitespace-nowrap">
                                 Vitalício: {formatPrice(product.price_lifetime)}
                               </span>
                             )}
@@ -217,7 +217,7 @@ const PortalTestes = () => {
           <div className="text-center py-8 sm:py-12 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700 px-4">
             <Calendar className="w-12 h-12 sm:w-16 sm:h-16 text-gray-400 mx-auto mb-3 sm:mb-4" />
             <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mb-4 sm:mb-6">Você não possui produtos em período de teste.</p>
-            <Link to="/produtos">
+            <Link to="/portal/produtos">
               <Button className="min-h-[44px] text-sm sm:text-base">
                 Explorar Produtos
               </Button>

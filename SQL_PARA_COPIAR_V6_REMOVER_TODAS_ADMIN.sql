@@ -182,3 +182,4 @@ END $$;
 -- A verificação de role ADMIN será feita no código da aplicação.
 -- ========================================
 
+

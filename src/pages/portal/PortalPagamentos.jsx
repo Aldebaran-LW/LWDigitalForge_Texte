@@ -1,26 +1,85 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-
-const payments = [
-  { id: 'PAY123', product: 'AutoBot Pro (Vitalícia)', amount: 'R$ 297,00', date: '2025-10-22', status: 'Pago' },
-  { id: 'PAY124', product: 'DataMaster (Vitalícia)', amount: 'R$ 197,00', date: '2025-10-21', status: 'Pago' },
-  { id: 'PAY125', product: 'SalesBot Elite (Assinatura Mensal)', amount: 'R$ 49,90', date: '2025-10-01', status: 'Ativa', isSubscription: true },
-];
+import { supabase } from '@/lib/customSupabaseClient';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { useToast } from '@/components/ui/use-toast';
+import { Loader2 } from 'lucide-react';
 
 const PortalPagamentos = () => {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [payments, setPayments] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchPayments = async () => {
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        // Buscar compras do usuário
+        const { data: purchases, error } = await supabase
+          .from('user_purchases')
+          .select(`
+            *,
+            registered_apps:app_id (*)
+          `)
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        // Mapear compras para formato de pagamento
+        const formattedPayments = (purchases || []).map(purchase => ({
+          id: purchase.id,
+          product: purchase.registered_apps?.name || 'Produto não encontrado',
+          amount: purchase.amount_paid ? `R$ ${(purchase.amount_paid / 100).toFixed(2).replace('.', ',')}` : 'R$ 0,00',
+          date: purchase.created_at ? new Date(purchase.created_at).toLocaleDateString('pt-BR') : 'N/A',
+          status: purchase.status === 'APPROVED' ? 'Pago' : purchase.status,
+          isSubscription: purchase.purchase_type !== 'LIFETIME',
+          productId: purchase.app_id
+        }));
+
+        setPayments(formattedPayments);
+      } catch (error) {
+        console.error('Erro ao buscar pagamentos:', error);
+        toast({
+          variant: 'destructive',
+          title: 'Erro',
+          description: 'Não foi possível carregar o histórico de pagamentos.',
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPayments();
+  }, [user, toast]);
   return (
     <>
       <Helmet>
         <title>Pagamentos - Portal LWDigitalForge</title>
       </Helmet>
-      <div className="px-4 sm:px-6">
-        <h1 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Histórico de Pagamentos</h1>
-        <div className="overflow-x-auto -mx-4 sm:mx-0">
-            <div className="min-w-full inline-block align-middle">
-              <table className="w-full text-xs sm:text-sm text-left">
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Histórico de Pagamentos</h1>
+          <p className="text-gray-600 dark:text-gray-400">Visualize todas as suas transações</p>
+        </div>
+
+        {loading ? (
+          <div className="flex justify-center items-center py-20">
+            <Loader2 className="h-12 w-12 text-blue-500 animate-spin" />
+          </div>
+        ) : payments.length > 0 ? (
+          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm text-left">
                 <thead className="text-xs text-gray-500 dark:text-gray-400 uppercase bg-gray-50 dark:bg-gray-800">
                 <tr>
                     <th className="py-2 sm:py-3 px-3 sm:px-4">Produto</th>
@@ -53,16 +112,36 @@ const PortalPagamentos = () => {
                         </span>
                     </td>
                     <td className="py-3 sm:py-4 px-3 sm:px-4 text-right">
-                        {payment.isSubscription && (
-                            <Button variant="outline" size="sm" className="min-h-[36px] text-xs sm:text-sm">Gerenciar</Button>
-                        )}
+                        {payment.isSubscription ? (
+                          <Link to="/portal/assinaturas">
+                            <Button variant="outline" size="sm" className="min-h-[36px] text-xs sm:text-sm">
+                              Gerenciar
+                            </Button>
+                          </Link>
+                        ) : payment.productId ? (
+                          <Link to={`/product/${payment.productId}`}>
+                            <Button variant="ghost" size="sm" className="min-h-[36px] text-xs sm:text-sm">
+                              Ver Produto
+                            </Button>
+                          </Link>
+                        ) : null}
                     </td>
                     </motion.tr>
                 ))}
                 </tbody>
               </table>
             </div>
-        </div>
+          </div>
+        ) : (
+          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-12 text-center">
+            <p className="text-gray-600 dark:text-gray-400 mb-4">
+              Nenhum pagamento encontrado.
+            </p>
+            <Link to="/portal/produtos">
+              <Button>Explorar Produtos</Button>
+            </Link>
+          </div>
+        )}
       </div>
     </>
   );

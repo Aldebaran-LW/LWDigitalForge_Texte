@@ -8,6 +8,7 @@ const ProtectedRoute = ({ children, role: requiredRole }) => {
   const { isAuthenticated, role: userRole, loading } = useAuth();
   const location = useLocation();
 
+  // Aguardar até que o loading termine completamente antes de verificar autenticação
   if (loading) {
     return (
       <div className="flex justify-center items-center h-screen">

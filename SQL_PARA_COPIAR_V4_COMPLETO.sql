@@ -92,3 +92,4 @@ CREATE POLICY "Permitir inserção de compras"
 -- Isso evita completamente a recursão nas políticas RLS.
 -- ========================================
 
+

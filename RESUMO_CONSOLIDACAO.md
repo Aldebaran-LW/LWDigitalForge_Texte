@@ -109,3 +109,4 @@ feat: consolidar main - centralizar assets do Supabase e limpar documentação o
 
 O branch `main` foi consolidado com sucesso! Todas as funcionalidades importantes foram mescladas, a documentação foi limpa e os branches obsoletos foram removidos. O projeto está agora mais organizado e focado.
 
+

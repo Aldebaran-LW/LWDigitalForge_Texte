@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useToast } from '@/components/ui/use-toast';
 import { useNavigate } from 'react-router-dom';
@@ -15,6 +15,7 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [role, setRole] = useState(null);
   const [profile, setProfile] = useState(null);
+  const sessionInitializedRef = useRef(false);
 
   const fetchUserProfile = useCallback(async (user) => {
     if (!user) {
@@ -65,17 +66,35 @@ export const AuthProvider = ({ children }) => {
   }, [fetchUserProfile]);
 
   useEffect(() => {
+    let mounted = true;
+    sessionInitializedRef.current = false;
+
+    // Primeiro, buscar a sessão atual e processar
     supabase.auth.getSession().then(({ data: { session } }) => {
-      handleSession(session);
+      if (mounted) {
+        sessionInitializedRef.current = true;
+        handleSession(session);
+      }
+    }).catch((error) => {
+      console.error('Erro ao buscar sessão:', error);
+      if (mounted) {
+        sessionInitializedRef.current = true;
+        setLoading(false);
+      }
     });
 
+    // Depois, escutar mudanças no estado de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
-        await handleSession(session);
+        // Só processar se já inicializamos a sessão (evita processar o evento inicial antes de getSession())
+        if (mounted && sessionInitializedRef.current) {
+          await handleSession(session);
+        }
       }
     );
 
     return () => {
+      mounted = false;
       subscription.unsubscribe();
     };
   }, [handleSession]);
@@ -219,7 +238,7 @@ export const AuthProvider = ({ children }) => {
     loading,
     role,
     profile,
-    isAuthenticated: !!session,
+    isAuthenticated: !!user && !!session,
     signUp,
     signIn,
     signInWithGoogle,

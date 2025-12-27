@@ -88,3 +88,4 @@ A aplicação está pronta para uso com:
 **Data da correção:** 2025-01-07  
 **Status:** ✅ Resolvido e testado
 
+

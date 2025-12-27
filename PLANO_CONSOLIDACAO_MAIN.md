@@ -85,3 +85,4 @@
 5. Commit e push
 6. Deletar branches obsoletos
 
+

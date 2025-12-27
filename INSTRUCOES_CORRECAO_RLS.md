@@ -75,3 +75,4 @@ npm run test:supabase
 
 Com a solução V3, a verificação de role ADMIN para operações administrativas será feita no código da aplicação (já está implementado em `ProtectedRoute.jsx` e `AdminUsuarios.jsx`), então não há problema de segurança - apenas mudamos onde a verificação acontece (do banco para o código).
 
+

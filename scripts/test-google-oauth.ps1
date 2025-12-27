@@ -52,3 +52,4 @@ Write-Host "2. Execute os testes manuais descritos em TESTES_GOOGLE_OAUTH.md" -F
 Write-Host "3. Configure o Google OAuth seguindo CONFIGURAR_GOOGLE_OAUTH.md`n" -ForegroundColor White
 
 
+

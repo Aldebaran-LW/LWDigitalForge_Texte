@@ -32,10 +32,15 @@ import AdminUsuarios from '@/pages/admin/AdminUsuarios';
 import AdminTiposDeProduto from '@/pages/admin/AdminTiposDeProduto';
 
 // Portal Imports
-// import PortalLayout from '@/layouts/PortalLayout'; // Futuramente
+import PortalLayout from '@/components/portal/PortalLayout';
+import PortalDashboard from '@/pages/portal/PortalDashboard';
+import PortalProdutos from '@/pages/portal/PortalProdutos';
 import PortalMeusProdutos from '@/pages/portal/PortalMeusProdutos';
 import PortalTestes from '@/pages/portal/PortalTestes';
+import PortalAssinaturas from '@/pages/portal/PortalAssinaturas';
 import PortalPagamentos from '@/pages/portal/PortalPagamentos';
+import PortalContato from '@/pages/portal/PortalContato';
+import PortalNotificacoes from '@/pages/portal/PortalNotificacoes';
 
 function App() {
   const location = useLocation();
@@ -81,10 +86,21 @@ function App() {
             <Route path="usuarios" element={<AdminUsuarios />} />
           </Route>
 
-          {/* Customer Portal Routes (ainda sem layout unificado) */}
-          <Route path="/portal/meus-produtos" element={<PortalMeusProdutos />} />
-          <Route path="/portal/testes" element={<PortalTestes />} />
-          <Route path="/portal/pagamentos" element={<PortalPagamentos />} />
+          {/* Customer Portal Routes */}
+          <Route 
+            path="/portal" 
+            element={<ProtectedRoute><PortalLayout /></ProtectedRoute>}
+          >
+            <Route index element={<Navigate to="/portal/dashboard" replace />} />
+            <Route path="dashboard" element={<PortalDashboard />} />
+            <Route path="produtos" element={<PortalProdutos />} />
+            <Route path="meus-produtos" element={<PortalMeusProdutos />} />
+            <Route path="testes" element={<PortalTestes />} />
+            <Route path="assinaturas" element={<PortalAssinaturas />} />
+            <Route path="pagamentos" element={<PortalPagamentos />} />
+            <Route path="contato" element={<PortalContato />} />
+            <Route path="notificacoes" element={<PortalNotificacoes />} />
+          </Route>
 
         </Routes>
       </main>
