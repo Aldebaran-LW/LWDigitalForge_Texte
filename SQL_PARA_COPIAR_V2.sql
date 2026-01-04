@@ -56,3 +56,7 @@ CREATE POLICY "Admins podem ver todas as compras"
     );
 
 
+
+
+
+

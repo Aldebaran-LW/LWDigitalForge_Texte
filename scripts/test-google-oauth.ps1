@@ -53,3 +53,7 @@ Write-Host "3. Configure o Google OAuth seguindo CONFIGURAR_GOOGLE_OAUTH.md`n" -
 
 
 
+
+
+
+

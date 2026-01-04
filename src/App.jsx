@@ -30,6 +30,7 @@ import AdminFormularioProduto from '@/pages/admin/AdminFormularioProduto';
 import AdminVendas from '@/pages/admin/AdminVendas';
 import AdminUsuarios from '@/pages/admin/AdminUsuarios';
 import AdminTiposDeProduto from '@/pages/admin/AdminTiposDeProduto';
+import AdminContato from '@/pages/admin/AdminContato';
 
 // Portal Imports
 import PortalLayout from '@/components/portal/PortalLayout';
@@ -84,6 +85,7 @@ function App() {
             <Route path="tipos-produto" element={<AdminTiposDeProduto />} />
             <Route path="vendas" element={<AdminVendas />} />
             <Route path="usuarios" element={<AdminUsuarios />} />
+            <Route path="contato" element={<AdminContato />} />
           </Route>
 
           {/* Customer Portal Routes */}

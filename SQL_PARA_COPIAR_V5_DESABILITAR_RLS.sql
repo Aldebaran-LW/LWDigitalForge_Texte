@@ -66,3 +66,7 @@ ALTER TABLE public.user_purchases DISABLE ROW LEVEL SECURITY;
 -- ========================================
 
 
+
+
+
+

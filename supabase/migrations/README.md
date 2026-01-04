@@ -97,3 +97,7 @@ touch supabase/migrations/20250104120000_add_categories_table.sql
 
 
 
+
+
+
+

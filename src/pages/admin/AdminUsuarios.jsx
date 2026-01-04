@@ -53,54 +53,40 @@ const AdminUsuarios = () => {
   }, []);
 
   const fetchUsers = async () => {
+    setLoading(true);
     try {
-      // Tentar usar a função RPC primeiro
-      const { data: usersData, error: rpcError } = await supabase
-        .rpc('get_users_with_emails');
-
-      if (!rpcError && usersData && Array.isArray(usersData)) {
-        const formattedUsers = usersData.map(user => ({
-          id: user.id,
-          email: user.email || `ID: ${user.id.substring(0, 8)}...`,
-          fullName: user.full_name || 'Sem nome',
-          phone: user.phone || 'Sem telefone',
-          role: user.role || 'USER',
-          createdAt: user.created_at || new Date().toISOString(),
-        }));
-        setUsers(formattedUsers);
-        setLoading(false);
-        return;
-      }
-
-      // Log do erro RPC se houver
-      if (rpcError) {
-        console.warn('Erro ao usar função RPC, usando fallback:', rpcError);
-      }
-
-      // Fallback: buscar apenas perfis
+      // Buscar perfis diretamente da tabela profiles (apenas campos que existem)
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .select('id, full_name, phone, role')
+        .order('id', { ascending: false });
 
       if (profilesError) {
         console.error('Erro ao buscar perfis:', profilesError);
         toast({
           variant: "destructive",
-          title: "Erro",
-          description: "Falha ao carregar lista de usuários."
+          title: "Erro ao carregar usuários",
+          description: profilesError.message || 'Não foi possível carregar a lista de usuários. Verifique as permissões de admin.'
         });
         setUsers([]);
+        setLoading(false);
         return;
       }
 
-      const formattedUsers = (profiles || []).map(profile => ({
+      if (!profiles || profiles.length === 0) {
+        setUsers([]);
+        setLoading(false);
+        return;
+      }
+
+      // Formatar usuários
+      const formattedUsers = profiles.map(profile => ({
         id: profile.id,
-        email: profile.email || `ID: ${profile.id.substring(0, 8)}...`,
+        email: `ID: ${profile.id.substring(0, 8)}...`, // Email não disponível via profiles
         fullName: profile.full_name || 'Sem nome',
         phone: profile.phone || 'Sem telefone',
         role: profile.role || 'USER',
-        createdAt: profile.created_at || new Date().toISOString(),
+        createdAt: new Date().toISOString(), // Usar data atual como fallback
       }));
 
       setUsers(formattedUsers);
@@ -109,7 +95,7 @@ const AdminUsuarios = () => {
       toast({
         variant: "destructive",
         title: "Erro",
-        description: "Falha ao carregar lista de usuários."
+        description: error.message || 'Erro desconhecido ao carregar usuários'
       });
       setUsers([]);
     } finally {
@@ -150,15 +136,17 @@ const AdminUsuarios = () => {
             .match({ user_id: selectedUser.id, app_id: selectedProduct });
 
         // Insere compra vitalícia
-        const { error } = await supabase.from('user_purchases').insert({
+        const purchaseData = {
           user_id: selectedUser.id,
-          app_id: selectedProduct,
+          app_id: selectedProduct, // Usar app_id (referência para registered_apps)
           purchase_type: 'LIFETIME',
           status: 'APPROVED',
-          amount_paid: 0, // Admin grant
-          payment_method: 'ADMIN_GRANT',
-          expires_at: null // Nunca expira
-        });
+          expires_at: null, // Nunca expira
+          amount_paid: 0, // Gratuito (concedido pelo admin)
+          payment_method: 'ADMIN_GRANT'
+        };
+        
+        const { error } = await supabase.from('user_purchases').insert(purchaseData);
 
         if (error) throw error;
         toast({ title: "Sucesso", description: `Acesso VITALÍCIO concedido a ${selectedUser.fullName}.` });

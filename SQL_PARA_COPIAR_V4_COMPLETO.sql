@@ -93,3 +93,7 @@ CREATE POLICY "Permitir inserção de compras"
 -- ========================================
 
 
+
+
+
+

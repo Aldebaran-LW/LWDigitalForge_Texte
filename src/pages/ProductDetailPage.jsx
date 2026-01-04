@@ -142,7 +142,12 @@ const ProductDetailPage = () => {
     setStartingTrial(true);
 
     try {
-      const result = await startProductTrial(user.id, product);
+      const result = await startProductTrial(
+        user.id, 
+        product.id, 
+        product.name, 
+        product.trial_period_days || 30
+      );
       
       if (result.success) {
         toast({
@@ -173,7 +178,7 @@ const ProductDetailPage = () => {
           toast({
             variant: "destructive",
             title: "Erro",
-            description: result.error,
+            description: result.message || "Não foi possível iniciar o teste.",
           });
         }
       }

@@ -21,3 +21,7 @@ SET purchased_at = created_at
 WHERE purchased_at IS NULL;
 
 
+
+
+
+

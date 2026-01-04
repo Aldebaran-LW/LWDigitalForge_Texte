@@ -246,3 +246,7 @@ COMMENT ON TABLE public.user_trials IS 'Períodos de teste dos usuários para pr
 
 
 
+
+
+
+

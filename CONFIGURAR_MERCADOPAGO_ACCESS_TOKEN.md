@@ -207,3 +207,7 @@ const payment = new Payment(client);
 - Processa pagamentos manualmente
 - Apenas inicia o checkout (usa apenas chave pública)
 
+
+
+
+

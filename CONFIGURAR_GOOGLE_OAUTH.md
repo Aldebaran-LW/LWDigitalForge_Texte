@@ -239,3 +239,7 @@ A função `handle_new_user()` captura automaticamente:
 
 
 
+
+
+
+

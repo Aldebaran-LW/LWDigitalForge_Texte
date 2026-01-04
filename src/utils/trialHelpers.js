@@ -8,27 +8,30 @@ import { supabase } from '@/lib/customSupabaseClient';
  */
 export const checkUserProductAccess = async (userId, productId) => {
   try {
-    // Verificar se o produto foi comprado
+    // Verificar se o produto foi comprado (user_purchases)
     const { data: purchaseData, error: purchaseError } = await supabase
-      .from('user_product_access')
-      .select('registered_apps(vercel_deployment_url)')
+      .from('user_purchases')
+      .select('registered_apps:app_id(vercel_deployment_url)')
       .eq('user_id', userId)
-      .eq('product_id', productId)
-      .eq('is_trial', false)
+      .eq('app_id', productId)
+      .eq('status', 'APPROVED')
       .single();
 
     if (purchaseData && !purchaseError) {
-      return { hasAccess: true, redirectUrl: purchaseData.registered_apps?.vercel_deployment_url };
+      return { 
+        hasAccess: true, 
+        redirectUrl: purchaseData.registered_apps?.vercel_deployment_url,
+        accessType: 'purchase'
+      };
     }
 
-    // Verificar se há um teste ativo
+    // Verificar se há um teste ativo (user_trials)
     const { data: trialData, error: trialError } = await supabase
-      .from('user_product_access')
-      .select('trial_ends_at, status, registered_apps(vercel_deployment_url)')
+      .from('user_trials')
+      .select('expires_at, is_active, registered_apps:app_id(vercel_deployment_url)')
       .eq('user_id', userId)
-      .eq('product_id', productId)
-      .eq('is_trial', true)
-      .eq('status', 'active')
+      .eq('app_id', productId)
+      .eq('is_active', true)
       .single();
 
     if (trialError && trialError.code !== 'PGRST116') {
@@ -36,8 +39,12 @@ export const checkUserProductAccess = async (userId, productId) => {
       return { hasAccess: false, redirectUrl: null };
     }
 
-    if (trialData && new Date(trialData.trial_ends_at) > new Date()) {
-      return { hasAccess: true, redirectUrl: trialData.registered_apps?.vercel_deployment_url };
+    if (trialData && new Date(trialData.expires_at) > new Date() && trialData.is_active) {
+      return { 
+        hasAccess: true, 
+        redirectUrl: trialData.registered_apps?.vercel_deployment_url,
+        accessType: 'trial'
+      };
     }
 
     return { hasAccess: false, redirectUrl: null };
@@ -63,13 +70,12 @@ export const startProductTrial = async (userId, productId, productName, trialPer
       return { success: false, message: 'Você já possui acesso a este produto.', redirectUrl: null };
     }
 
-    // Verificar se já teve um teste anterior (mesmo que expirado)
+    // Verificar se já teve um teste anterior (mesmo que expirado ou inativo)
     const { data: previousTrial, error: previousTrialError } = await supabase
-      .from('user_product_access')
+      .from('user_trials')
       .select('id')
       .eq('user_id', userId)
-      .eq('product_id', productId)
-      .eq('is_trial', true)
+      .eq('app_id', productId)
       .single();
 
     if (previousTrial && !previousTrialError) {
@@ -77,8 +83,8 @@ export const startProductTrial = async (userId, productId, productName, trialPer
     }
 
     // Calcular data de expiração
-    const trialEndsAt = new Date();
-    trialEndsAt.setDate(trialEndsAt.getDate() + trialPeriodDays);
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + trialPeriodDays);
 
     // Buscar URL do produto
     const { data: trialProduct, error: productError } = await supabase
@@ -92,16 +98,13 @@ export const startProductTrial = async (userId, productId, productName, trialPer
       return { success: false, message: 'Não foi possível obter a URL do produto.', redirectUrl: null };
     }
 
-    // Criar registro de teste
-    const { error } = await supabase.from('user_product_access').insert({
+    // Criar registro de teste na tabela user_trials
+    const { error } = await supabase.from('user_trials').insert({
       user_id: userId,
-      product_id: productId,
-      product_name: productName,
-      access_level: 'trial',
-      is_trial: true,
-      trial_started_at: new Date().toISOString(),
-      trial_ends_at: trialEndsAt.toISOString(),
-      status: 'active',
+      app_id: productId,
+      started_at: new Date().toISOString(),
+      expires_at: expiresAt.toISOString(),
+      is_active: true,
     });
 
     if (error) {
