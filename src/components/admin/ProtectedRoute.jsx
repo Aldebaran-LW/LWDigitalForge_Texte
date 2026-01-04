@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { Loader2 } from 'lucide-react';
 
 const ProtectedRoute = ({ children, role: requiredRole }) => {
-  const { isAuthenticated, role: userRole, loading } = useAuth();
+  const { isAuthenticated, role: userRole, loading, user, session } = useAuth();
   const location = useLocation();
 
   // Aguardar até que o loading termine completamente antes de verificar autenticação
@@ -17,7 +17,11 @@ const ProtectedRoute = ({ children, role: requiredRole }) => {
     );
   }
 
-  if (!isAuthenticated) {
+  // Verificação adicional de segurança
+  // Garantir que tanto user quanto session existam e sejam válidos
+  const isValidAuth = isAuthenticated && user && session;
+  
+  if (!isValidAuth) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 

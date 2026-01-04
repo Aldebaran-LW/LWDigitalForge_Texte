@@ -53,6 +53,23 @@ export const AuthProvider = ({ children }) => {
   }, [toast]);
 
   const handleSession = useCallback(async (currentSession) => {
+    // Verificar se a sessão é válida e não expirada
+    if (currentSession) {
+      const expiresAt = currentSession.expires_at;
+      const now = Math.floor(Date.now() / 1000);
+      
+      // Se a sessão expirou, limpar tudo
+      if (expiresAt && expiresAt < now) {
+        console.log('Sessão expirada, limpando...');
+        setSession(null);
+        setUser(null);
+        setRole(null);
+        setProfile(null);
+        setLoading(false);
+        return;
+      }
+    }
+    
     setSession(currentSession);
     const currentUser = currentSession?.user ?? null;
     setUser(currentUser);
@@ -70,16 +87,35 @@ export const AuthProvider = ({ children }) => {
     sessionInitializedRef.current = false;
 
     // Primeiro, buscar a sessão atual e processar
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
       if (mounted) {
         sessionInitializedRef.current = true;
-        handleSession(session);
+        
+        // Se houver erro ou sessão inválida, limpar
+        if (error || !session) {
+          console.log('Nenhuma sessão válida encontrada');
+          handleSession(null);
+        } else {
+          // Verificar se a sessão não expirou
+          const expiresAt = session.expires_at;
+          if (expiresAt) {
+            const now = Math.floor(Date.now() / 1000);
+            if (expiresAt < now) {
+              console.log('Sessão expirada detectada, limpando...');
+              supabase.auth.signOut();
+              handleSession(null);
+              return;
+            }
+          }
+          handleSession(session);
+        }
       }
     }).catch((error) => {
       console.error('Erro ao buscar sessão:', error);
       if (mounted) {
         sessionInitializedRef.current = true;
-        setLoading(false);
+        // Em caso de erro, garantir que não há sessão
+        handleSession(null);
       }
     });
 
@@ -232,18 +268,34 @@ export const AuthProvider = ({ children }) => {
     navigate('/login');
   }, [toast, navigate]);
 
+  // Verificar se a sessão é válida e não expirada
+  const isAuthenticated = useMemo(() => {
+    if (!user || !session) return false;
+    
+    // Verificar se a sessão não expirou
+    const expiresAt = session.expires_at;
+    if (expiresAt) {
+      const now = Math.floor(Date.now() / 1000);
+      if (expiresAt < now) {
+        return false;
+      }
+    }
+    
+    return true;
+  }, [user, session]);
+
   const value = useMemo(() => ({
     user,
     session,
     loading,
     role,
     profile,
-    isAuthenticated: !!user && !!session,
+    isAuthenticated,
     signUp,
     signIn,
     signInWithGoogle,
     signOut,
-  }), [user, session, loading, role, profile, signUp, signIn, signInWithGoogle, signOut]);
+  }), [user, session, loading, role, profile, isAuthenticated, signUp, signIn, signInWithGoogle, signOut]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
