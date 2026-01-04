@@ -1,0 +1,413 @@
+/**
+ * Script de Teste: API check-subscription
+ * 
+ * Este script testa a Edge Function check-subscription com diferentes cenários
+ * 
+ * Execute com: node scripts/test-check-subscription.js
+ * Ou: npm run test:check-subscription (se configurado)
+ */
+
+import { createClient } from '@supabase/supabase-js';
+import dotenv from 'dotenv';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+dotenv.config({ path: join(__dirname, '..', '.env') });
+
+// Configuração
+const supabaseUrl = process.env.VITE_SUPABASE_URL || 'https://wwwwyuwighdehmvnolrl.supabase.co';
+const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind3d3d5dXdpZ2hkZWhtdm5vbHJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMzNDI3MDgsImV4cCI6MjA3ODcwMjcwOH0.m5r_mc9zIKsnc13rXGi6fkfRAoL2cGhgzZH3yRScnVA';
+
+// URL da Edge Function (local ou produção)
+const EDGE_FUNCTION_URL = process.env.EDGE_FUNCTION_URL || 
+  'http://localhost:54321/functions/v1/check-subscription';
+
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+// Cores para output
+const colors = {
+  reset: '\x1b[0m',
+  green: '\x1b[32m',
+  red: '\x1b[31m',
+  yellow: '\x1b[33m',
+  blue: '\x1b[34m',
+  cyan: '\x1b[36m',
+  magenta: '\x1b[35m',
+};
+
+function log(message, color = 'reset') {
+  console.log(`${colors[color]}${message}${colors.reset}`);
+}
+
+function logTest(name) {
+  log(`\n🧪 Teste: ${name}`, 'cyan');
+  log('─'.repeat(60), 'cyan');
+}
+
+function logSuccess(message) {
+  log(`✅ ${message}`, 'green');
+}
+
+function logError(message) {
+  log(`❌ ${message}`, 'red');
+}
+
+function logWarning(message) {
+  log(`⚠️  ${message}`, 'yellow');
+}
+
+function logInfo(message) {
+  log(`ℹ️  ${message}`, 'blue');
+}
+
+/**
+ * Chama a Edge Function check-subscription
+ */
+async function callCheckSubscription(userId, email) {
+  try {
+    const response = await fetch(EDGE_FUNCTION_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ userId, email }),
+    });
+
+    const data = await response.json();
+    return { status: response.status, data };
+  } catch (error) {
+    return { status: 0, data: null, error: error.message };
+  }
+}
+
+/**
+ * Teste 1: Validação - userId ausente
+ */
+async function testMissingUserId() {
+  logTest('Validação: userId ausente');
+  
+  const result = await callCheckSubscription(null, 'test@example.com');
+  
+  if (result.status === 400 && result.data?.error === 'Bad Request') {
+    logSuccess('Retornou 400 Bad Request');
+    logInfo(`Mensagem: ${result.data.message}`);
+    return true;
+  } else {
+    logError(`Esperado 400, recebido ${result.status}`);
+    logInfo(`Resposta: ${JSON.stringify(result.data, null, 2)}`);
+    return false;
+  }
+}
+
+/**
+ * Teste 2: Validação - email ausente
+ */
+async function testMissingEmail() {
+  logTest('Validação: email ausente');
+  
+  const result = await callCheckSubscription('550e8400-e29b-41d4-a716-446655440000', null);
+  
+  if (result.status === 400 && result.data?.error === 'Bad Request') {
+    logSuccess('Retornou 400 Bad Request');
+    logInfo(`Mensagem: ${result.data.message}`);
+    return true;
+  } else {
+    logError(`Esperado 400, recebido ${result.status}`);
+    return false;
+  }
+}
+
+/**
+ * Teste 3: Validação - email inválido
+ */
+async function testInvalidEmail() {
+  logTest('Validação: email inválido');
+  
+  const result = await callCheckSubscription('550e8400-e29b-41d4-a716-446655440000', 'email-invalido');
+  
+  if (result.status === 400 && result.data?.error === 'Bad Request') {
+    logSuccess('Retornou 400 Bad Request');
+    logInfo(`Mensagem: ${result.data.message}`);
+    return true;
+  } else {
+    logError(`Esperado 400, recebido ${result.status}`);
+    return false;
+  }
+}
+
+/**
+ * Teste 4: Usuário não encontrado
+ */
+async function testUserNotFound() {
+  logTest('Usuário não encontrado');
+  
+  const fakeUserId = '00000000-0000-0000-0000-000000000000';
+  const fakeEmail = 'naoexiste@example.com';
+  
+  const result = await callCheckSubscription(fakeUserId, fakeEmail);
+  
+  if (result.status === 200) {
+    const data = result.data;
+    if (data.hasAccess === false && 
+        data.isSubscriber === false && 
+        data.isTrial === false &&
+        data.subscriptionStatus === 'none') {
+      logSuccess('Retornou resposta correta para usuário não encontrado');
+      logInfo(`Mensagem: ${data.message}`);
+      return true;
+    } else {
+      logError('Resposta não corresponde ao esperado');
+      logInfo(`Resposta: ${JSON.stringify(data, null, 2)}`);
+      return false;
+    }
+  } else {
+    logError(`Esperado 200, recebido ${result.status}`);
+    if (result.error) logError(`Erro: ${result.error}`);
+    return false;
+  }
+}
+
+/**
+ * Teste 5: Buscar usuário real para testes
+ */
+async function getTestUser() {
+  logInfo('Buscando usuário de teste...');
+  
+  const { data: profiles, error } = await supabase
+    .from('profiles')
+    .select('id, email')
+    .limit(1)
+    .single();
+  
+  if (error || !profiles) {
+    logWarning('Nenhum usuário encontrado. Alguns testes serão pulados.');
+    return null;
+  }
+  
+  logSuccess(`Usuário encontrado: ${profiles.email}`);
+  return profiles;
+}
+
+/**
+ * Teste 6: Verificar estrutura de resposta
+ */
+async function testResponseStructure(userId, email) {
+  logTest('Estrutura da Resposta');
+  
+  const result = await callCheckSubscription(userId, email);
+  
+  if (result.status === 200 && result.data) {
+    const data = result.data;
+    const requiredFields = ['hasAccess', 'isSubscriber', 'isTrial', 'subscriptionStatus'];
+    const missingFields = requiredFields.filter(field => !(field in data));
+    
+    if (missingFields.length === 0) {
+      logSuccess('Todos os campos obrigatórios estão presentes');
+      logInfo(`hasAccess: ${data.hasAccess}`);
+      logInfo(`isSubscriber: ${data.isSubscriber}`);
+      logInfo(`isTrial: ${data.isTrial}`);
+      logInfo(`subscriptionStatus: ${data.subscriptionStatus}`);
+      
+      if (data.expiresAt) logInfo(`expiresAt: ${data.expiresAt}`);
+      if (data.trialExpiresAt) logInfo(`trialExpiresAt: ${data.trialExpiresAt}`);
+      if (data.daysRemaining !== undefined) logInfo(`daysRemaining: ${data.daysRemaining}`);
+      
+      return true;
+    } else {
+      logError(`Campos faltando: ${missingFields.join(', ')}`);
+      return false;
+    }
+  } else {
+    logError(`Erro ao obter resposta: status ${result.status}`);
+    if (result.error) logError(`Erro: ${result.error}`);
+    return false;
+  }
+}
+
+/**
+ * Teste 7: Verificar lógica de acesso
+ */
+async function testAccessLogic(userId, email) {
+  logTest('Lógica de Acesso');
+  
+  const result = await callCheckSubscription(userId, email);
+  
+  if (result.status === 200 && result.data) {
+    const data = result.data;
+    const expectedHasAccess = data.isSubscriber || data.isTrial;
+    
+    if (data.hasAccess === expectedHasAccess) {
+      logSuccess('Lógica de acesso está correta');
+      logInfo(`hasAccess (${data.hasAccess}) = isSubscriber (${data.isSubscriber}) OU isTrial (${data.isTrial})`);
+      return true;
+    } else {
+      logError(`Lógica incorreta: hasAccess=${data.hasAccess}, mas deveria ser ${expectedHasAccess}`);
+      return false;
+    }
+  } else {
+    logError(`Erro ao obter resposta: status ${result.status}`);
+    return false;
+  }
+}
+
+/**
+ * Teste 8: Verificar assinaturas do usuário
+ */
+async function checkUserSubscriptions(userId) {
+  logTest('Verificando Assinaturas do Usuário');
+  
+  // Buscar assinaturas
+  const { data: purchases, error: purchasesError } = await supabase
+    .from('user_purchases')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('status', 'APPROVED')
+    .in('purchase_type', ['MONTHLY', 'ANNUAL', 'LIFETIME']);
+  
+  if (purchasesError) {
+    logWarning(`Erro ao buscar compras: ${purchasesError.message}`);
+    return;
+  }
+  
+  logInfo(`Assinaturas encontradas: ${purchases?.length || 0}`);
+  
+  if (purchases && purchases.length > 0) {
+    purchases.forEach(p => {
+      logInfo(`  - ${p.purchase_type} (expires_at: ${p.expires_at || 'N/A'})`);
+    });
+  }
+  
+  // Buscar trials
+  const { data: trials, error: trialsError } = await supabase
+    .from('user_trials')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('is_active', true);
+  
+  if (trialsError) {
+    logWarning(`Erro ao buscar trials: ${trialsError.message}`);
+    return;
+  }
+  
+  logInfo(`Trials ativos encontrados: ${trials?.length || 0}`);
+  
+  if (trials && trials.length > 0) {
+    const now = new Date();
+    trials.forEach(t => {
+      const expiresAt = new Date(t.expires_at);
+      const isActive = expiresAt > now;
+      logInfo(`  - Trial ${isActive ? 'ATIVO' : 'EXPIRADO'} (expires_at: ${t.expires_at})`);
+    });
+  }
+}
+
+/**
+ * Teste 9: Teste de conexão com Edge Function
+ */
+async function testConnection() {
+  logTest('Conexão com Edge Function');
+  
+  logInfo(`Tentando conectar em: ${EDGE_FUNCTION_URL}`);
+  
+  try {
+    const result = await callCheckSubscription('test', 'test@test.com');
+    
+    if (result.error) {
+      if (result.error.includes('ECONNREFUSED') || result.error.includes('fetch failed')) {
+        logError('Não foi possível conectar à Edge Function');
+        logWarning('Certifique-se de que a função está rodando:');
+        logWarning('  npx supabase functions serve check-subscription');
+        return false;
+      } else {
+        logError(`Erro de conexão: ${result.error}`);
+        return false;
+      }
+    } else {
+      logSuccess('Conexão estabelecida com sucesso');
+      return true;
+    }
+  } catch (error) {
+    logError(`Erro: ${error.message}`);
+    return false;
+  }
+}
+
+/**
+ * Executa todos os testes
+ */
+async function runAllTests() {
+  log('\n' + '='.repeat(60), 'magenta');
+  log('🚀 TESTE DA EDGE FUNCTION: check-subscription', 'magenta');
+  log('='.repeat(60) + '\n', 'magenta');
+  
+  const results = {
+    passed: 0,
+    failed: 0,
+    skipped: 0,
+  };
+  
+  // Teste de conexão primeiro
+  const connected = await testConnection();
+  if (!connected) {
+    logError('\n❌ Não foi possível conectar à Edge Function');
+    logWarning('Execute: npx supabase functions serve check-subscription');
+    process.exit(1);
+  }
+  results.passed++;
+  
+  // Testes de validação
+  if (await testMissingUserId()) results.passed++;
+  else results.failed++;
+  
+  if (await testMissingEmail()) results.passed++;
+  else results.failed++;
+  
+  if (await testInvalidEmail()) results.passed++;
+  else results.failed++;
+  
+  if (await testUserNotFound()) results.passed++;
+  else results.failed++;
+  
+  // Buscar usuário real para testes
+  const testUser = await getTestUser();
+  
+  if (testUser) {
+    if (await testResponseStructure(testUser.id, testUser.email)) results.passed++;
+    else results.failed++;
+    
+    if (await testAccessLogic(testUser.id, testUser.email)) results.passed++;
+    else results.failed++;
+    
+    await checkUserSubscriptions(testUser.id);
+  } else {
+    results.skipped += 2;
+    logWarning('Testes com usuário real foram pulados (nenhum usuário encontrado)');
+  }
+  
+  // Resumo
+  log('\n' + '='.repeat(60), 'magenta');
+  log('📊 RESUMO DOS TESTES', 'magenta');
+  log('='.repeat(60), 'magenta');
+  log(`✅ Passou: ${results.passed}`, 'green');
+  log(`❌ Falhou: ${results.failed}`, 'red');
+  log(`⏭️  Pulado: ${results.skipped}`, 'yellow');
+  log('='.repeat(60) + '\n', 'magenta');
+  
+  if (results.failed === 0) {
+    logSuccess('🎉 Todos os testes passaram!');
+    process.exit(0);
+  } else {
+    logError(`❌ ${results.failed} teste(s) falharam`);
+    process.exit(1);
+  }
+}
+
+// Executar testes
+runAllTests().catch(error => {
+  logError(`\n❌ Erro fatal: ${error.message}`);
+  console.error(error);
+  process.exit(1);
+});
+

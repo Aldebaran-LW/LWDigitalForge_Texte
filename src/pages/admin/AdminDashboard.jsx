@@ -2,8 +2,9 @@
 import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
-import { Eye, DollarSign, UserPlus, Zap, Loader2 } from 'lucide-react';
+import { Eye, DollarSign, UserPlus, Zap, Loader2, CreditCard, TestTube2 } from 'lucide-react';
 import { supabase } from '@/lib/customSupabaseClient';
+import { AdminCheckSubscription } from '@/components/admin/AdminCheckSubscription';
 
 const AdminDashboard = () => {
   const [stats, setStats] = useState([
@@ -58,11 +59,37 @@ const AdminDashboard = () => {
           console.error('Erro ao buscar produtos:', productsError);
         }
 
+        // Buscar assinaturas ativas (MONTHLY e ANNUAL aprovadas e não expiradas)
+        const now = new Date().toISOString();
+        const { data: activePurchases, error: purchasesError } = await supabase
+          .from('user_purchases')
+          .select('id')
+          .eq('status', 'APPROVED')
+          .in('purchase_type', ['MONTHLY', 'ANNUAL'])
+          .gt('expires_at', now);
+
+        if (purchasesError) {
+          console.error('Erro ao buscar assinaturas:', purchasesError);
+        }
+
+        // Buscar trials ativos
+        const { data: activeTrials, error: trialsError } = await supabase
+          .from('user_trials')
+          .select('id')
+          .eq('is_active', true)
+          .gt('expires_at', now);
+
+        if (trialsError) {
+          console.error('Erro ao buscar trials:', trialsError);
+        }
+
         setStats([
           { title: 'Total de Acessos', value: '0', icon: Eye, color: 'text-blue-500', bgColor: 'bg-blue-500/10' },
           { title: 'Total de Vendas', value: formatCurrency(totalRevenue), icon: DollarSign, color: 'text-green-500', bgColor: 'bg-green-500/10' },
           { title: 'Total de Usuários', value: formatNumber(totalUsers || 0), icon: UserPlus, color: 'text-indigo-500', bgColor: 'bg-indigo-500/10' },
           { title: 'Total de Produtos', value: formatNumber(totalProducts || 0), icon: Zap, color: 'text-amber-500', bgColor: 'bg-amber-500/10' },
+          { title: 'Assinaturas Ativas', value: formatNumber(activePurchases?.length || 0), icon: CreditCard, color: 'text-purple-500', bgColor: 'bg-purple-500/10' },
+          { title: 'Trials Ativos', value: formatNumber(activeTrials?.length || 0), icon: TestTube2, color: 'text-yellow-500', bgColor: 'bg-yellow-500/10' },
         ]);
       } catch (error) {
         console.error('Erro ao buscar estatísticas:', error);
@@ -94,7 +121,7 @@ const AdminDashboard = () => {
             <Loader2 className="h-10 w-10 sm:h-12 sm:w-12 text-blue-500 dark:text-white animate-spin" />
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 md:gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 sm:gap-5 md:gap-6">
             {stats.map((stat, index) => (
               <motion.div
                 key={stat.title}
@@ -116,6 +143,16 @@ const AdminDashboard = () => {
             ))}
           </div>
         )}
+
+        {/* Componente para verificar assinatura de usuários */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.6 }}
+          className="mt-8"
+        >
+          <AdminCheckSubscription />
+        </motion.div>
       </div>
     </>
   );

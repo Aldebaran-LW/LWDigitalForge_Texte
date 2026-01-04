@@ -8,7 +8,9 @@
     "build": "node tools/generate-llms.js || true && vite build",
     "preview": "vite preview --host :: --port 3000",
     "test:supabase": "node test-supabase.js",
-    "test:google-oauth": "node scripts/test-google-oauth.js"
+    "test:google-oauth": "node scripts/test-google-oauth.js",
+    "test:check-subscription": "node scripts/test-check-subscription.js",
+    "test:check-subscription:prod": "node scripts/test-check-subscription-production.js"
   },
   "dependencies": {
     "@radix-ui/react-alert-dialog": "^1.0.5",

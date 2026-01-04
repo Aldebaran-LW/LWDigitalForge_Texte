@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/api/check-subscription",
+      "destination": "https://wwwwyuwighdehmvnolrl.supabase.co/functions/v1/check-subscription"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
