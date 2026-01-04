@@ -46,17 +46,11 @@ const AdminLayout = () => {
       </AnimatePresence>
 
       {/* Sidebar */}
-      <AnimatePresence>
-        <motion.aside
-          initial={false}
-          animate={{
-            x: isSidebarOpen ? 0 : '-100%',
-          }}
-          transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-          className={`fixed lg:static inset-y-0 left-0 w-64 flex-shrink-0 bg-white dark:bg-gray-800 p-4 sm:p-6 flex flex-col justify-between z-40 lg:z-auto ${
-            isSidebarOpen ? 'shadow-2xl' : ''
-          }`}
-        >
+      <aside
+        className={`fixed lg:static inset-y-0 left-0 w-64 flex-shrink-0 bg-white dark:bg-gray-800 p-4 sm:p-6 flex flex-col justify-between z-40 lg:z-auto transition-transform duration-300 ease-in-out ${
+          isSidebarOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full lg:translate-x-0'
+        }`}
+      >
           <div className="flex-1 overflow-y-auto">
             <div className="flex items-center gap-2 mb-6 sm:mb-8 md:mb-10">
               <img
@@ -96,8 +90,7 @@ const AdminLayout = () => {
               <span>Sair</span>
             </button>
           </div>
-        </motion.aside>
-      </AnimatePresence>
+        </aside>
 
       <main className="flex-1 p-4 sm:p-6 md:p-8 overflow-y-auto lg:ml-0">
         <Outlet />
