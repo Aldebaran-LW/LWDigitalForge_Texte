@@ -86,7 +86,7 @@ const ProductsSection = () => {
                     <img 
                       src={product.image_url} 
                       alt={product.name}
-                      className="w-16 h-16 object-cover rounded-full"
+                      className="w-24 h-24 sm:w-32 sm:h-32 md:w-40 md:h-40 object-cover rounded-lg"
                       onError={(e) => {
                         e.target.style.display = 'none';
                       }}

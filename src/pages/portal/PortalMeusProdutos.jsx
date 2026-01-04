@@ -10,7 +10,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { Link } from 'react-router-dom';
 
 const PortalMeusProdutos = () => {
-  const { user } = useAuth();
+  const { user, role } = useAuth();
   const { toast } = useToast();
   const [myProducts, setMyProducts] = useState([]);
   const [trials, setTrials] = useState([]);
@@ -167,7 +167,7 @@ const PortalMeusProdutos = () => {
                     <img 
                       src={product.image_url} 
                       alt={product.name}
-                      className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 object-cover rounded-lg mb-3 sm:mb-4"
+                      className="w-24 h-24 sm:w-32 sm:h-32 md:w-40 md:h-40 object-cover rounded-lg mb-4 sm:mb-5"
                       onError={(e) => {
                         e.target.style.display = 'none';
                       }}
@@ -193,7 +193,8 @@ const PortalMeusProdutos = () => {
                       </Button>
                     </motion.div>
                   )}
-                  {product.github_repo_url && (
+                  {/* Mostrar repositório apenas para admins */}
+                  {product.github_repo_url && role === 'ADMIN' && (
                     <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                       <Button 
                         variant="outline"

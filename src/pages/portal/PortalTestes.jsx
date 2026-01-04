@@ -10,7 +10,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { Loader2, Calendar, ExternalLink, ShoppingCart, Clock } from 'lucide-react';
 
 const PortalTestes = () => {
-  const { user } = useAuth();
+  const { user, role } = useAuth();
   const { toast } = useToast();
   const [trials, setTrials] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -84,7 +84,8 @@ const PortalTestes = () => {
     const product = trial.registered_apps;
     if (product?.vercel_deployment_url) {
       window.open(product.vercel_deployment_url, '_blank');
-    } else if (product?.github_repo_url) {
+    } else if (product?.github_repo_url && role === 'ADMIN') {
+      // Apenas admins podem acessar repositório
       window.open(product.github_repo_url, '_blank');
     } else {
       toast({
@@ -139,7 +140,7 @@ const PortalTestes = () => {
                       <img 
                         src={product.image_url} 
                         alt={product.name}
-                        className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 object-cover rounded-lg flex-shrink-0"
+                        className="w-32 h-32 sm:w-40 sm:h-40 md:w-48 md:h-48 object-cover rounded-lg flex-shrink-0"
                       />
                     )}
                     
