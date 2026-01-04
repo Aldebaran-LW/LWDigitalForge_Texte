@@ -58,9 +58,12 @@ const ProductDetailPage = () => {
     const checkActiveTrial = async () => {
       if (!user || !id) return;
       
-      const access = await checkUserProductAccess(user.id, id);
-      if (access.hasAccess && access.accessType === 'trial') {
-        setHasActiveTrial(true);
+      const access = await checkUserProductAccess(user.id, id, user.email);
+      if (access.hasAccess) {
+        // Se tem acesso via assinatura, também considerar como acesso válido
+        if (access.accessType === 'trial' || access.accessType === 'subscription' || access.accessType === 'subscription_trial') {
+          setHasActiveTrial(true);
+        }
       }
     };
 
@@ -146,7 +149,8 @@ const ProductDetailPage = () => {
         user.id, 
         product.id, 
         product.name, 
-        product.trial_period_days || 30
+        product.trial_period_days || 30,
+        user.email
       );
       
       if (result.success) {

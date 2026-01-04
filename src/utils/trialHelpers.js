@@ -1,14 +1,82 @@
 import { supabase } from '@/lib/customSupabaseClient';
 
 /**
- * Verifica se um usuário tem acesso a um produto (comprado ou teste ativo)
+ * Verifica se um usuário tem assinatura ativa para um produto específico
  * @param {string} userId - ID do usuário
  * @param {string} productId - ID do produto
- * @returns {Promise<{hasAccess: boolean, redirectUrl: string|null}>}
+ * @returns {Promise<{hasAccess: boolean, accessType: string|null}>}
  */
-export const checkUserProductAccess = async (userId, productId) => {
+const checkUserSubscriptionForProduct = async (userId, productId) => {
   try {
-    // Verificar se o produto foi comprado (user_purchases)
+    const now = new Date().toISOString();
+    
+    // Verificar se o usuário tem assinatura ativa para este produto específico
+    // Buscar compras aprovadas do tipo MONTHLY, ANNUAL ou LIFETIME para este produto
+    const { data: subscriptionPurchases, error: subscriptionError } = await supabase
+      .from('user_purchases')
+      .select('*, registered_apps:app_id(vercel_deployment_url)')
+      .eq('user_id', userId)
+      .eq('app_id', productId)
+      .eq('status', 'APPROVED')
+      .in('purchase_type', ['MONTHLY', 'ANNUAL', 'LIFETIME']);
+
+    if (subscriptionError) {
+      console.error('Erro ao verificar assinatura do produto:', subscriptionError);
+      return { hasAccess: false, accessType: null };
+    }
+
+    if (!subscriptionPurchases || subscriptionPurchases.length === 0) {
+      return { hasAccess: false, accessType: null };
+    }
+
+    // Verificar se alguma assinatura está ativa
+    for (const purchase of subscriptionPurchases) {
+      // LIFETIME sempre é ativo se aprovado
+      if (purchase.purchase_type === 'LIFETIME') {
+        return {
+          hasAccess: true,
+          accessType: 'subscription_lifetime',
+          redirectUrl: purchase.registered_apps?.vercel_deployment_url || null,
+        };
+      }
+      
+      // MONTHLY e ANNUAL precisam verificar expires_at
+      if (purchase.expires_at && new Date(purchase.expires_at) > new Date(now)) {
+        return {
+          hasAccess: true,
+          accessType: purchase.purchase_type === 'MONTHLY' ? 'subscription_monthly' : 'subscription_annual',
+          redirectUrl: purchase.registered_apps?.vercel_deployment_url || null,
+        };
+      }
+    }
+
+    return { hasAccess: false, accessType: null };
+  } catch (error) {
+    console.error('Erro ao verificar assinatura do produto:', error);
+    return { hasAccess: false, accessType: null };
+  }
+};
+
+/**
+ * Verifica se um usuário tem acesso a um produto (comprado, teste ativo ou assinatura ativa para o produto)
+ * @param {string} userId - ID do usuário
+ * @param {string} productId - ID do produto
+ * @param {string} userEmail - Email do usuário (opcional, não usado mais mas mantido para compatibilidade)
+ * @returns {Promise<{hasAccess: boolean, redirectUrl: string|null, accessType: string}>}
+ */
+export const checkUserProductAccess = async (userId, productId, userEmail = null) => {
+  try {
+    // 1. PRIMEIRO: Verificar se o usuário tem assinatura ativa PARA ESTE PRODUTO ESPECÍFICO
+    const subscriptionCheck = await checkUserSubscriptionForProduct(userId, productId);
+    if (subscriptionCheck.hasAccess) {
+      return {
+        hasAccess: true,
+        redirectUrl: subscriptionCheck.redirectUrl || null,
+        accessType: subscriptionCheck.accessType,
+      };
+    }
+
+    // 2. Verificar se o produto foi comprado especificamente (user_purchases)
     const { data: purchaseData, error: purchaseError } = await supabase
       .from('user_purchases')
       .select('registered_apps:app_id(vercel_deployment_url)')
@@ -18,14 +86,14 @@ export const checkUserProductAccess = async (userId, productId) => {
       .single();
 
     if (purchaseData && !purchaseError) {
-      return { 
-        hasAccess: true, 
+      return {
+        hasAccess: true,
         redirectUrl: purchaseData.registered_apps?.vercel_deployment_url,
         accessType: 'purchase'
       };
     }
 
-    // Verificar se há um teste ativo (user_trials)
+    // 3. Verificar se há um teste ativo para este produto específico (user_trials)
     const { data: trialData, error: trialError } = await supabase
       .from('user_trials')
       .select('expires_at, is_active, registered_apps:app_id(vercel_deployment_url)')
@@ -40,8 +108,8 @@ export const checkUserProductAccess = async (userId, productId) => {
     }
 
     if (trialData && new Date(trialData.expires_at) > new Date() && trialData.is_active) {
-      return { 
-        hasAccess: true, 
+      return {
+        hasAccess: true,
         redirectUrl: trialData.registered_apps?.vercel_deployment_url,
         accessType: 'trial'
       };
@@ -60,13 +128,22 @@ export const checkUserProductAccess = async (userId, productId) => {
  * @param {string} productId - ID do produto
  * @param {string} productName - Nome do produto
  * @param {number} trialPeriodDays - Período de teste em dias
+ * @param {string} userEmail - Email do usuário (opcional, mas recomendado para verificar assinatura)
  * @returns {Promise<{success: boolean, message: string, redirectUrl: string|null}>}
  */
-export const startProductTrial = async (userId, productId, productName, trialPeriodDays) => {
+export const startProductTrial = async (userId, productId, productName, trialPeriodDays, userEmail = null) => {
   try {
-    // Verificar se já existe um teste ou compra
-    const { hasAccess } = await checkUserProductAccess(userId, productId);
+    // Verificar se já existe um teste, compra ou assinatura ativa
+    const { hasAccess, accessType } = await checkUserProductAccess(userId, productId, userEmail);
     if (hasAccess) {
+      // Se tem acesso via assinatura, não precisa de trial
+      if (accessType === 'subscription' || accessType === 'subscription_trial') {
+        return { 
+          success: false, 
+          message: 'Você já possui acesso a todos os produtos através da sua assinatura ativa.', 
+          redirectUrl: null 
+        };
+      }
       return { success: false, message: 'Você já possui acesso a este produto.', redirectUrl: null };
     }
 
