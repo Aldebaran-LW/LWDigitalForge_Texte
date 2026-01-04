@@ -109,7 +109,19 @@ export const startProductTrial = async (userId, productId, productName, trialPer
 
     if (error) {
       console.error('Erro ao iniciar teste:', error);
-      return { success: false, message: error.message, redirectUrl: null };
+      
+      // Mensagens de erro mais amigáveis
+      let errorMessage = error.message;
+      
+      if (error.code === '42501' || error.message.includes('permission') || error.message.includes('policy')) {
+        errorMessage = 'Você não tem permissão para criar um teste. Verifique se está logado corretamente.';
+      } else if (error.code === '23505' || error.message.includes('unique')) {
+        errorMessage = 'Você já possui um teste ativo para este produto.';
+      } else if (error.code === '23503' || error.message.includes('foreign key')) {
+        errorMessage = 'Produto não encontrado. Por favor, tente novamente.';
+      }
+      
+      return { success: false, message: errorMessage, redirectUrl: null };
     }
 
     return { 
