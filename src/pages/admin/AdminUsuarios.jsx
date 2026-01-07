@@ -67,43 +67,59 @@ const AdminUsuarios = () => {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      // Tentar buscar perfis com email primeiro
-      let profiles = null;
-      let profilesError = null;
-      
-      // Primeira tentativa: buscar com email (sem created_at para evitar erro)
-      const { data: profilesWithEmail, error: emailError } = await supabase
+      // Buscar perfis com todos os campos (incluindo email)
+      // A política RLS deve permitir que admins vejam todos os perfis
+      const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('id, email, full_name, phone, role')
         .order('id', { ascending: false });
 
-      if (emailError) {
-        console.warn('Erro ao buscar com email, tentando sem email:', emailError);
-        // Segunda tentativa: buscar sem email (caso RLS bloqueie)
-        const { data: profilesWithoutEmail, error: noEmailError } = await supabase
-          .from('profiles')
-          .select('id, full_name, phone, role')
-          .order('id', { ascending: false });
-
-        if (noEmailError) {
-          profilesError = noEmailError;
-        } else {
-          profiles = profilesWithoutEmail;
-        }
-      } else {
-        profiles = profilesWithEmail;
-      }
-
+      // Se houver erro e for relacionado a RLS, tentar buscar sem email como fallback
       if (profilesError) {
         console.error('Erro ao buscar perfis:', profilesError);
-        toast({
-          variant: "destructive",
-          title: "Erro ao carregar usuários",
-          description: profilesError.message || 'Não foi possível carregar a lista de usuários. Verifique as permissões de admin.'
-        });
-        setUsers([]);
-        setLoading(false);
-        return;
+        
+        // Verificar se é erro de permissão/RLS
+        if (profilesError.code === 'PGRST301' || profilesError.message?.includes('permission') || profilesError.message?.includes('policy')) {
+          console.warn('Erro de permissão RLS detectado, tentando buscar sem email...');
+          
+          // Tentativa de fallback: buscar sem email
+          const { data: profilesWithoutEmail, error: noEmailError } = await supabase
+            .from('profiles')
+            .select('id, full_name, phone, role')
+            .order('id', { ascending: false });
+
+          if (noEmailError) {
+            toast({
+              variant: "destructive",
+              title: "Erro de Permissão",
+              description: `Não foi possível carregar os usuários. Verifique se você tem permissão de admin. Erro: ${noEmailError.message}`
+            });
+            setUsers([]);
+            setLoading(false);
+            return;
+          } else {
+            // Usar perfis sem email como fallback
+            setUsers((profilesWithoutEmail || []).map(profile => ({
+              id: profile.id,
+              email: 'Email não disponível (sem permissão)',
+              fullName: profile.full_name || 'Sem nome',
+              phone: profile.phone || 'Sem telefone',
+              role: profile.role || 'USER',
+              createdAt: new Date().toISOString(),
+              activeTrials: [],
+              activeSubscriptions: [],
+              allAccess: [],
+              hasActiveTrial: false,
+              hasActiveSubscription: false,
+              hasAnyAccess: false
+            })));
+            setLoading(false);
+            return;
+          }
+        } else {
+          // Outro tipo de erro
+          throw profilesError;
+        }
       }
 
       if (!profiles || profiles.length === 0) {

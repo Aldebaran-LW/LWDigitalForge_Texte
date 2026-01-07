@@ -76,6 +76,14 @@ const PortalMeusProdutos = () => {
 
   const handleAccess = (product) => {
     if (product.vercel_deployment_url) {
+      // Salvar productId no sessionStorage antes de abrir app (não na URL!)
+      // Isso permite que o app detecte automaticamente qual produto é
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('app_product_id', product.id);
+        sessionStorage.setItem('app_product_name', product.name);
+      }
+      
+      // Abrir app com URL limpa (sem parâmetros)
       window.open(product.vercel_deployment_url, '_blank');
     } else if (product.github_repo_url) {
       window.open(product.github_repo_url, '_blank');
