@@ -73,12 +73,22 @@ web_modules/
 # Secrets configuration (temporary - delete after setup)
 SECRETS_CONFIG.txt
 CONFIGURACAO_SECRETS.md
+*SECRETS*.txt
+*SECRETS*.md
+*CONFIGURACAO*.md
+*CONFIG*.txt
 
 # GitHub tokens and secrets
 *.token
 *.ghp
 *_token.txt
 *_secret.txt
+*_TOKEN.txt
+*_SECRET.txt
+*.key
+*.secret
+*credentials*
+*secrets*
 
 # parcel-bundler cache (https://parceljs.org/)
 .cache
@@ -154,6 +164,30 @@ vite.config.ts.timestamp-*
 # Scripts com tokens do GitHub
 criar-pr.ps1
 criar-pr-simples.ps1
+
+# Scripts de deploy com tokens hardcoded (NÃO COMMITAR)
+DEPLOY.ps1
+DEPLOY.bat
+DEPLOY_SEM_ENV.ps1
+DEPLOY_DIRETO.ps1
+DEPLOY_E_TESTAR.bat
+DEPLOY_MANUAL_FINAL.txt
+*_MANUAL*.txt
+*_FINAL*.txt
+*DEPLOY*.ps1
+*DEPLOY*.bat
+
+# Arquivos temporários com tokens
+DEPLOY_COM_TOKEN.ps1
+deploy-*.ps1
+deploy-*.bat
+
+# Arquivos de documentação que podem conter tokens
+RELATORIO_SEGURANCA*.md
+*_TOKEN*.txt
+*_SECRET*.txt
+*SECRET*.txt
+*TOKEN*.txt
 
 # Configurações do Cursor MCP (contém tokens sensíveis)
 .cursor/mcp.json
