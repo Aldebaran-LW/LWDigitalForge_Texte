@@ -75,23 +75,49 @@ const PortalMeusProdutos = () => {
   }, [user, toast]);
 
   const handleAccess = (product) => {
-    if (product.vercel_deployment_url) {
-      // Salvar productId no sessionStorage antes de abrir app (não na URL!)
-      // Isso permite que o app detecte automaticamente qual produto é
-      if (typeof window !== 'undefined') {
-        sessionStorage.setItem('app_product_id', product.id);
-        sessionStorage.setItem('app_product_name', product.name);
+    // Validar se URL existe
+    if (!product.vercel_deployment_url) {
+      if (product.github_repo_url && role === 'ADMIN') {
+        // Apenas admins podem acessar repositório
+        window.open(product.github_repo_url, '_blank');
+        return;
       }
-      
-      // Abrir app com URL limpa (sem parâmetros)
-      window.open(product.vercel_deployment_url, '_blank');
-    } else if (product.github_repo_url) {
-      window.open(product.github_repo_url, '_blank');
-    } else {
       toast({
         variant: 'destructive',
         title: 'Erro',
-        description: 'URL de acesso não disponível para este produto.',
+        description: 'URL de acesso não configurada para este produto. Entre em contato com o suporte.',
+      });
+      return;
+    }
+
+    // Validar formato da URL
+    try {
+      new URL(product.vercel_deployment_url);
+    } catch (e) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro',
+        description: 'URL de acesso inválida. Entre em contato com o suporte.',
+      });
+      return;
+    }
+
+    // Salvar productId no sessionStorage antes de abrir app (não na URL!)
+    // Isso permite que o app detecte automaticamente qual produto é
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('app_product_id', product.id);
+      sessionStorage.setItem('app_product_name', product.name);
+    }
+    
+    // Abrir app com URL limpa (sem parâmetros)
+    const newWindow = window.open(product.vercel_deployment_url, '_blank');
+    
+    // Verificar se popup foi bloqueado
+    if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+      toast({
+        variant: 'destructive',
+        title: 'Popup Bloqueado',
+        description: 'Por favor, permita popups para este site e tente novamente.',
       });
     }
   };

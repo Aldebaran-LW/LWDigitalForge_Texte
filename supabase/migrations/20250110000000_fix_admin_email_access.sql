@@ -3,8 +3,14 @@
 -- Migration criada em: 2025-01-10
 -- ========================================
 
--- Verificar se a função is_admin() existe e funciona corretamente
--- Se não existir, criar a versão mais recente
+-- IMPORTANTE: Remover políticas PRIMEIRO (elas dependem da função)
+-- Depois remover a função, e então recriar tudo
+
+-- Remover políticas que dependem da função is_admin()
+DROP POLICY IF EXISTS "Admins podem ver todos os perfis" ON public.profiles;
+DROP POLICY IF EXISTS "Usuários podem ver seus próprios perfis" ON public.profiles;
+
+-- Agora podemos remover a função sem erro de dependência
 DROP FUNCTION IF EXISTS public.is_admin();
 DROP FUNCTION IF EXISTS public.is_admin(UUID);
 
@@ -36,10 +42,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
 
--- Remover política atual de SELECT para profiles
-DROP POLICY IF EXISTS "Admins podem ver todos os perfis" ON public.profiles;
-DROP POLICY IF EXISTS "Usuários podem ver seus próprios perfis" ON public.profiles;
-
 -- Recriar política combinada que permite:
 -- 1. Admins vejam TODOS os perfis com TODOS os campos (incluindo email)
 -- 2. Usuários vejam apenas seus próprios perfis
@@ -56,6 +58,10 @@ COMMENT ON POLICY "Usuários podem ver seus próprios perfis" ON public.profiles
     'Permite que usuários vejam apenas seus próprios perfis';
 COMMENT ON POLICY "Admins podem ver todos os perfis" ON public.profiles IS 
     'Permite que admins vejam todos os perfis com todos os campos, incluindo email';
+
+
+
+
 
 
 

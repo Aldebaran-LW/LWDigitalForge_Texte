@@ -15,6 +15,24 @@ const PortalTestes = () => {
   const [trials, setTrials] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Função para atualizar testes expirados
+  const updateExpiredTrials = async () => {
+    if (!user) return;
+    
+    const now = new Date().toISOString();
+    
+    const { error } = await supabase
+      .from('user_trials')
+      .update({ is_active: false })
+      .lt('expires_at', now)
+      .eq('is_active', true)
+      .eq('user_id', user.id);
+      
+    if (error) {
+      console.error('Erro ao atualizar testes expirados:', error);
+    }
+  };
+
   useEffect(() => {
     const fetchActiveTrials = async () => {
       if (!user) {
@@ -24,6 +42,11 @@ const PortalTestes = () => {
 
       setLoading(true);
       try {
+        // Atualizar testes expirados primeiro
+        await updateExpiredTrials();
+        
+        // Buscar apenas testes realmente ativos (não expirados)
+        const now = new Date().toISOString();
         const { data, error } = await supabase
           .from('user_trials')
           .select(`
@@ -42,6 +65,7 @@ const PortalTestes = () => {
           `)
           .eq('user_id', user.id)
           .eq('is_active', true)
+          .gt('expires_at', now) // Apenas testes não expirados
           .order('started_at', { ascending: false });
 
         if (error) throw error;
@@ -82,16 +106,49 @@ const PortalTestes = () => {
 
   const handleAccessProduct = (trial) => {
     const product = trial.registered_apps;
-    if (product?.vercel_deployment_url) {
-      window.open(product.vercel_deployment_url, '_blank');
-    } else if (product?.github_repo_url && role === 'ADMIN') {
-      // Apenas admins podem acessar repositório
-      window.open(product.github_repo_url, '_blank');
-    } else {
+    
+    // Validar se URL existe
+    if (!product?.vercel_deployment_url) {
+      if (product?.github_repo_url && role === 'ADMIN') {
+        // Apenas admins podem acessar repositório
+        window.open(product.github_repo_url, '_blank');
+        return;
+      }
       toast({
         variant: 'destructive',
         title: 'Erro',
-        description: 'URL de acesso não disponível para este produto.',
+        description: 'URL de acesso não configurada para este produto. Entre em contato com o suporte.',
+      });
+      return;
+    }
+
+    // Validar formato da URL
+    try {
+      new URL(product.vercel_deployment_url);
+    } catch (e) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro',
+        description: 'URL de acesso inválida. Entre em contato com o suporte.',
+      });
+      return;
+    }
+
+    // Salvar productId no sessionStorage
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('app_product_id', product.id);
+      sessionStorage.setItem('app_product_name', product.name);
+    }
+
+    // Abrir app
+    const newWindow = window.open(product.vercel_deployment_url, '_blank');
+    
+    // Verificar se popup foi bloqueado
+    if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+      toast({
+        variant: 'destructive',
+        title: 'Popup Bloqueado',
+        description: 'Por favor, permita popups para este site e tente novamente.',
       });
     }
   };

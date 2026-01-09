@@ -67,20 +67,76 @@ const AdminUsuarios = () => {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      // Buscar perfis com todos os campos (incluindo email)
-      // A política RLS deve permitir que admins vejam todos os perfis
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, email, full_name, phone, role')
-        .order('id', { ascending: false });
+      // Verificar usuário atual e role primeiro
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      if (currentUser) {
+        const { data: currentProfile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', currentUser.id)
+          .single();
+        
+        console.log('🔍 Diagnóstico - Usuário atual:', {
+          userId: currentUser.id,
+          email: currentUser.email,
+          role: currentProfile?.role
+        });
+
+        if (currentProfile?.role !== 'ADMIN') {
+          toast({
+            variant: "destructive",
+            title: "Acesso Negado",
+            description: `Você não tem permissão de ADMIN. Seu role atual: ${currentProfile?.role || 'USER'}. Entre em contato com um administrador.`
+          });
+          setUsers([]);
+          setLoading(false);
+          return;
+        }
+      }
+
+      // Buscar perfis com emails usando view ou função RPC
+      // Tentar primeiro usar view users_with_emails, depois fallback para profiles
+      console.log('🔍 Tentando buscar perfis...');
+      
+      let profiles = null;
+      let profilesError = null;
+      let hasEmailsInData = false;
+      
+      // Tentar buscar usando view users_with_emails (se existir)
+      const { data: viewData, error: viewError } = await supabase
+        .from('users_with_emails')
+        .select('id, email, full_name, phone, role, created_at')
+        .order('created_at', { ascending: false });
+      
+      if (!viewError && viewData) {
+        console.log('✅ Usando view users_with_emails');
+        profiles = viewData;
+        hasEmailsInData = true;
+      } else {
+        console.log('⚠️ View não disponível, usando profiles + RPC');
+        // Fallback: buscar de profiles (agora com email, coluna foi adicionada)
+        const { data: profilesData, error: profilesErr } = await supabase
+          .from('profiles')
+          .select('id, email, full_name, phone, role')
+          .order('id', { ascending: false });
+        
+        profiles = profilesData;
+        profilesError = profilesErr;
+        hasEmailsInData = false;
+      }
 
       // Se houver erro e for relacionado a RLS, tentar buscar sem email como fallback
       if (profilesError) {
-        console.error('Erro ao buscar perfis:', profilesError);
+        console.error('❌ Erro ao buscar perfis:', {
+          code: profilesError.code,
+          message: profilesError.message,
+          details: profilesError.details,
+          hint: profilesError.hint
+        });
         
         // Verificar se é erro de permissão/RLS
         if (profilesError.code === 'PGRST301' || profilesError.message?.includes('permission') || profilesError.message?.includes('policy')) {
-          console.warn('Erro de permissão RLS detectado, tentando buscar sem email...');
+          console.warn('⚠️ Erro de permissão RLS detectado, tentando buscar sem email...');
           
           // Tentativa de fallback: buscar sem email
           const { data: profilesWithoutEmail, error: noEmailError } = await supabase
@@ -89,15 +145,17 @@ const AdminUsuarios = () => {
             .order('id', { ascending: false });
 
           if (noEmailError) {
+            console.error('❌ Erro mesmo sem email:', noEmailError);
             toast({
               variant: "destructive",
-              title: "Erro de Permissão",
-              description: `Não foi possível carregar os usuários. Verifique se você tem permissão de admin. Erro: ${noEmailError.message}`
+              title: "Erro de Permissão RLS",
+              description: `Não foi possível carregar os usuários. A migration pode não ter sido aplicada. Erro: ${noEmailError.message}. Verifique o console para mais detalhes.`
             });
             setUsers([]);
             setLoading(false);
             return;
           } else {
+            console.log('✅ Usuários carregados sem email (fallback)');
             // Usar perfis sem email como fallback
             setUsers((profilesWithoutEmail || []).map(profile => ({
               id: profile.id,
@@ -118,11 +176,27 @@ const AdminUsuarios = () => {
           }
         } else {
           // Outro tipo de erro
-          throw profilesError;
+          console.error('❌ Erro inesperado:', profilesError);
+          toast({
+            variant: "destructive",
+            title: "Erro ao Carregar Usuários",
+            description: `Erro: ${profilesError.message}. Verifique o console para mais detalhes.`
+          });
+          setUsers([]);
+          setLoading(false);
+          return;
         }
       }
 
+      console.log('✅ Perfis carregados com sucesso:', profiles?.length || 0);
+
       if (!profiles || profiles.length === 0) {
+        console.warn('⚠️ Nenhum perfil encontrado na tabela profiles');
+        toast({
+          variant: "default",
+          title: "Nenhum Usuário Encontrado",
+          description: "Não há usuários cadastrados no sistema."
+        });
         setUsers([]);
         setLoading(false);
         return;
@@ -230,6 +304,32 @@ const AdminUsuarios = () => {
         }
       }
 
+      // Se não usou a view, verificar se profiles tem email (coluna foi adicionada)
+      const emailsMap = {};
+      if (!hasEmailsInData && profiles) {
+        // Se profiles já tem email (coluna foi adicionada), não precisa buscar via RPC
+        if (profiles.length > 0 && profiles[0].email !== undefined) {
+          console.log('✅ Emails carregados diretamente de profiles');
+          hasEmailsInData = true; // Marcar que já tem emails
+        } else {
+          // Fallback: tentar buscar via RPC se coluna ainda não existe
+          try {
+            const userIds = profiles.map(p => p.id);
+            const { data: emailsData, error: emailsError } = await supabase.rpc('get_user_emails', {
+              user_ids: userIds
+            });
+            
+            if (!emailsError && emailsData) {
+              emailsData.forEach((item) => {
+                emailsMap[item.user_id] = item.email;
+              });
+              console.log('✅ Emails carregados via RPC:', Object.keys(emailsMap).length);
+            }
+          } catch (error) {
+            console.warn('Não foi possível buscar emails:', error);
+          }
+        }
+      }
 
       // Formatar usuários com informações completas
       const formattedUsers = profiles.map(profile => {
@@ -237,13 +337,16 @@ const AdminUsuarios = () => {
         const subscriptions = subscriptionsByUser[profile.id] || [];
         const allAccess = [...trials, ...subscriptions];
         
+        // Email pode vir de: view, profile.email (coluna adicionada), ou emailsMap (RPC)
+        const userEmail = profile.email || emailsMap[profile.id] || 'Email não disponível';
+        
         return {
           id: profile.id,
-          email: profile.email || 'Email não disponível',
+          email: userEmail,
           fullName: profile.full_name || 'Sem nome',
           phone: profile.phone || 'Sem telefone',
           role: profile.role || 'USER',
-          createdAt: new Date().toISOString(),
+          createdAt: profile.created_at || new Date().toISOString(),
           activeTrials: trials,
           activeSubscriptions: subscriptions,
           allAccess: allAccess,
