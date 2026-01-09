@@ -20,55 +20,69 @@ Content-Type: application/json
 ```json
 {
   "userId": "550e8400-e29b-41d4-a716-446655440000",
-  "email": "usuario@exemplo.com"
+  "email": "usuario@exemplo.com",
+  "appId": "e8ff7872-dedb-405c-bf8a-f7901ac4b432"
 }
 ```
+
+**⚠️ IMPORTANTE**: A função agora verifica acesso **específico ao app** (sistema híbrido).
 
 ### Campos Obrigatórios
 - `userId` (string, UUID): ID único do usuário no Supabase Auth
 - `email` (string, email): Email do usuário autenticado
+- `appId` ou `productId` (string, UUID): **OBRIGATÓRIO** - ID do app para verificar acesso específico
 
 ## 📥 Response (Resposta)
 
 ### Status Codes
 
 - `200 OK` - Requisição bem-sucedida
-- `400 Bad Request` - Dados inválidos (userId ou email ausentes)
+- `400 Bad Request` - Dados inválidos (userId, email ou appId ausentes)
 - `500 Internal Server Error` - Erro no servidor
 
 ### Response Body (Sucesso - 200)
 
-#### Usuário com Assinatura Ativa
+#### Usuário com Assinatura Ativa para o App Específico
 ```json
 {
   "hasAccess": true,
   "isSubscriber": true,
   "isTrial": false,
   "subscriptionStatus": "active",
-  "expiresAt": "2024-12-31T23:59:59Z"
+  "appId": "e8ff7872-dedb-405c-bf8a-f7901ac4b432",
+  "appName": "JornadaPro",
+  "appSlug": "jornadapro",
+  "purchaseType": "LIFETIME",
+  "expiresAt": null
 }
 ```
 
-#### Usuário em Período de Teste
+#### Usuário em Período de Teste para o App Específico
 ```json
 {
   "hasAccess": true,
   "isSubscriber": false,
   "isTrial": true,
   "subscriptionStatus": "trial",
+  "appId": "e8ff7872-dedb-405c-bf8a-f7901ac4b432",
+  "appName": "JornadaPro",
+  "appSlug": "jornadapro",
   "trialExpiresAt": "2024-01-15T23:59:59Z",
   "daysRemaining": 7
 }
 ```
 
-#### Usuário sem Acesso
+#### Usuário sem Acesso ao App Específico
 ```json
 {
   "hasAccess": false,
   "isSubscriber": false,
   "isTrial": false,
   "subscriptionStatus": "none",
-  "message": "Assinatura não encontrada ou expirada"
+  "appId": "e8ff7872-dedb-405c-bf8a-f7901ac4b432",
+  "appName": "JornadaPro",
+  "appSlug": "jornadapro",
+  "message": "Usuário não tem acesso ao app \"JornadaPro\" (ID: e8ff7872-dedb-405c-bf8a-f7901ac4b432)"
 }
 ```
 
@@ -76,7 +90,7 @@ Content-Type: application/json
 ```json
 {
   "error": "Bad Request",
-  "message": "userId e email são obrigatórios"
+  "message": "appId ou productId é obrigatório para verificar acesso ao app específico"
 }
 ```
 
@@ -92,32 +106,43 @@ Content-Type: application/json
 
 | Campo | Tipo | Descrição |
 |-------|------|-----------|
-| `hasAccess` | boolean | **Obrigatório** - Indica se o usuário tem acesso (true se `isSubscriber` OU `isTrial` for true) |
-| `isSubscriber` | boolean | **Obrigatório** - Indica se o usuário tem assinatura ativa |
-| `isTrial` | boolean | **Obrigatório** - Indica se o usuário está em período de teste |
-| `subscriptionStatus` | string | Status da assinatura: `"active"`, `"trial"`, `"expired"`, `"none"` |
-| `expiresAt` | string (ISO 8601) | Data de expiração da assinatura (se aplicável) |
+| `hasAccess` | boolean | **Obrigatório** - Indica se o usuário tem acesso ao app específico (true se `isSubscriber` OU `isTrial` for true) |
+| `isSubscriber` | boolean | **Obrigatório** - Indica se o usuário tem assinatura ativa para o app específico |
+| `isTrial` | boolean | **Obrigatório** - Indica se o usuário está em período de teste para o app específico |
+| `subscriptionStatus` | string | Status da assinatura: `"active"`, `"trial"`, `"none"` |
+| `appId` | string (UUID) | **Obrigatório** - ID do app verificado |
+| `appName` | string | Nome do app verificado |
+| `appSlug` | string | Slug do app (se disponível) |
+| `purchaseType` | string | Tipo de compra: `"MONTHLY"`, `"ANNUAL"`, `"LIFETIME"` (se aplicável) |
+| `expiresAt` | string (ISO 8601) | Data de expiração da assinatura (se aplicável, null para LIFETIME) |
 | `trialExpiresAt` | string (ISO 8601) | Data de expiração do teste (se aplicável) |
-| `daysRemaining` | number | Dias restantes no período de teste |
+| `daysRemaining` | number | Dias restantes no período de teste (se aplicável) |
 | `message` | string | Mensagem adicional (opcional) |
 
-## 🔐 Lógica de Acesso
+## 🔐 Lógica de Acesso (Sistema Híbrido)
+
+⚠️ **IMPORTANTE**: A função agora verifica acesso **específico ao app** (sistema híbrido).
 
 O sistema considera que o usuário tem acesso se:
-- `hasAccess === true` **OU**
-- `isSubscriber === true` **OU**
-- `isTrial === true`
+- `hasAccess === true` **E** o acesso é **para o app específico informado**
+- `isSubscriber === true` **E** a assinatura é **para o app específico**
+- `isTrial === true` **E** o trial é **para o app específico**
 
-### Verificação de Assinatura
+**Exemplo**: Se o usuário tem acesso ao JornadaPro mas não ao App de Vendas, ele será **bloqueado** ao tentar acessar o App de Vendas, mesmo tendo JornadaPro.
+
+### Verificação de Assinatura por App
 
 A função verifica:
-1. **Assinaturas Ativas** (`user_purchases`):
+1. **App Existe e Está Ativo**: Verifica se o `appId` existe na tabela `registered_apps` e está ativo
+2. **Assinaturas Ativas para o App Específico** (`user_purchases`):
    - Status: `APPROVED`
+   - `app_id` = `appId` fornecido (filtro específico)
    - Tipo: `MONTHLY`, `ANNUAL` ou `LIFETIME`
    - Para `MONTHLY` e `ANNUAL`: `expires_at` deve ser maior que a data atual
    - Para `LIFETIME`: sempre ativo se aprovado
 
-2. **Trials Ativos** (`user_trials`):
+3. **Trials Ativos para o App Específico** (`user_trials`):
+   - `app_id` = `appId` fornecido (filtro específico)
    - `is_active = true`
    - `expires_at` deve ser maior que a data atual
 
@@ -126,8 +151,8 @@ A função verifica:
 ### JavaScript/TypeScript
 
 ```javascript
-const checkSubscription = async (userId, email) => {
-  const response = await fetch('https://lwdigitalforge.com/functions/v1/check-subscription', {
+const checkSubscription = async (userId, email, appId) => {
+  const response = await fetch('https://wwwwyuwighdehmvnolrl.supabase.co/functions/v1/check-subscription', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -135,6 +160,7 @@ const checkSubscription = async (userId, email) => {
     body: JSON.stringify({
       userId,
       email,
+      appId, // OBRIGATÓRIO - ID do app específico
     }),
   });
 
@@ -145,29 +171,38 @@ const checkSubscription = async (userId, email) => {
 // Uso
 const result = await checkSubscription(
   '550e8400-e29b-41d4-a716-446655440000',
-  'usuario@exemplo.com'
+  'usuario@exemplo.com',
+  'e8ff7872-dedb-405c-bf8a-f7901ac4b432' // ID do JornadaPro
 );
 
 if (result.hasAccess) {
-  console.log('Usuário tem acesso!');
+  console.log(`Usuário tem acesso ao app: ${result.appName}`);
   if (result.isSubscriber) {
-    console.log('Assinatura ativa até:', result.expiresAt);
+    console.log(`Tipo: ${result.purchaseType}`);
+    if (result.expiresAt) {
+      console.log('Expira em:', result.expiresAt);
+    } else {
+      console.log('Acesso vitalício!');
+    }
   } else if (result.isTrial) {
-    console.log('Trial ativo. Dias restantes:', result.daysRemaining);
+    console.log(`Trial ativo. Dias restantes: ${result.daysRemaining}`);
+    console.log('Expira em:', result.trialExpiresAt);
   }
 } else {
-  console.log('Usuário não tem acesso');
+  console.log(`Usuário não tem acesso ao app: ${result.appName}`);
+  console.log(result.message);
 }
 ```
 
 ### cURL
 
 ```bash
-curl -X POST https://lwdigitalforge.com/functions/v1/check-subscription \
+curl -X POST https://wwwwyuwighdehmvnolrl.supabase.co/functions/v1/check-subscription \
   -H "Content-Type: application/json" \
   -d '{
     "userId": "550e8400-e29b-41d4-a716-446655440000",
-    "email": "usuario@exemplo.com"
+    "email": "usuario@exemplo.com",
+    "appId": "e8ff7872-dedb-405c-bf8a-f7901ac4b432"
   }'
 ```
 
@@ -176,8 +211,9 @@ curl -X POST https://lwdigitalforge.com/functions/v1/check-subscription \
 A função consulta as seguintes tabelas:
 
 - **`profiles`**: Verifica se o usuário existe e o email corresponde
-- **`user_purchases`**: Verifica assinaturas ativas
-- **`user_trials`**: Verifica trials ativos
+- **`registered_apps`**: Verifica se o app existe e está ativo
+- **`user_purchases`**: Verifica assinaturas ativas **para o app específico** (filtro por `app_id`)
+- **`user_trials`**: Verifica trials ativos **para o app específico** (filtro por `app_id`)
 
 ## 🔒 Segurança
 
@@ -198,15 +234,16 @@ A função consulta as seguintes tabelas:
 Para testar a função localmente:
 
 ```bash
-# Usando Supabase CLI
-supabase functions serve check-subscription
+# Usando Supabase CLI (com npx)
+npx supabase functions serve check-subscription
 
 # Testar com curl
 curl -X POST http://localhost:54321/functions/v1/check-subscription \
   -H "Content-Type: application/json" \
   -d '{
     "userId": "seu-user-id",
-    "email": "seu-email@exemplo.com"
+    "email": "seu-email@exemplo.com",
+    "appId": "e8ff7872-dedb-405c-bf8a-f7901ac4b432"
   }'
 ```
 

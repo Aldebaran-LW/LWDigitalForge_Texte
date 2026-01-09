@@ -63,15 +63,16 @@ function logInfo(message) {
 
 /**
  * Chama a Edge Function check-subscription
+ * ⚠️ IMPORTANTE: Agora exige appId (sistema híbrido)
  */
-async function callCheckSubscription(userId, email) {
+async function callCheckSubscription(userId, email, appId = 'e8ff7872-dedb-405c-bf8a-f7901ac4b432') {
   try {
     const response = await fetch(EDGE_FUNCTION_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ userId, email }),
+      body: JSON.stringify({ userId, email, appId }),
     });
 
     const data = await response.json();
@@ -87,7 +88,7 @@ async function callCheckSubscription(userId, email) {
 async function testMissingUserId() {
   logTest('Validação: userId ausente');
   
-  const result = await callCheckSubscription(null, 'test@example.com');
+  const result = await callCheckSubscription(null, 'test@example.com', 'e8ff7872-dedb-405c-bf8a-f7901ac4b432');
   
   if (result.status === 400 && result.data?.error === 'Bad Request') {
     logSuccess('Retornou 400 Bad Request');
@@ -101,12 +102,48 @@ async function testMissingUserId() {
 }
 
 /**
+ * Teste 1b: Validação - appId ausente (NOVO)
+ */
+async function testMissingAppId() {
+  logTest('Validação: appId ausente (NOVO - Sistema Híbrido)');
+  
+  try {
+    const response = await fetch(EDGE_FUNCTION_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ 
+        userId: '550e8400-e29b-41d4-a716-446655440000',
+        email: 'test@example.com'
+        // appId ausente propositalmente
+      }),
+    });
+
+    const data = await response.json();
+    
+    if (response.status === 400 && data?.error === 'Bad Request' && data?.message?.includes('appId')) {
+      logSuccess('Retornou 400 Bad Request para appId ausente');
+      logInfo(`Mensagem: ${data.message}`);
+      return true;
+    } else {
+      logError(`Esperado 400, recebido ${response.status}`);
+      logInfo(`Resposta: ${JSON.stringify(data, null, 2)}`);
+      return false;
+    }
+  } catch (error) {
+    logError(`Erro: ${error.message}`);
+    return false;
+  }
+}
+
+/**
  * Teste 2: Validação - email ausente
  */
 async function testMissingEmail() {
   logTest('Validação: email ausente');
   
-  const result = await callCheckSubscription('550e8400-e29b-41d4-a716-446655440000', null);
+  const result = await callCheckSubscription('550e8400-e29b-41d4-a716-446655440000', null, 'e8ff7872-dedb-405c-bf8a-f7901ac4b432');
   
   if (result.status === 400 && result.data?.error === 'Bad Request') {
     logSuccess('Retornou 400 Bad Request');
@@ -124,7 +161,7 @@ async function testMissingEmail() {
 async function testInvalidEmail() {
   logTest('Validação: email inválido');
   
-  const result = await callCheckSubscription('550e8400-e29b-41d4-a716-446655440000', 'email-invalido');
+  const result = await callCheckSubscription('550e8400-e29b-41d4-a716-446655440000', 'email-invalido', 'e8ff7872-dedb-405c-bf8a-f7901ac4b432');
   
   if (result.status === 400 && result.data?.error === 'Bad Request') {
     logSuccess('Retornou 400 Bad Request');
@@ -144,17 +181,20 @@ async function testUserNotFound() {
   
   const fakeUserId = '00000000-0000-0000-0000-000000000000';
   const fakeEmail = 'naoexiste@example.com';
+  const appId = 'e8ff7872-dedb-405c-bf8a-f7901ac4b432';
   
-  const result = await callCheckSubscription(fakeUserId, fakeEmail);
+  const result = await callCheckSubscription(fakeUserId, fakeEmail, appId);
   
   if (result.status === 200) {
     const data = result.data;
     if (data.hasAccess === false && 
         data.isSubscriber === false && 
         data.isTrial === false &&
-        data.subscriptionStatus === 'none') {
+        data.subscriptionStatus === 'none' &&
+        data.appId === appId) {
       logSuccess('Retornou resposta correta para usuário não encontrado');
       logInfo(`Mensagem: ${data.message}`);
+      logInfo(`App verificado: ${data.appName || data.appId}`);
       return true;
     } else {
       logError('Resposta não corresponde ao esperado');
@@ -191,16 +231,18 @@ async function getTestUser() {
 }
 
 /**
- * Teste 6: Verificar estrutura de resposta
+ * Teste 6: Verificar estrutura de resposta (Atualizado para Sistema Híbrido)
  */
 async function testResponseStructure(userId, email) {
-  logTest('Estrutura da Resposta');
+  logTest('Estrutura da Resposta (Sistema Híbrido)');
   
-  const result = await callCheckSubscription(userId, email);
+  const appId = 'e8ff7872-dedb-405c-bf8a-f7901ac4b432';
+  const result = await callCheckSubscription(userId, email, appId);
   
   if (result.status === 200 && result.data) {
     const data = result.data;
-    const requiredFields = ['hasAccess', 'isSubscriber', 'isTrial', 'subscriptionStatus'];
+    // Novos campos obrigatórios para sistema híbrido
+    const requiredFields = ['hasAccess', 'isSubscriber', 'isTrial', 'subscriptionStatus', 'appId', 'appName'];
     const missingFields = requiredFields.filter(field => !(field in data));
     
     if (missingFields.length === 0) {
@@ -209,8 +251,12 @@ async function testResponseStructure(userId, email) {
       logInfo(`isSubscriber: ${data.isSubscriber}`);
       logInfo(`isTrial: ${data.isTrial}`);
       logInfo(`subscriptionStatus: ${data.subscriptionStatus}`);
+      logInfo(`appId: ${data.appId}`);
+      logInfo(`appName: ${data.appName}`);
+      if (data.appSlug) logInfo(`appSlug: ${data.appSlug}`);
       
       if (data.expiresAt) logInfo(`expiresAt: ${data.expiresAt}`);
+      if (data.purchaseType) logInfo(`purchaseType: ${data.purchaseType}`);
       if (data.trialExpiresAt) logInfo(`trialExpiresAt: ${data.trialExpiresAt}`);
       if (data.daysRemaining !== undefined) logInfo(`daysRemaining: ${data.daysRemaining}`);
       
@@ -228,20 +274,23 @@ async function testResponseStructure(userId, email) {
 }
 
 /**
- * Teste 7: Verificar lógica de acesso
+ * Teste 7: Verificar lógica de acesso (Sistema Híbrido - por App)
  */
 async function testAccessLogic(userId, email) {
-  logTest('Lógica de Acesso');
+  logTest('Lógica de Acesso (Sistema Híbrido - por App)');
   
-  const result = await callCheckSubscription(userId, email);
+  const appId = 'e8ff7872-dedb-405c-bf8a-f7901ac4b432';
+  const result = await callCheckSubscription(userId, email, appId);
   
   if (result.status === 200 && result.data) {
     const data = result.data;
     const expectedHasAccess = data.isSubscriber || data.isTrial;
     
     if (data.hasAccess === expectedHasAccess) {
-      logSuccess('Lógica de acesso está correta');
+      logSuccess('Lógica de acesso está correta (verificando acesso ao app específico)');
+      logInfo(`App verificado: ${data.appName} (${data.appId})`);
       logInfo(`hasAccess (${data.hasAccess}) = isSubscriber (${data.isSubscriber}) OU isTrial (${data.isTrial})`);
+      if (data.message) logInfo(`Mensagem: ${data.message}`);
       return true;
     } else {
       logError(`Lógica incorreta: hasAccess=${data.hasAccess}, mas deveria ser ${expectedHasAccess}`);
@@ -314,7 +363,7 @@ async function testConnection() {
   logWarning('⚠️  IMPORTANTE: A função precisa estar deployada em produção!');
   
   try {
-    const result = await callCheckSubscription('test', 'test@test.com');
+    const result = await callCheckSubscription('test', 'test@test.com', 'e8ff7872-dedb-405c-bf8a-f7901ac4b432');
     
     if (result.error) {
       if (result.error.includes('ECONNREFUSED') || result.error.includes('fetch failed')) {
@@ -379,6 +428,9 @@ async function runAllTests() {
   if (await testMissingUserId()) results.passed++;
   else results.failed++;
   
+  if (await testMissingAppId()) results.passed++;
+  else results.failed++;
+  
   if (await testMissingEmail()) results.passed++;
   else results.failed++;
   
@@ -402,7 +454,8 @@ async function runAllTests() {
     
     // Teste adicional: Verificar campos condicionais
     logTest('Campos Condicionais na Resposta');
-    const result = await callCheckSubscription(testUser.id, testUser.email);
+    const appId = 'e8ff7872-dedb-405c-bf8a-f7901ac4b432';
+    const result = await callCheckSubscription(testUser.id, testUser.email, appId);
     if (result.status === 200 && result.data) {
       const data = result.data;
       let conditionalFieldsOk = true;
