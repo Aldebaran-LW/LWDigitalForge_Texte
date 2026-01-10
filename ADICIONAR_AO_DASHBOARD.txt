@@ -1,0 +1,82 @@
+═══════════════════════════════════════════════════════════════
+🎯 COMO ADICIONAR AO PORTAL DASHBOARD
+═══════════════════════════════════════════════════════════════
+
+OPÇÃO 1: Componente Pronto (Mais Fácil) ✅
+───────────────────────────────────────────────────────────────
+
+1. Abra: src/pages/portal/PortalDashboard.jsx
+
+2. Adicione no topo (com os outros imports):
+   import { SubscriptionStatus } from '@/components/SubscriptionStatus';
+
+3. Dentro do return, adicione ANTES do conteúdo existente:
+   <SubscriptionStatus />
+
+Pronto! O card de status aparecerá automaticamente.
+
+───────────────────────────────────────────────────────────────
+OPÇÃO 2: Hook Manual (Mais Controle)
+───────────────────────────────────────────────────────────────
+
+1. Adicione o import:
+   import { useSubscriptionAccess } from '@/hooks/useSubscription';
+
+2. Dentro do componente, adicione:
+   const { hasAccess, subscriptionData, loading } = useSubscriptionAccess();
+
+3. Use no JSX:
+   {hasAccess && <div>Você tem acesso!</div>}
+   {!hasAccess && <div>Sem acesso</div>}
+
+═══════════════════════════════════════════════════════════════
+📝 EXEMPLO COMPLETO - ONDE COLOCAR
+═══════════════════════════════════════════════════════════════
+
+// src/pages/portal/PortalDashboard.jsx
+
+import { SubscriptionStatus } from '@/components/SubscriptionStatus';  // ← ADICIONAR
+
+function PortalDashboard() {
+  // ... código existente ...
+  
+  return (
+    <div>
+      {/* ← ADICIONAR AQUI */}
+      <SubscriptionStatus />
+      
+      {/* Resto do código existente... */}
+    </div>
+  );
+}
+
+═══════════════════════════════════════════════════════════════
+🎨 O QUE VAI APARECER
+═══════════════════════════════════════════════════════════════
+
+Um card bonito mostrando:
+✅ Status da assinatura (Ativa/Trial/Sem Assinatura)
+✅ Data de expiração (se aplicável)
+✅ Dias restantes (se em trial)
+✅ Badge de "Acesso Ativo" ou "Sem Acesso"
+
+═══════════════════════════════════════════════════════════════
+💡 OUTROS LUGARES ÚTEIS PARA USAR
+═══════════════════════════════════════════════════════════════
+
+1. Portal Assinaturas - Verificar antes de mostrar lista
+2. Página de Produto - Bloquear download sem assinatura
+3. Portal Meus Produtos - Mostrar badge de status
+4. Qualquer página que precise verificar acesso
+
+═══════════════════════════════════════════════════════════════
+
+
+
+
+
+
+
+
+
+

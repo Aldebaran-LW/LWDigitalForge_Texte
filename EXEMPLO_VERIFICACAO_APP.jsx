@@ -7,8 +7,9 @@
 import { useEffect, useState } from 'react';
 import { supabase } from './lib/supabase'; // Configure seu cliente Supabase
 
-// IMPORTANTE: Configure o ID do produto
+// IMPORTANTE: Configure o ID do produto e URL do portal
 const PRODUCT_ID = import.meta.env.VITE_PRODUCT_ID || 'uuid-do-produto-aqui';
+const PORTAL_URL = import.meta.env.VITE_PORTAL_URL || 'https://www.lwdigitalforge.com'; // URL do portal principal
 
 function App() {
   const [user, setUser] = useState(null);
@@ -129,10 +130,10 @@ function App() {
             Você não tem acesso a este aplicativo. Por favor, verifique sua assinatura ou entre em contato com o suporte.
           </p>
           <a
-            href="https://seu-portal.com/portal/assinaturas"
+            href={`${PORTAL_URL}/portal/produtos`}
             className="inline-block px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"
           >
-            Ver Assinaturas
+            Ver Produtos
           </a>
         </div>
       </div>

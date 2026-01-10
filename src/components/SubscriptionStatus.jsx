@@ -5,15 +5,42 @@ import { Loader2, CheckCircle, XCircle, Clock } from 'lucide-react';
 /**
  * Componente para exibir o status de assinatura do usuário
  * 
+ * @param {string} appId - ID do app/produto (opcional, tenta ler do sessionStorage se não fornecido)
+ * 
  * @example
- * <SubscriptionStatus />
+ * <SubscriptionStatus appId="app-id-here" />
+ * // ou
+ * <SubscriptionStatus /> // Tenta ler do sessionStorage
  */
-export function SubscriptionStatus() {
-  const { hasAccess, subscriptionData, loading, error, refresh } = useSubscriptionAccess();
+export function SubscriptionStatus({ appId: propAppId = null }) {
+  // Tentar ler appId do sessionStorage se não foi fornecido como prop
+  const [appId, setAppId] = React.useState(() => {
+    if (propAppId) return propAppId;
+    if (typeof window !== 'undefined') {
+      return sessionStorage.getItem('app_product_id');
+    }
+    return null;
+  });
+  
+  const { hasAccess, subscriptionData, loading, error, refresh } = useSubscriptionAccess(appId);
 
   useEffect(() => {
-    refresh();
-  }, [refresh]);
+    if (appId) {
+      refresh();
+    }
+  }, [refresh, appId]);
+  
+  // Se não tem appId, mostrar aviso
+  if (!appId) {
+    return (
+      <div className="p-6 border rounded-lg bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800">
+        <div className="flex items-center text-yellow-800 dark:text-yellow-200">
+          <XCircle className="h-5 w-5 mr-2" />
+          <span>App ID não encontrado. Certifique-se de acessar a aplicação através do portal.</span>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (

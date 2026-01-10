@@ -1,0 +1,82 @@
+═══════════════════════════════════════════════════════════════
+🚀 TESTE LOCAL - PORTA 3000
+═══════════════════════════════════════════════════════════════
+
+✅ Servidor iniciado em background!
+
+Acesse: http://localhost:3000
+
+═══════════════════════════════════════════════════════════════
+🧪 COMO TESTAR
+═══════════════════════════════════════════════════════════════
+
+1. ADMIN DASHBOARD (Já tem componente!)
+   ───────────────────────────────────────────────────────────
+   http://localhost:3000/admin/dashboard
+   
+   → Role até o componente "Verificar Assinatura de Usuário"
+   → Cole User ID e Email de um usuário real
+   → Clique em "Verificar Assinatura"
+   → Veja o resultado!
+
+2. PORTAL DASHBOARD (Adicionar componente)
+   ───────────────────────────────────────────────────────────
+   http://localhost:3000/portal/dashboard
+   
+   → Se adicionou o <SubscriptionStatus />, verá o card
+   → Se não adicionou, não aparecerá nada ainda
+
+3. TESTE NO CONSOLE DO NAVEGADOR
+   ───────────────────────────────────────────────────────────
+   
+   Abra o Console (F12) e execute:
+   
+   fetch('https://wwwwyuwighdehmvnolrl.supabase.co/functions/v1/check-subscription', {
+     method: 'POST',
+     headers: { 'Content-Type': 'application/json' },
+     body: JSON.stringify({
+       userId: '00000000-0000-0000-0000-000000000000',
+       email: 'test@test.com'
+     })
+   })
+   .then(r => r.json())
+   .then(console.log);
+
+═══════════════════════════════════════════════════════════════
+📝 ONDE TESTAR
+═══════════════════════════════════════════════════════════════
+
+✅ Admin Dashboard:
+   http://localhost:3000/admin/dashboard
+   → Componente já está lá!
+
+✅ Portal Dashboard:
+   http://localhost:3000/portal/dashboard
+   → Adicione <SubscriptionStatus /> se quiser
+
+✅ Admin Usuários:
+   http://localhost:3000/admin/usuarios
+   → Pode usar o hook para verificar usuários
+
+═══════════════════════════════════════════════════════════════
+🎯 TESTE RÁPIDO NO ADMIN
+═══════════════════════════════════════════════════════════════
+
+1. Acesse: http://localhost:3000/admin/dashboard
+2. Faça login como admin (se necessário)
+3. Role até "Verificar Assinatura de Usuário"
+4. Pegue um User ID e Email de um usuário real
+5. Cole e clique em "Verificar"
+6. Veja o resultado!
+
+═══════════════════════════════════════════════════════════════
+
+
+
+
+
+
+
+
+
+

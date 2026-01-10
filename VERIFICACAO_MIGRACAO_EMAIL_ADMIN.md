@@ -68,3 +68,9 @@ Se ainda não funcionar, pode ser que:
 3. Políticas RLS podem precisar de alguns segundos para atualizar
 
 
+
+
+
+
+
+

@@ -1,0 +1,58 @@
+═══════════════════════════════════════════════════════════════
+🚀 COMO EXECUTAR OS SCRIPTS
+═══════════════════════════════════════════════════════════════
+
+───────────────────────────────────────────────────────────────
+OPÇÃO 1: NO POWERSHELL (Recomendado)
+───────────────────────────────────────────────────────────────
+
+Execute:
+.\DEPLOY.ps1
+
+Ou:
+.\DEPLOY.bat
+
+───────────────────────────────────────────────────────────────
+OPÇÃO 2: NO CMD (Prompt de Comando)
+───────────────────────────────────────────────────────────────
+
+Execute:
+DEPLOY.bat
+
+───────────────────────────────────────────────────────────────
+OPÇÃO 3: CLIQUE DUPLO
+───────────────────────────────────────────────────────────────
+
+1. Abra a pasta no Windows Explorer
+2. Clique duas vezes em: DEPLOY.bat
+   (Funciona no CMD, não no PowerShell)
+
+═══════════════════════════════════════════════════════════════
+⚠️ IMPORTANTE NO POWERSHELL
+═══════════════════════════════════════════════════════════════
+
+No PowerShell, SEMPRE use: .\ antes do nome do arquivo
+
+✅ CORRETO:  .\DEPLOY.bat
+✅ CORRETO:  .\DEPLOY.ps1
+❌ ERRADO:   DEPLOY.bat
+
+═══════════════════════════════════════════════════════════════
+📝 ARQUIVOS DISPONÍVEIS
+═══════════════════════════════════════════════════════════════
+
+- DEPLOY.bat    → Para CMD (clique duplo funciona)
+- DEPLOY.ps1    → Para PowerShell (mais robusto)
+- DEPLOY_E_TESTAR.bat → Deploy + testes automáticos
+
+═══════════════════════════════════════════════════════════════
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,56 @@
+═══════════════════════════════════════════════════════════════
+🎯 ONDE EXECUTAR OS COMANDOS?
+═══════════════════════════════════════════════════════════════
+
+❌ NÃO execute no Supabase Dashboard (site)
+✅ SIM, execute no SEU TERMINAL (PowerShell ou CMD)
+
+═══════════════════════════════════════════════════════════════
+📋 COMANDOS EXATOS PARA COPIAR E COLAR
+═══════════════════════════════════════════════════════════════
+
+1. Abra o PowerShell ou CMD no Windows
+
+2. Vá até a pasta do projeto:
+   cd C:\Users\LUCAS_W\Documents\GitHub\LWDigitalForge_Texte
+
+3. Execute UM destes comandos:
+
+   OPÇÃO A (Mais Fácil):
+   .\DEPLOY_COM_TOKEN.ps1
+   
+   OPÇÃO B (Manual):
+   $env:SUPABASE_ACCESS_TOKEN="COLE_SEU_TOKEN_AQUI"
+   npx supabase functions deploy check-subscription
+
+═══════════════════════════════════════════════════════════════
+🔑 ONDE PEGAR O TOKEN?
+═══════════════════════════════════════════════════════════════
+
+1. Abra no navegador: https://supabase.com/dashboard/account/tokens
+2. Clique em "Generate New Token"
+3. Copie o token (aparece só uma vez!)
+
+═══════════════════════════════════════════════════════════════
+✅ EXEMPLO VISUAL
+═══════════════════════════════════════════════════════════════
+
+No PowerShell você verá algo assim:
+
+PS C:\Users\LUCAS_W\Documents\GitHub\LWDigitalForge_Texte> .\DEPLOY_COM_TOKEN.ps1
+
+📝 Cole seu SUPABASE_ACCESS_TOKEN aqui: sbp_abc123...
+📤 Fazendo deploy...
+✅ Deploy realizado com sucesso!
+
+═══════════════════════════════════════════════════════════════
+
+
+
+
+
+
+
+
+
+

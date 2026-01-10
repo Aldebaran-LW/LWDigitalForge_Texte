@@ -13,6 +13,59 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
+/**
+ * Verifica a assinatura do webhook do Mercado Pago usando HMAC-SHA256
+ * @param payload - Corpo da requisição como string
+ * @param signature - Assinatura recebida no header x-signature
+ * @param secret - Chave secreta (access token do Mercado Pago)
+ * @returns true se a assinatura for válida
+ */
+async function verifySignature(
+  payload: string,
+  signature: string,
+  secret: string
+): Promise<boolean> {
+  try {
+    // Criar chave para HMAC
+    const keyData = new TextEncoder().encode(secret);
+    const key = await crypto.subtle.importKey(
+      "raw",
+      keyData,
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["sign"]
+    );
+
+    // Calcular HMAC do payload
+    const payloadData = new TextEncoder().encode(payload);
+    const hmac = await crypto.subtle.sign("HMAC", key, payloadData);
+
+    // Converter para hex
+    const calculatedSignature = Array.from(new Uint8Array(hmac))
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
+
+    // Comparar assinaturas (timing-safe comparison)
+    const receivedSignature = signature.replace(/^sha256=/, "").toLowerCase();
+    const calculatedLower = calculatedSignature.toLowerCase();
+
+    // Comparação timing-safe
+    if (receivedSignature.length !== calculatedLower.length) {
+      return false;
+    }
+
+    let result = 0;
+    for (let i = 0; i < receivedSignature.length; i++) {
+      result |= receivedSignature.charCodeAt(i) ^ calculatedLower.charCodeAt(i);
+    }
+
+    return result === 0;
+  } catch (error) {
+    console.error("Erro ao verificar assinatura:", error);
+    return false;
+  }
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -25,8 +78,43 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Obter dados da notificação
-    const body = await req.json();
+    // Obter access token para verificação de assinatura
+    const accessToken = Deno.env.get("MERCADOPAGO_ACCESS_TOKEN");
+    if (!accessToken) {
+      console.error("MERCADOPAGO_ACCESS_TOKEN não configurado");
+      return new Response(
+        JSON.stringify({ error: "Configuração de pagamento não disponível" }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // Obter corpo da requisição como texto para verificação de assinatura
+    const bodyText = await req.text();
+    
+    // Verificar assinatura do webhook (se presente)
+    const signatureHeader = req.headers.get("x-signature");
+    if (signatureHeader) {
+      const isValid = await verifySignature(bodyText, signatureHeader, accessToken);
+      if (!isValid) {
+        console.error("Assinatura do webhook inválida");
+        return new Response(
+          JSON.stringify({ error: "Assinatura inválida" }),
+          {
+            status: 401,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
+      console.log("✓ Assinatura do webhook verificada com sucesso");
+    } else {
+      console.warn("⚠ Header x-signature não presente - processando sem verificação de assinatura");
+    }
+
+    // Parse do corpo da requisição
+    const body = JSON.parse(bodyText);
     const { type, data } = body;
 
     // Mercado Pago envia notificações de diferentes tipos
@@ -53,18 +141,6 @@ serve(async (req) => {
     }
 
     // Configurar Mercado Pago para buscar detalhes do pagamento
-    const accessToken = Deno.env.get("MERCADOPAGO_ACCESS_TOKEN");
-    if (!accessToken) {
-      console.error("MERCADOPAGO_ACCESS_TOKEN não configurado");
-      return new Response(
-        JSON.stringify({ error: "Configuração de pagamento não disponível" }),
-        {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
-    }
-
     const client = new MercadoPagoConfig({ accessToken });
     const payment = new Payment(client);
 
@@ -208,6 +284,7 @@ serve(async (req) => {
     );
   }
 });
+
 
 
 

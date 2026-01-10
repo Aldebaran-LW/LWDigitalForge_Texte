@@ -97,3 +97,13 @@ Com o MCP do Supabase configurado, você poderá:
 
 
 
+
+
+
+
+
+
+
+
+
+

@@ -15,20 +15,22 @@ export function AdminCheckSubscription() {
   const { checkSubscription, loading, error } = useSubscription();
   const [userId, setUserId] = useState('');
   const [email, setEmail] = useState('');
+  const [appId, setAppId] = useState('');
   const [result, setResult] = useState(null);
 
   const handleCheck = async () => {
-    if (!userId || !email) {
+    if (!userId || !email || !appId) {
       return;
     }
 
-    const data = await checkSubscription({ userId, email });
+    const data = await checkSubscription({ userId, email, appId });
     setResult(data);
   };
 
   const handleClear = () => {
     setUserId('');
     setEmail('');
+    setAppId('');
     setResult(null);
   };
 
@@ -66,10 +68,26 @@ export function AdminCheckSubscription() {
           />
         </div>
         
+        <div>
+          <Label htmlFor="appId" className="text-sm font-medium">
+            App ID / Product ID (UUID) *
+          </Label>
+          <Input
+            id="appId"
+            value={appId}
+            onChange={(e) => setAppId(e.target.value)}
+            placeholder="550e8400-e29b-41d4-a716-446655440000"
+            className="mt-1"
+          />
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            * Obrigatório para verificar acesso a um app específico
+          </p>
+        </div>
+        
         <div className="flex gap-2">
           <Button 
             onClick={handleCheck} 
-            disabled={loading || !userId || !email}
+            disabled={loading || !userId || !email || !appId}
             className="flex-1"
           >
             {loading ? (

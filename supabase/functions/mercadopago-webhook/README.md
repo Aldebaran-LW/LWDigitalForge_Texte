@@ -65,24 +65,32 @@ A função então busca os detalhes completos do pagamento na API do Mercado Pag
 
 ## 🔐 Segurança
 
-⚠️ **Importante**: Esta função não requer autenticação porque é chamada pelo Mercado Pago. No entanto, você deve:
+### ✅ Verificação de Assinatura
 
-1. **Validar a origem da requisição** (opcional, mas recomendado)
-2. **Usar HTTPS** sempre
-3. **Verificar o `external_reference`** antes de atualizar
+A função implementa **verificação de assinatura HMAC-SHA256** para garantir que as requisições realmente vêm do Mercado Pago:
 
-Para maior segurança, você pode adicionar validação de IP ou token secreto:
+1. **Verifica o header `x-signature`** se presente
+2. **Calcula HMAC-SHA256** do corpo da requisição usando o `MERCADOPAGO_ACCESS_TOKEN` como chave secreta
+3. **Compara as assinaturas** usando comparação timing-safe
+4. **Rejeita requisições** com assinatura inválida (status 401)
 
-```typescript
-// Exemplo de validação de token (opcional)
-const webhookSecret = Deno.env.get("MERCADOPAGO_WEBHOOK_SECRET");
-const providedSecret = req.headers.get("X-Webhook-Secret");
-if (webhookSecret && providedSecret !== webhookSecret) {
-  return new Response(JSON.stringify({ error: "Unauthorized" }), {
-    status: 401,
-  });
-}
-```
+**Comportamento:**
+- ✅ Se o header `x-signature` estiver presente, a assinatura é verificada
+- ⚠️ Se o header não estiver presente, a requisição é processada normalmente (compatibilidade)
+- ✅ Logs indicam quando a assinatura é verificada ou quando não está presente
+
+### 🔒 Outras Medidas de Segurança
+
+1. **Validação do `external_reference`** antes de atualizar compras
+2. **Verificação idempotente** através da API do Mercado Pago (busca detalhes do pagamento)
+3. **Uso de HTTPS** sempre (obrigatório em produção)
+4. **Service Role Key** usado apenas no servidor (nunca exposto ao cliente)
+
+### 📝 Notas
+
+- A verificação de assinatura usa o `MERCADOPAGO_ACCESS_TOKEN` como chave secreta
+- Se o Mercado Pago não enviar o header `x-signature`, a função ainda processa a requisição para manter compatibilidade
+- Logs indicam quando a verificação de assinatura é executada com sucesso
 
 ## 🐛 Debug
 
@@ -107,6 +115,7 @@ curl -X POST http://localhost:54321/functions/v1/mercadopago-webhook \
 
 - [Mercado Pago Webhooks Docs](https://www.mercadopago.com.br/developers/pt/docs/your-integrations/notifications/webhooks)
 - [Mercado Pago Payment API](https://www.mercadopago.com.br/developers/pt/reference/payments/_payments_id/get)
+
 
 
 

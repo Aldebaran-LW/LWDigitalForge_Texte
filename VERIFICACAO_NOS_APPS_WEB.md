@@ -150,11 +150,9 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [accessDenied, setAccessDenied] = useState(false);
 
-  // ID do produto - pode vir de:
-  // 1. Variável de ambiente: import.meta.env.VITE_PRODUCT_ID
-  // 2. URL/parâmetro
-  // 3. Configuração do app
+  // ID do produto e URL do portal - podem vir de variáveis de ambiente
   const PRODUCT_ID = import.meta.env.VITE_PRODUCT_ID || 'product-id-aqui';
+  const PORTAL_URL = import.meta.env.VITE_PORTAL_URL || 'https://www.lwdigitalforge.com'; // URL do portal principal
 
   useEffect(() => {
     const checkAccess = async () => {
@@ -198,10 +196,10 @@ function App() {
             Você não tem acesso a este aplicativo. Por favor, verifique sua assinatura ou entre em contato com o suporte.
           </p>
           <a
-            href="https://seu-portal.com/portal/assinaturas"
+            href={`${PORTAL_URL}/portal/produtos`}
             className="inline-block px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
           >
-            Ver Assinaturas
+            Ver Produtos
           </a>
         </div>
       </div>
@@ -225,6 +223,7 @@ No app web, adicione no `.env`:
 VITE_PRODUCT_ID=uuid-do-produto-aqui
 VITE_SUPABASE_URL=https://wwwwyuwighdehmvnolrl.supabase.co
 VITE_SUPABASE_ANON_KEY=sua-chave-anon
+VITE_PORTAL_URL=https://www.lwdigitalforge.com  # URL do portal principal
 ```
 
 ---
@@ -271,7 +270,8 @@ const productId = urlParams.get('productId');
 
 if (!token || !userId || !productId) {
   // Redirecionar ou mostrar erro
-  window.location.href = 'https://seu-portal.com/portal/assinaturas';
+  const PORTAL_URL = import.meta.env.VITE_PORTAL_URL || 'https://www.lwdigitalforge.com';
+  window.location.href = `${PORTAL_URL}/portal/produtos`;
 }
 ```
 

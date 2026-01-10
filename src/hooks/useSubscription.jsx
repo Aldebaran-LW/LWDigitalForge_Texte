@@ -26,6 +26,8 @@ export function useSubscription() {
    * @param {Object} options - Opções opcionais
    * @param {string} options.userId - ID do usuário (padrão: usuário logado)
    * @param {string} options.email - Email do usuário (padrão: email do usuário logado)
+   * @param {string} options.appId - ID do app/produto (obrigatório para verificar acesso específico)
+   * @param {string} options.productId - ID do produto (alias para appId, para compatibilidade)
    * @returns {Promise<Object|null>} Dados da assinatura ou null em caso de erro
    */
   const checkSubscription = useCallback(async (options = {}) => {
@@ -36,9 +38,15 @@ export function useSubscription() {
 
     const userId = options.userId || user.id;
     const email = options.email || user.email;
+    const appId = options.appId || options.productId;
 
     if (!userId || !email) {
       setError('userId e email são obrigatórios');
+      return null;
+    }
+
+    if (!appId) {
+      setError('appId ou productId é obrigatório para verificar acesso ao app específico');
       return null;
     }
 
@@ -58,6 +66,8 @@ export function useSubscription() {
         body: JSON.stringify({
           userId,
           email,
+          appId,
+          productId: appId, // Enviar ambos para compatibilidade
         }),
       });
 
@@ -88,22 +98,30 @@ export function useSubscription() {
 /**
  * Hook para verificar se o usuário tem acesso (assinatura ou trial ativo)
  * 
+ * @param {string} appId - ID do app/produto (obrigatório)
  * @returns {Object} Objeto com hasAccess, loading, error e função refresh
  * 
  * @example
- * const { hasAccess, loading, refresh } = useSubscriptionAccess();
+ * const { hasAccess, loading, refresh } = useSubscriptionAccess('app-id-here');
  * 
  * if (hasAccess) {
  *   // Mostrar conteúdo premium
  * }
  */
-export function useSubscriptionAccess() {
+export function useSubscriptionAccess(appId = null) {
   const { checkSubscription, loading, error } = useSubscription();
   const [hasAccess, setHasAccess] = useState(false);
   const [subscriptionData, setSubscriptionData] = useState(null);
 
   const refresh = useCallback(async () => {
-    const data = await checkSubscription();
+    if (!appId) {
+      console.error('useSubscriptionAccess: appId é obrigatório');
+      setHasAccess(false);
+      setSubscriptionData(null);
+      return;
+    }
+    
+    const data = await checkSubscription({ appId });
     if (data) {
       setHasAccess(data.hasAccess || false);
       setSubscriptionData(data);
@@ -111,7 +129,7 @@ export function useSubscriptionAccess() {
       setHasAccess(false);
       setSubscriptionData(null);
     }
-  }, [checkSubscription]);
+  }, [checkSubscription, appId]);
 
   return {
     hasAccess,
