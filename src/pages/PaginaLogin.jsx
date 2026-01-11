@@ -1,22 +1,60 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { supabase } from '@/lib/customSupabaseClient';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
 
 const PaginaLogin = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const { signIn, signInWithGoogle, loading } = useAuth();
+  const { signIn, signInWithGoogle, loading, user } = useAuth();
+  const navigate = useNavigate();
+
+  // Verificar acesso após login e redirecionar apropriadamente
+  useEffect(() => {
+    if (user) {
+      checkAccessAndRedirect();
+    }
+  }, [user]);
+
+  async function checkAccessAndRedirect() {
+    try {
+      // Chamar a função RPC que retorna o status de acesso do usuário
+      const { data, error } = await supabase.rpc('get_user_apps_status', { 
+        p_user_id: user.id 
+      });
+
+      if (error) {
+        console.error("Erro ao verificar acesso:", error);
+        // Fallback: redirecionar para dashboard se a função RPC não estiver disponível
+        navigate('/portal/dashboard');
+        return;
+      }
+
+      // Se o utilizador tiver acesso a QUALQUER app, mandar para o Dashboard
+      const hasAnyAccess = data?.some(app => app.has_access);
+
+      if (hasAnyAccess) {
+        navigate('/portal/dashboard');
+      } else {
+        // Se for um utilizador novo sem nada, mandar para a página de produtos
+        navigate('/portal/produtos');
+      }
+    } catch (err) {
+      console.error("Erro no redirecionamento:", err);
+      navigate('/portal/dashboard'); // Fallback seguro
+    }
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     await signIn(email, password);
-    // Navigation is handled inside the signIn function on success
+    // Navigation será feita pelo useEffect quando user for definido
   };
 
   return (
