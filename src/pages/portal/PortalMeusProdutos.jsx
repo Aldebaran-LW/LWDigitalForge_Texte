@@ -47,7 +47,14 @@ const PortalMeusProdutos = () => {
           const products = (purchases || [])
             .map(purchase => purchase.registered_apps)
             .filter(Boolean);
-          setMyProducts(products);
+          
+          // Remover duplicados baseado no ID do produto
+          // Isso evita mostrar o mesmo produto múltiplas vezes quando há múltiplas compras
+          const uniqueProducts = Array.from(
+            new Map(products.map(product => [product.id, product])).values()
+          );
+          
+          setMyProducts(uniqueProducts);
         }
 
         // Buscar testes ativos
