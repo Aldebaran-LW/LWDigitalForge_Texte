@@ -123,7 +123,30 @@ export const checkUserProductAccess = async (userId, productId, userEmail = null
 };
 
 /**
- * Inicia um teste gratuito para um usuário
+ * Inicia um teste gratuito para um usuário (conforme contrato exigido)
+ * @param {string} userId - ID do usuário
+ * @param {string} appId - ID do app (e8ff7872-dedb-405c-bf8a-f7901ac4b432 para JornadaPro)
+ * @returns {Promise<{error: Error|null}>}
+ */
+export const iniciarTrialGratis = async (userId, appId) => {
+  const dataExpiracao = new Date();
+  dataExpiracao.setDate(dataExpiracao.getDate() + 30); // 30 dias de trial
+
+  const { error } = await supabase
+    .from('user_trials')
+    .insert([{
+      user_id: userId,
+      app_id: appId, // e8ff7872-dedb-405c-bf8a-f7901ac4b432
+      expires_at: dataExpiracao.toISOString(),
+      is_active: true,
+      started_at: new Date().toISOString()
+    }]);
+
+  return { error };
+};
+
+/**
+ * Inicia um teste gratuito para um usuário (versão completa com validações)
  * @param {string} userId - ID do usuário
  * @param {string} productId - ID do produto
  * @param {string} productName - Nome do produto
@@ -175,7 +198,7 @@ export const startProductTrial = async (userId, productId, productName, trialPer
       return { success: false, message: 'Não foi possível obter a URL do produto.', redirectUrl: null };
     }
 
-    // Criar registro de teste na tabela user_trials
+    // Criar registro de teste na tabela user_trials (conforme contrato exigido)
     const { error } = await supabase.from('user_trials').insert({
       user_id: userId,
       app_id: productId,

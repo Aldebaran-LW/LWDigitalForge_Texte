@@ -27,10 +27,12 @@ serve(async (req) => {
 
     // Obter dados do body
     const body = await req.json();
+    console.log("🔍 [Edge Function] DADOS RECEBIDOS NA FUNÇÃO:", JSON.stringify(body, null, 2));
     const { userId, email, appId, productId } = body;
 
     // appId ou productId são aceitos (productId para compatibilidade)
     const targetAppId = appId || productId;
+    console.log("🔍 [Edge Function] targetAppId extraído:", targetAppId);
 
     // Validação dos campos obrigatórios
     if (!userId || !email) {

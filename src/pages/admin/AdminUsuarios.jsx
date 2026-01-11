@@ -474,15 +474,16 @@ const AdminUsuarios = () => {
             .delete()
             .match({ user_id: selectedUser.id, app_id: selectedProduct });
 
-        // Insere compra vitalícia
+        // Insere compra vitalícia (seguindo o contrato exigido pela Edge Function)
         const purchaseData = {
           user_id: selectedUser.id,
-          app_id: selectedProduct, // Usar app_id (referência para registered_apps)
-          purchase_type: 'LIFETIME',
-          status: 'APPROVED',
-          expires_at: null, // Nunca expira
-          amount_paid: 0, // Gratuito (concedido pelo admin)
-          payment_method: 'ADMIN_GRANT'
+          app_id: selectedProduct, // ID exato do app (referência para registered_apps)
+          purchase_type: 'LIFETIME', // Fundamental para ignorar expiração
+          status: 'APPROVED', // A Edge Function só lê registros 'APPROVED'
+          payment_method: 'ADMIN_GRANT',
+          amount_paid: 0,
+          purchased_at: new Date().toISOString(), // OBRIGATÓRIO: data da compra
+          expires_at: null // Nunca expira (LIFETIME)
         };
         
         const { error } = await supabase.from('user_purchases').insert(purchaseData);
