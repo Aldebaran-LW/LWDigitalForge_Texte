@@ -13,9 +13,12 @@ import {
   ShoppingCart, 
   ExternalLink,
   Loader2,
-  X
+  X,
+  PlayCircle,
+  CheckCircle
 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
+import { checkUserProductAccess, startProductTrial } from '@/utils/trialHelpers';
 
 const PortalProdutos = () => {
   const { user } = useAuth();
@@ -27,6 +30,8 @@ const PortalProdutos = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [priceFilter, setPriceFilter] = useState('all'); // all, free, paid
   const [sortBy, setSortBy] = useState('name'); // name, price_asc, price_desc
+  const [productAccessStates, setProductAccessStates] = useState({}); // { productId: { hasAccess, accessType, loading } }
+  const [startingTrials, setStartingTrials] = useState({}); // { productId: boolean }
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -55,6 +60,37 @@ const PortalProdutos = () => {
 
     fetchProducts();
   }, [toast]);
+
+  // Verificar acesso de cada produto quando produtos ou usuário mudarem
+  useEffect(() => {
+    const checkProductAccess = async () => {
+      if (!user || products.length === 0) {
+        return;
+      }
+
+      const states = {};
+      for (const product of products) {
+        try {
+          const { hasAccess, accessType } = await checkUserProductAccess(user.id, product.id, user.email);
+          states[product.id] = {
+            hasAccess,
+            accessType,
+            loading: false
+          };
+        } catch (error) {
+          console.error(`Erro ao verificar acesso para produto ${product.id}:`, error);
+          states[product.id] = {
+            hasAccess: false,
+            accessType: null,
+            loading: false
+          };
+        }
+      }
+      setProductAccessStates(states);
+    };
+
+    checkProductAccess();
+  }, [user, products]);
 
   useEffect(() => {
     let filtered = [...products];
@@ -118,6 +154,71 @@ const PortalProdutos = () => {
   const getMinPrice = (product) => {
     const prices = [product.price_monthly, product.price_annual, product.price_lifetime].filter(Boolean);
     return prices.length > 0 ? Math.min(...prices) : null;
+  };
+
+  const handleStartTrial = async (product, e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!user) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro',
+        description: 'Precisa estar logado para testar.',
+      });
+      return;
+    }
+
+    setStartingTrials(prev => ({ ...prev, [product.id]: true }));
+
+    try {
+      const result = await startProductTrial(
+        user.id,
+        product.id,
+        product.name,
+        product.trial_period_days || 30,
+        user.email
+      );
+
+      if (result.success) {
+        // Atualizar estado do produto
+        setProductAccessStates(prev => ({
+          ...prev,
+          [product.id]: {
+            hasAccess: true,
+            accessType: 'trial',
+            loading: false
+          }
+        }));
+
+        toast({
+          title: "Trial Ativado!",
+          description: result.message || `Você tem ${product.trial_period_days || 30} dias para testar ${product.name}.`,
+        });
+
+        // Opcional: Redirecionar para o app após 2 segundos
+        if (result.redirectUrl) {
+          setTimeout(() => {
+            window.open(result.redirectUrl, '_blank');
+          }, 2000);
+        }
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Não foi possível ativar",
+          description: result.message || "Erro ao iniciar o teste.",
+        });
+      }
+    } catch (error) {
+      console.error('Erro ao iniciar trial:', error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: error.message || "Não foi possível iniciar o teste.",
+      });
+    } finally {
+      setStartingTrials(prev => ({ ...prev, [product.id]: false }));
+    }
   };
 
   if (loading) {
@@ -259,26 +360,73 @@ const PortalProdutos = () => {
                     </div>
                   )}
 
-                  <div className="flex gap-2">
-                    <Link to={`/product/${product.id}`} className="flex-1">
-                      <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                        <Button className="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 shadow-lg shadow-blue-500/25">
-                          <ShoppingCart className="w-4 h-4 mr-2" />
-                          Ver Detalhes
-                        </Button>
-                      </motion.div>
-                    </Link>
-                    {product.vercel_deployment_url && (
-                      <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
-                        <Button
-                          variant="outline"
-                          onClick={() => window.open(product.vercel_deployment_url, '_blank')}
-                          className="hover:bg-gray-100 dark:hover:bg-gray-700"
-                        >
-                          <ExternalLink className="w-4 h-4" />
-                        </Button>
-                      </motion.div>
-                    )}
+                  <div className="flex flex-col gap-2">
+                    <div className="flex gap-2">
+                      <Link to={`/product/${product.id}`} className="flex-1">
+                        <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                          <Button className="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 shadow-lg shadow-blue-500/25">
+                            <ShoppingCart className="w-4 h-4 mr-2" />
+                            Ver Detalhes
+                          </Button>
+                        </motion.div>
+                      </Link>
+                      {product.vercel_deployment_url && (
+                        <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                          <Button
+                            variant="outline"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              window.open(product.vercel_deployment_url, '_blank');
+                            }}
+                            className="hover:bg-gray-100 dark:hover:bg-gray-700"
+                          >
+                            <ExternalLink className="w-4 h-4" />
+                          </Button>
+                        </motion.div>
+                      )}
+                    </div>
+                    {user && (() => {
+                      const productState = productAccessStates[product.id];
+                      const hasAccess = productState?.hasAccess || false;
+                      const isTrial = productState?.accessType === 'trial';
+                      const isLoading = startingTrials[product.id] || false;
+                      const canStartTrial = !hasAccess && !isLoading;
+
+                      if (hasAccess && isTrial) {
+                        return (
+                          <Button disabled className="w-full bg-green-600 hover:bg-green-600">
+                            <CheckCircle className="w-4 h-4 mr-2" />
+                            Trial Ativo
+                          </Button>
+                        );
+                      }
+
+                      if (canStartTrial) {
+                        return (
+                          <Button
+                            onClick={(e) => handleStartTrial(product, e)}
+                            disabled={isLoading}
+                            variant="outline"
+                            className="w-full border-blue-600 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                          >
+                            {isLoading ? (
+                              <>
+                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                Ativando...
+                              </>
+                            ) : (
+                              <>
+                                <PlayCircle className="w-4 h-4 mr-2" />
+                                Testar Grátis ({product.trial_period_days || 30} dias)
+                              </>
+                            )}
+                          </Button>
+                        );
+                      }
+
+                      return null;
+                    })()}
                   </div>
                 </motion.div>
               );
