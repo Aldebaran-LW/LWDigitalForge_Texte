@@ -1,0 +1,32 @@
+[
+  {
+    "email": "usuario1@email.com",
+    "app_id": "123e4567-e89b-12d3-a456-426614174000",
+    "tipo_liberacao": "trial",
+    "dias_trial": 14
+  },
+  {
+    "email": "usuario2@email.com",
+    "app_id": "123e4567-e89b-12d3-a456-426614174000",
+    "tipo_liberacao": "trial",
+    "dias_trial": 30
+  },
+  {
+    "email": "usuario3@email.com",
+    "app_id": "123e4567-e89b-12d3-a456-426614174000",
+    "tipo_liberacao": "compra",
+    "tipo_compra": "LIFETIME"
+  },
+  {
+    "email": "usuario4@email.com",
+    "app_id": "JornadaPro",
+    "tipo_liberacao": "compra",
+    "tipo_compra": "MONTHLY"
+  },
+  {
+    "email": "usuario5@email.com",
+    "app_id": "JornadaPro",
+    "tipo_liberacao": "compra",
+    "tipo_compra": "ANNUAL"
+  }
+]

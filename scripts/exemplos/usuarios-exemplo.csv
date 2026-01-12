@@ -1,0 +1,4 @@
+email,app_id,tipo_liberacao,dias_trial
+usuario1@email.com,123e4567-e89b-12d3-a456-426614174000,trial,14
+usuario2@email.com,123e4567-e89b-12d3-a456-426614174000,trial,30
+usuario3@email.com,123e4567-e89b-12d3-a456-426614174000,compra,LIFETIME
