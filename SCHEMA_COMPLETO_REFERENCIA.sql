@@ -1,0 +1,12 @@
+-- ========================================
+-- SCHEMA COMPLETO DO BANCO DE DADOS
+-- ========================================
+-- Referência completa de todas as tabelas
+-- Última atualização: 2025-01-12
+-- ========================================
+-- WARNING: This schema is for context only and is not meant to be run.
+-- Table order and constraints may not be valid for execution.
+-- ========================================
+
+-- Este arquivo serve apenas como referência do schema completo.
+-- Para criar as tabelas, use as migrations individuais em supabase/migrations/

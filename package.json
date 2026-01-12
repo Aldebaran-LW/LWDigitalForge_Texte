@@ -10,7 +10,10 @@
     "test:supabase": "node test-supabase.js",
     "test:google-oauth": "node scripts/test-google-oauth.js",
     "test:check-subscription": "node scripts/test-check-subscription.js",
-    "test:check-subscription:prod": "node scripts/test-check-subscription-production.js"
+    "test:check-subscription:prod": "node scripts/test-check-subscription-production.js",
+    "verify:mongodb": "node scripts/verificar-mongodb.js",
+    "verify:mongodb:databases": "node scripts/verificar-mongodb-databases.js",
+    "verify:mongodb:jornadapro": "node scripts/verificar-mongodb-jornadapro.js"
   },
   "dependencies": {
     "@radix-ui/react-alert-dialog": "^1.0.5",
@@ -28,6 +31,7 @@
     "clsx": "^2.0.0",
     "framer-motion": "^10.16.4",
     "lucide-react": "^0.285.0",
+    "mongodb": "^7.0.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-helmet": "^6.1.0",

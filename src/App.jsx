@@ -42,6 +42,8 @@ import PortalAssinaturas from '@/pages/portal/PortalAssinaturas';
 import PortalPagamentos from '@/pages/portal/PortalPagamentos';
 import PortalContato from '@/pages/portal/PortalContato';
 import PortalNotificacoes from '@/pages/portal/PortalNotificacoes';
+import AssinaturaNecessaria from '@/pages/AssinaturaNecessaria';
+import ProtectedProductRoute from '@/components/ProtectedProductRoute';
 
 function App() {
   const location = useLocation();
@@ -71,6 +73,7 @@ function App() {
           <Route path="/pagina-privacidade" element={<PaginaPrivacidade />} />
           <Route path="/success" element={<SuccessPage />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
+          <Route path="/assinatura-necessaria" element={<AssinaturaNecessaria />} />
 
           {/* Admin Routes */}
           <Route 

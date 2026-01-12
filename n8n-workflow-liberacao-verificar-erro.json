@@ -1,14 +1,14 @@
 {
-  "name": "Liberação Automática - Simples",
+  "name": "Liberação Automática - Verificar Erro",
   "nodes": [
     {
       "parameters": {},
-      "id": "fd69e90c-9c9e-4d4e-a4ce-7ab9d4e37c2a",
+      "id": "cfb4e6a3-3cee-426e-a972-d45c23995cd1",
       "name": "Cron - A cada hora",
       "type": "n8n-nodes-base.cron",
       "typeVersion": 1,
       "position": [
-        -1408,
+        -1360,
         464
       ]
     },
@@ -43,12 +43,12 @@
         },
         "options": {}
       },
-      "id": "6627956d-a01d-4215-9a31-69ce437ae711",
+      "id": "294ad628-38aa-4d01-bfe0-c83d74491318",
       "name": "Atualizar Todos Usuários",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        -1200,
+        -1152,
         464
       ],
       "continueOnFail": true
@@ -64,11 +64,11 @@
           "conditions": [
             {
               "id": "check-no-error",
-              "leftValue": "={{ $json.error ? false : true }}",
-              "rightValue": true,
+              "leftValue": "={{ $json.error }}",
+              "rightValue": "",
               "operator": {
-                "type": "boolean",
-                "operation": "equals"
+                "type": "string",
+                "operation": "isEmpty"
               }
             }
           ],
@@ -76,12 +76,12 @@
         },
         "options": {}
       },
-      "id": "361d1575-9dd4-4528-aa5e-6ef4fa2d156e",
+      "id": "2b807e9d-6f19-4639-951e-ba80136477a5",
       "name": "Verificar Sucesso",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [
-        -976,
+        -928,
         464
       ]
     },
@@ -105,12 +105,12 @@
         },
         "options": {}
       },
-      "id": "85c63540-983c-4b2c-bf02-b8eabf49a12a",
+      "id": "99f5458c-b0ac-41fd-9891-b07fab6a6276",
       "name": "Sucesso",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.2,
       "position": [
-        -752,
+        -704,
         352
       ]
     },
@@ -134,12 +134,12 @@
         },
         "options": {}
       },
-      "id": "c5b32844-5ee6-4114-8563-3bcb7ac1f881",
+      "id": "cd914a48-979c-4c4f-be97-16e9e03b731b",
       "name": "Erro",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.2,
       "position": [
-        -752,
+        -704,
         560
       ]
     }
