@@ -52,26 +52,7 @@ const ProtectedProductRoute = ({ children, appId: propAppId }) => {
 
         setAppData(app);
 
-        // 2. Verificar is_liberado no profile (mais rápido)
-        if (profile?.is_liberado) {
-          // Verificar se a data de vencimento ainda é válida (se não for LIFETIME)
-          if (profile.data_vencimento) {
-            const expiresAt = new Date(profile.data_vencimento);
-            const now = new Date();
-            if (expiresAt > now || expiresAt.toISOString() === '2099-01-01T00:00:00.000Z') {
-              setHasAccess(true);
-              setLoading(false);
-              return;
-            }
-          } else {
-            // Se is_liberado = true mas sem data_vencimento, pode ser LIFETIME
-            setHasAccess(true);
-            setLoading(false);
-            return;
-          }
-        }
-
-        // 3. Se is_liberado = false, verificar diretamente nas tabelas (verificação adicional)
+        // 2. Verificar diretamente nas tabelas (fonte da verdade)
         // Verificar compra LIFETIME
         const { data: lifetimePurchase } = await supabase
           .from('user_purchases')
