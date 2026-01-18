@@ -7,15 +7,18 @@ import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { Loader2, ExternalLink, Download, Filter, Package } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { checkAccessViaN8N, createAccessDeniedNotification } from '@/lib/n8nAccessCheck';
 
 const PortalMeusProdutos = () => {
   const { user, role } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [myProducts, setMyProducts] = useState([]);
   const [trials, setTrials] = useState([]);
   const [filter, setFilter] = useState('todos'); // todos, adquiridos, testando
   const [loading, setLoading] = useState(true);
+  const [checkingAccess, setCheckingAccess] = useState(false);
 
   useEffect(() => {
     const fetchMyProducts = async () => {
@@ -81,7 +84,7 @@ const PortalMeusProdutos = () => {
     fetchMyProducts();
   }, [user, toast]);
 
-  const handleAccess = (product) => {
+  const handleAccess = async (product) => {
     // Validar se URL existe
     if (!product.vercel_deployment_url) {
       if (product.github_repo_url && role === 'ADMIN') {
@@ -109,23 +112,71 @@ const PortalMeusProdutos = () => {
       return;
     }
 
-    // Salvar productId no sessionStorage antes de abrir app (não na URL!)
-    // Isso permite que o app detecte automaticamente qual produto é
-    if (typeof window !== 'undefined') {
-      sessionStorage.setItem('app_product_id', product.id);
-      sessionStorage.setItem('app_product_name', product.name);
-    }
-    
-    // Abrir app com URL limpa (sem parâmetros)
-    const newWindow = window.open(product.vercel_deployment_url, '_blank');
-    
-    // Verificar se popup foi bloqueado
-    if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+    if (!user) {
       toast({
         variant: 'destructive',
-        title: 'Popup Bloqueado',
-        description: 'Por favor, permita popups para este site e tente novamente.',
+        title: 'Erro',
+        description: 'Você precisa estar logado para acessar esta aplicação.',
       });
+      navigate('/login');
+      return;
+    }
+
+    // Verificar acesso via n8n antes de abrir aplicação
+    setCheckingAccess(true);
+    try {
+      const accessCheck = await checkAccessViaN8N(user.id, product.id);
+      
+      if (!accessCheck.hasAccess) {
+        // Criar notificação no banco de dados
+        await createAccessDeniedNotification(
+          user.id,
+          accessCheck.reason || 'Acesso negado',
+          product.name
+        );
+
+        // Mostrar toast e redirecionar
+        toast({
+          variant: 'destructive',
+          title: 'Acesso Negado',
+          description: accessCheck.message || 'Você não tem acesso a este produto.',
+        });
+
+        // Redirecionar para página de produtos conforme especificado
+        if (accessCheck.redirectUrl) {
+          window.location.href = accessCheck.redirectUrl;
+        } else {
+          navigate('/portal/produtos');
+        }
+        return;
+      }
+
+      // Se tem acesso, salvar productId no sessionStorage e abrir aplicação
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('app_product_id', product.id);
+        sessionStorage.setItem('app_product_name', product.name);
+      }
+      
+      // Abrir app com URL limpa (sem parâmetros)
+      const newWindow = window.open(product.vercel_deployment_url, '_blank');
+      
+      // Verificar se popup foi bloqueado
+      if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+        toast({
+          variant: 'destructive',
+          title: 'Popup Bloqueado',
+          description: 'Por favor, permita popups para este site e tente novamente.',
+        });
+      }
+    } catch (error) {
+      console.error('Erro ao verificar acesso:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Erro',
+        description: 'Erro ao verificar acesso. Tente novamente.',
+      });
+    } finally {
+      setCheckingAccess(false);
     }
   };
 

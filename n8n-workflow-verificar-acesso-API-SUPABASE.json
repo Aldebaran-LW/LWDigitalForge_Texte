@@ -1,0 +1,429 @@
+{
+  "name": "Verificar Acesso JornadaPro - API Supabase",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "verificar-acesso-jornadapro",
+        "options": {
+          "responseMode": "responseNode"
+        }
+      },
+      "id": "1-webhook",
+      "name": "1. Webhook - Receber Requisição",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "verificar-acesso-jornadapro"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "user_id",
+              "name": "user_id",
+              "value": "={{ $json.body.userId }}",
+              "type": "string"
+            },
+            {
+              "id": "app_id",
+              "name": "app_id",
+              "value": "={{ $json.body.appId || 'e8ff7872-dedb-405c-bf8a-f7901ac4b432' }}",
+              "type": "string"
+            },
+            {
+              "id": "timestamp",
+              "name": "timestamp",
+              "value": "={{ new Date().toISOString() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "2-extrair",
+      "name": "2. Extrair userId e appId",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "user_id_check",
+              "leftValue": "={{ $json.user_id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "3-validar",
+      "name": "3. Validar userId",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extrair variáveis de ambiente\nconst supabaseUrl = process.env.SUPABASE_URL || 'https://wwwwyuwighdehmvnolrl.supabase.co';\nconst supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;\n\n// Validar se a chave está configurada\nif (!supabaseKey) {\n  throw new Error('SUPABASE_SERVICE_ROLE_KEY não configurada no Render. Configure a variável de ambiente.');\n}\n\n// Passar dados do nó anterior + variáveis de ambiente\nreturn {\n  ...$input.item.json,\n  supabase_url: supabaseUrl,\n  supabase_key: supabaseKey\n};"
+      },
+      "id": "3-5-env",
+      "name": "3.5. Carregar Variáveis de Ambiente",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"error\": \"userId é obrigatório\",\n  \"hasAccess\": false,\n  \"redirectUrl\": \"https://www.lwdigitalforge.com/login\",\n  \"message\": \"Por favor, faça login ou cadastre-se primeiro\",\n  \"timestamp\": \"{{ $('2. Extrair userId e appId').item.json.timestamp }}\"\n}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "id": "erro-user-id",
+      "name": "❌ Erro - userId Faltando",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [900, 480]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.supabase_url }}/rest/v1/user_purchases?user_id=eq.{{ $json.user_id }}&app_id=eq.{{ $json.app_id }}&status=eq.APPROVED&select=id,purchase_type,expires_at,purchased_at,status&order=purchased_at.desc",
+        "authentication": "none",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $json.supabase_key }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.supabase_key }}"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "4-compras",
+      "name": "4. Buscar COMPRAS (API Supabase)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 200]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $('3.5. Carregar Variáveis de Ambiente').item.json.supabase_url }}/rest/v1/user_trials?user_id=eq.{{ $('2. Extrair userId e appId').item.json.user_id }}&app_id=eq.{{ $('2. Extrair userId e appId').item.json.app_id }}&is_active=eq.true&expires_at=gt.{{ new Date().toISOString() }}&select=id,is_active,expires_at,started_at&order=started_at.desc",
+        "authentication": "none",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $('3.5. Carregar Variáveis de Ambiente').item.json.supabase_key }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('3.5. Carregar Variáveis de Ambiente').item.json.supabase_key }}"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "5-trials",
+      "name": "5. Buscar TRIALS (API Supabase)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1120, 200]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "total_purchases",
+              "name": "total_purchases",
+              "value": "={{ Array.isArray($json) ? $json.length : 0 }}",
+              "type": "number"
+            },
+            {
+              "id": "has_purchases",
+              "name": "has_purchases",
+              "value": "={{ Array.isArray($json) && $json.length > 0 }}",
+              "type": "boolean"
+            },
+            {
+              "id": "purchases_data",
+              "name": "purchases_data",
+              "value": "={{ JSON.stringify(Array.isArray($json) ? $json : []) }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "6-analisar-compras",
+      "name": "6. Analisar Compras",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.2,
+      "position": [1340, 100]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "total_trials",
+              "name": "total_trials",
+              "value": "={{ Array.isArray($json) ? $json.length : 0 }}",
+              "type": "number"
+            },
+            {
+              "id": "has_trials",
+              "name": "has_trials",
+              "value": "={{ Array.isArray($json) && $json.length > 0 }}",
+              "type": "boolean"
+            },
+            {
+              "id": "trials_data",
+              "name": "trials_data",
+              "value": "={{ JSON.stringify(Array.isArray($json) ? $json : []) }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "7-analisar-trials",
+      "name": "7. Analisar Trials",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.2,
+      "position": [1340, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ============================================\n// LÓGICA DE VERIFICAÇÃO DE ACESSO\n// ============================================\n\nconst userId = $('2. Extrair userId e appId').item.json.user_id;\nconst appId = $('2. Extrair userId e appId').item.json.app_id;\n\n// Obter dados das análises\nconst comprasData = $('6. Analisar Compras').item.json;\nconst trialsData = $('7. Analisar Trials').item.json;\n\n// Parsear JSON\nconst compras = JSON.parse(comprasData.purchases_data || '[]');\nconst trials = JSON.parse(trialsData.trials_data || '[]');\n\nconsole.log('📊 Total compras:', compras.length);\nconsole.log('📊 Total trials:', trials.length);\n\n// Variáveis de resultado\nlet hasAccess = false;\nlet accessType = null;\nlet expiresAt = null;\nlet reason = null;\n\n// ============================================\n// 1. VERIFICAR LIFETIME (Prioridade Máxima)\n// ============================================\nfor (const compra of compras) {\n  if (compra.purchase_type === 'LIFETIME') {\n    hasAccess = true;\n    accessType = 'LIFETIME';\n    reason = 'Compra LIFETIME encontrada';\n    console.log('✅ LIFETIME encontrado!');\n    break;\n  }\n}\n\n// ============================================\n// 2. VERIFICAR ASSINATURAS (MONTHLY/ANNUAL)\n// ============================================\nif (!hasAccess) {\n  const now = new Date();\n  \n  for (const compra of compras) {\n    if (['MONTHLY', 'ANNUAL'].includes(compra.purchase_type)) {\n      const expDate = compra.expires_at ? new Date(compra.expires_at) : null;\n      \n      if (expDate && expDate > now) {\n        hasAccess = true;\n        accessType = compra.purchase_type;\n        expiresAt = compra.expires_at;\n        reason = `Assinatura ${compra.purchase_type} ativa até ${expDate.toLocaleDateString()}`;\n        console.log(`✅ Assinatura ${compra.purchase_type} válida!`);\n        break;\n      } else {\n        console.log(`⚠️ Assinatura ${compra.purchase_type} expirada`);\n      }\n    }\n  }\n}\n\n// ============================================\n// 3. VERIFICAR TRIAL\n// ============================================\nif (!hasAccess && trials.length > 0) {\n  const trial = trials[0]; // Primeiro trial ativo\n  hasAccess = true;\n  accessType = 'TRIAL';\n  expiresAt = trial.expires_at;\n  const expDate = new Date(trial.expires_at);\n  reason = `Trial ativo até ${expDate.toLocaleDateString()}`;\n  console.log('✅ Trial ativo encontrado!');\n}\n\n// ============================================\n// 4. SEM ACESSO\n// ============================================\nif (!hasAccess) {\n  reason = 'Nenhuma compra, assinatura ou trial ativo encontrado';\n  console.log('❌ Sem acesso');\n}\n\n// ============================================\n// RETORNO\n// ============================================\nreturn {\n  userId,\n  appId,\n  hasAccess,\n  accessType,\n  expiresAt,\n  reason,\n  debug: {\n    totalCompras: compras.length,\n    totalTrials: trials.length,\n    comprasTypes: compras.map(c => c.purchase_type),\n    timestamp: new Date().toISOString()\n  }\n};"
+      },
+      "id": "8-calcular",
+      "name": "8. Calcular Acesso (Lógica)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1560, 200]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "has_access",
+              "leftValue": "={{ $json.hasAccess }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "9-decisao",
+      "name": "9. Tem Acesso?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1780, 200]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"hasAccess\": true,\n  \"accessType\": \"{{ $json.accessType }}\",\n  \"expiresAt\": \"{{ $json.expiresAt }}\",\n  \"reason\": \"{{ $json.reason }}\",\n  \"userId\": \"{{ $json.userId }}\",\n  \"appId\": \"{{ $json.appId }}\",\n  \"redirectUrl\": \"https://jornadapro.lwdigitalforge.com\",\n  \"message\": \"Acesso liberado! Redirecionando...\",\n  \"timestamp\": \"{{ $json.debug.timestamp }}\"\n}",
+        "options": {}
+      },
+      "id": "10-sucesso",
+      "name": "✅ Sucesso - LIBERAR ACESSO",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [2000, 100]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"hasAccess\": false,\n  \"accessType\": null,\n  \"reason\": \"{{ $json.reason }}\",\n  \"userId\": \"{{ $json.userId }}\",\n  \"appId\": \"{{ $json.appId }}\",\n  \"redirectUrl\": \"https://www.lwdigitalforge.com/portal/produtos\",\n  \"message\": \"Assinatura necessária para acessar esta aplicação\",\n  \"timestamp\": \"{{ $json.debug.timestamp }}\"\n}",
+        "options": {
+          "responseCode": 403
+        }
+      },
+      "id": "11-negado",
+      "name": "❌ Negado - BLOQUEAR ACESSO",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [2000, 300]
+    }
+  ],
+  "connections": {
+    "1. Webhook - Receber Requisição": {
+      "main": [
+        [
+          {
+            "node": "2. Extrair userId e appId",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "2. Extrair userId e appId": {
+      "main": [
+        [
+          {
+            "node": "3. Validar userId",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "3. Validar userId": {
+      "main": [
+        [
+          {
+            "node": "3.5. Carregar Variáveis de Ambiente",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "❌ Erro - userId Faltando",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "3.5. Carregar Variáveis de Ambiente": {
+      "main": [
+        [
+          {
+            "node": "4. Buscar COMPRAS (API Supabase)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "4. Buscar COMPRAS (API Supabase)": {
+      "main": [
+        [
+          {
+            "node": "6. Analisar Compras",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "5. Buscar TRIALS (API Supabase)": {
+      "main": [
+        [
+          {
+            "node": "7. Analisar Trials",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "6. Analisar Compras": {
+      "main": [
+        [
+          {
+            "node": "5. Buscar TRIALS (API Supabase)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "7. Analisar Trials": {
+      "main": [
+        [
+          {
+            "node": "8. Calcular Acesso (Lógica)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "8. Calcular Acesso (Lógica)": {
+      "main": [
+        [
+          {
+            "node": "9. Tem Acesso?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "9. Tem Acesso?": {
+      "main": [
+        [
+          {
+            "node": "✅ Sucesso - LIBERAR ACESSO",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "❌ Negado - BLOQUEAR ACESSO",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2026-01-14T17:00:00.000Z",
+  "versionId": "1"
+}

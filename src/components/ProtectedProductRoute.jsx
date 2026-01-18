@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { Navigate, useParams } from 'react-router-dom';
+import { Navigate, useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { supabase } from '@/lib/customSupabaseClient';
 import { Loader2, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
+import { checkAccessViaN8N, createAccessDeniedNotification } from '@/lib/n8nAccessCheck';
 
 /**
  * Componente que protege rotas de produtos/apps
@@ -13,13 +14,14 @@ import { Link } from 'react-router-dom';
  */
 const ProtectedProductRoute = ({ children, appId: propAppId }) => {
   const { user, profile, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
   const { id: urlAppId } = useParams(); // Pega appId da URL se disponível
   const [loading, setLoading] = useState(true);
   const [hasAccess, setHasAccess] = useState(false);
   const [appData, setAppData] = useState(null);
 
-  // Determina qual appId usar (prop > url)
-  const appId = propAppId || urlAppId;
+  // Determina qual appId usar (prop > url > sessionStorage)
+  const appId = propAppId || urlAppId || (typeof window !== 'undefined' ? sessionStorage.getItem('app_product_id') : null);
 
   useEffect(() => {
     const checkAccess = async () => {
@@ -52,60 +54,22 @@ const ProtectedProductRoute = ({ children, appId: propAppId }) => {
 
         setAppData(app);
 
-        // 2. Verificar diretamente nas tabelas (fonte da verdade)
-        // Verificar compra LIFETIME
-        const { data: lifetimePurchase } = await supabase
-          .from('user_purchases')
-          .select('id')
-          .eq('user_id', user.id)
-          .eq('app_id', appId)
-          .eq('purchase_type', 'LIFETIME')
-          .eq('status', 'APPROVED')
-          .limit(1)
-          .single();
+        // 2. Verificar acesso via webhook n8n (fonte da verdade)
+        const accessCheck = await checkAccessViaN8N(user.id, appId);
 
-        if (lifetimePurchase) {
+        if (accessCheck.hasAccess) {
           setHasAccess(true);
           setLoading(false);
           return;
         }
 
-        // Verificar compra MONTHLY/ANNUAL ativa
-        const { data: activePurchase } = await supabase
-          .from('user_purchases')
-          .select('id, expires_at')
-          .eq('user_id', user.id)
-          .eq('app_id', appId)
-          .eq('status', 'APPROVED')
-          .in('purchase_type', ['MONTHLY', 'ANNUAL'])
-          .gt('expires_at', new Date().toISOString())
-          .limit(1)
-          .single();
+        // 3. Se não tem acesso, criar notificação e redirecionar
+        await createAccessDeniedNotification(
+          user.id,
+          accessCheck.reason || 'Acesso negado',
+          app.name
+        );
 
-        if (activePurchase) {
-          setHasAccess(true);
-          setLoading(false);
-          return;
-        }
-
-        // Verificar trial ativo
-        const { data: activeTrial } = await supabase
-          .from('user_trials')
-          .select('id, expires_at')
-          .eq('user_id', user.id)
-          .eq('app_id', appId)
-          .eq('is_active', true)
-          .gt('expires_at', new Date().toISOString())
-          .limit(1)
-          .single();
-
-        if (activeTrial) {
-          setHasAccess(true);
-          setLoading(false);
-          return;
-        }
-
-        // Se nenhuma verificação passou, não tem acesso
         setHasAccess(false);
         setLoading(false);
       } catch (error) {
@@ -132,9 +96,11 @@ const ProtectedProductRoute = ({ children, appId: propAppId }) => {
     return <Navigate to="/login" replace />;
   }
 
-  // Se não tem acesso, mostrar página de assinatura necessária
+  // Se não tem acesso, redirecionar para portal/produtos conforme especificado
   if (!hasAccess) {
-    return <SubscriptionRequiredPage appData={appData} />;
+    // Redirecionar para página de produtos (conforme especificado)
+    navigate('/portal/produtos', { replace: true });
+    return null; // Não renderizar nada durante o redirecionamento
   }
 
   // Se tem acesso, renderizar o conteúdo
