@@ -104,7 +104,7 @@ const PortalTestes = () => {
     return `${hours} hora${hours > 1 ? 's' : ''}`;
   };
 
-  const handleAccessProduct = (trial) => {
+  const handleAccessProduct = async (trial) => {
     const product = trial.registered_apps;
     
     // Validar se URL existe
@@ -134,21 +134,66 @@ const PortalTestes = () => {
       return;
     }
 
-    // Salvar productId no sessionStorage
-    if (typeof window !== 'undefined') {
-      sessionStorage.setItem('app_product_id', product.id);
-      sessionStorage.setItem('app_product_name', product.name);
-    }
-
-    // Abrir app
-    const newWindow = window.open(product.vercel_deployment_url, '_blank');
-    
-    // Verificar se popup foi bloqueado
-    if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+    if (!user) {
       toast({
         variant: 'destructive',
-        title: 'Popup Bloqueado',
-        description: 'Por favor, permita popups para este site e tente novamente.',
+        title: 'Erro',
+        description: 'Você precisa estar logado para acessar esta aplicação.',
+      });
+      return;
+    }
+
+    // Verificar acesso via n8n antes de abrir aplicação
+    try {
+      // Importar dinamicamente para evitar dependência circular
+      const { checkAccessViaN8N, createAccessDeniedNotification } = await import('@/lib/n8nAccessCheck');
+      const accessCheck = await checkAccessViaN8N(user.id, product.id);
+      
+      if (!accessCheck.hasAccess) {
+        // Criar notificação no banco de dados
+        await createAccessDeniedNotification(
+          user.id,
+          accessCheck.reason || 'Acesso negado',
+          product.name
+        );
+
+        // Mostrar toast e redirecionar
+        toast({
+          variant: 'destructive',
+          title: 'Acesso Negado',
+          description: accessCheck.message || 'Você não tem acesso a este produto.',
+        });
+
+        // Redirecionar conforme resposta do n8n
+        if (accessCheck.redirectUrl) {
+          window.location.href = accessCheck.redirectUrl;
+        }
+        return;
+      }
+
+      // Se tem acesso, salvar productId no sessionStorage e abrir aplicação
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('app_product_id', product.id);
+        sessionStorage.setItem('app_product_name', product.name);
+      }
+      
+      // Abrir app com URL limpa (sem parâmetros)
+      const newWindow = window.open(product.vercel_deployment_url, '_blank');
+      
+      // Verificar se popup foi bloqueado
+      if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+        toast({
+          variant: 'destructive',
+          title: 'Popup Bloqueado',
+          description: 'Por favor, permita popups para este site e tente novamente.',
+        });
+      }
+    } catch (error) {
+      console.error('Erro ao verificar acesso:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Erro',
+        description: 'Erro ao verificar acesso. Tente novamente.',
       });
     }
   };

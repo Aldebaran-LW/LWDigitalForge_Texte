@@ -7,7 +7,8 @@ import { supabase } from './customSupabaseClient';
  * @returns {Promise<{hasAccess: boolean, redirectUrl?: string, message?: string, reason?: string, accessType?: string}>}
  */
 export async function checkAccessViaN8N(userId, appId = 'e8ff7872-dedb-405c-bf8a-f7901ac4b432') {
-  const n8nWebhookUrl = 'https://n8n-a8kh.onrender.com/webhook/verificar-acesso-jornadapro';
+  // URL do webhook do n8n (pode ser webhook-test para teste ou webhook para produção)
+  const n8nWebhookUrl = import.meta.env.VITE_N8N_WEBHOOK_URL || 'https://n8n-a8kh.onrender.com/webhook-test/verificar-acesso-jornadapro';
   
   try {
     const response = await fetch(n8nWebhookUrl, {
