@@ -370,21 +370,83 @@ const PortalProdutos = () => {
                           </Button>
                         </motion.div>
                       </Link>
-                      {product.vercel_deployment_url && (
-                        <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
-                          <Button
-                            variant="outline"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              window.open(product.vercel_deployment_url, '_blank');
-                            }}
-                            className="hover:bg-gray-100 dark:hover:bg-gray-700"
-                          >
-                            <ExternalLink className="w-4 h-4" />
-                          </Button>
-                        </motion.div>
-                      )}
+                      {product.vercel_deployment_url && (() => {
+                        const productState = productAccessStates[product.id];
+                        const hasAccess = productState?.hasAccess || false;
+                        
+                        if (hasAccess) {
+                          return (
+                            <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                              <Button
+                                variant="outline"
+                                onClick={async (e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  
+                                  if (!user) {
+                                    toast({
+                                      variant: 'destructive',
+                                      title: 'Erro',
+                                      description: 'Você precisa estar logado para acessar esta aplicação.',
+                                    });
+                                    return;
+                                  }
+
+                                  // Importar dinamicamente para evitar dependência circular
+                                  const { checkAccessViaN8N, createAccessDeniedNotification } = await import('@/lib/n8nAccessCheck');
+                                  
+                                  // Verificar acesso via n8n antes de abrir aplicação
+                                  try {
+                                    const accessCheck = await checkAccessViaN8N(user.id, product.id);
+                                    
+                                    if (!accessCheck.hasAccess) {
+                                      // Criar notificação no banco de dados
+                                      await createAccessDeniedNotification(
+                                        user.id,
+                                        accessCheck.reason || 'Acesso negado',
+                                        product.name
+                                      );
+
+                                      // Mostrar toast e redirecionar
+                                      toast({
+                                        variant: 'destructive',
+                                        title: 'Acesso Negado',
+                                        description: accessCheck.message || 'Você não tem acesso a este produto.',
+                                      });
+
+                                      // Redirecionar conforme resposta do n8n
+                                      if (accessCheck.redirectUrl) {
+                                        window.location.href = accessCheck.redirectUrl;
+                                      }
+                                      return;
+                                    }
+
+                                    // Se tem acesso, salvar productId no sessionStorage e abrir aplicação
+                                    if (typeof window !== 'undefined') {
+                                      sessionStorage.setItem('app_product_id', product.id);
+                                      sessionStorage.setItem('app_product_name', product.name);
+                                    }
+                                    
+                                    // Abrir app com URL limpa (sem parâmetros)
+                                    window.open(product.vercel_deployment_url, '_blank');
+                                  } catch (error) {
+                                    console.error('Erro ao verificar acesso:', error);
+                                    toast({
+                                      variant: 'destructive',
+                                      title: 'Erro',
+                                      description: 'Erro ao verificar acesso. Tente novamente.',
+                                    });
+                                  }
+                                }}
+                                className="hover:bg-gray-100 dark:hover:bg-gray-700"
+                              >
+                                <ExternalLink className="w-4 h-4" />
+                              </Button>
+                            </motion.div>
+                          );
+                        }
+                        return null;
+                      })()}
                     </div>
                     {user && (() => {
                       const productState = productAccessStates[product.id];

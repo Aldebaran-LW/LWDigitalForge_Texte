@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { startProductTrial } from '@/utils/trialHelpers';
+import { checkAccessViaN8N, createAccessDeniedNotification } from '@/lib/n8nAccessCheck';
 import { Button } from "@/components/ui/button";
 import { Rocket, CheckCircle, ExternalLink, Loader2 } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
+import { useNavigate } from 'react-router-dom';
 
 /**
  * Componente de Card de Produto para o Portal
@@ -16,6 +18,8 @@ import { toast } from "@/components/ui/use-toast";
 export default function ProductCard({ app, userHasAccess = false, subscriptionType = null }) {
   const [loading, setLoading] = useState(false);
   const [trialSuccess, setTrialSuccess] = useState(false);
+  const [checkingAccess, setCheckingAccess] = useState(false);
+  const navigate = useNavigate();
 
   const handleStartTrial = async () => {
     setLoading(true);
@@ -84,19 +88,84 @@ export default function ProductCard({ app, userHasAccess = false, subscriptionTy
         {hasAccess ? (
           <Button 
             className="w-full bg-green-600 hover:bg-green-700 text-white"
-            onClick={() => {
-              if (app.vercel_deployment_url) {
-                window.open(app.vercel_deployment_url, '_blank');
-              } else {
+            disabled={checkingAccess}
+            onClick={async () => {
+              if (!app.vercel_deployment_url) {
                 toast({
                   variant: "destructive",
                   title: "URL não disponível",
                   description: "URL do aplicativo não está configurada.",
                 });
+                return;
+              }
+
+              // Obter usuário atual
+              const { data: { user } } = await supabase.auth.getUser();
+              if (!user) {
+                toast({
+                  variant: "destructive",
+                  title: "Erro",
+                  description: "Você precisa estar logado para acessar esta aplicação.",
+                });
+                return;
+              }
+
+              // Verificar acesso via n8n antes de abrir aplicação
+              setCheckingAccess(true);
+              try {
+                const accessCheck = await checkAccessViaN8N(user.id, app.id);
+                
+                if (!accessCheck.hasAccess) {
+                  // Criar notificação no banco de dados
+                  await createAccessDeniedNotification(
+                    user.id,
+                    accessCheck.reason || 'Acesso negado',
+                    app.name
+                  );
+
+                  // Mostrar toast e redirecionar
+                  toast({
+                    variant: 'destructive',
+                    title: 'Acesso Negado',
+                    description: accessCheck.message || 'Você não tem acesso a este produto.',
+                  });
+
+                  // Redirecionar conforme resposta do n8n
+                  if (accessCheck.redirectUrl) {
+                    navigate(accessCheck.redirectUrl);
+                  }
+                  return;
+                }
+
+                // Se tem acesso, salvar productId no sessionStorage e abrir aplicação
+                if (typeof window !== 'undefined') {
+                  sessionStorage.setItem('app_product_id', app.id);
+                  sessionStorage.setItem('app_product_name', app.name);
+                }
+                
+                // Abrir app com URL limpa (sem parâmetros)
+                window.open(app.vercel_deployment_url, '_blank');
+              } catch (error) {
+                console.error('Erro ao verificar acesso:', error);
+                toast({
+                  variant: 'destructive',
+                  title: 'Erro',
+                  description: 'Erro ao verificar acesso. Tente novamente.',
+                });
+              } finally {
+                setCheckingAccess(false);
               }
             }}
           >
-            <ExternalLink className="w-4 h-4 mr-2" /> Entrar no App
+            {checkingAccess ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Verificando...
+              </>
+            ) : (
+              <>
+                <ExternalLink className="w-4 h-4 mr-2" /> Entrar no App
+              </>
+            )}
           </Button>
         ) : (
           /* CASO 2: UTILIZADOR NÃO TEM ACESSO AINDA */
