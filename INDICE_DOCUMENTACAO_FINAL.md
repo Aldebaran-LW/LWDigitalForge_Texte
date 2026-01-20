@@ -104,6 +104,25 @@
     - Análise completa da arquitetura do Ponto_Diario
     - Verificação de que está tudo correto
 
+19. **`RELATORIO_COMPLETO_BANCO_DADOS_SUPABASE.md`** ⭐ **NOVO**
+    - Análise completa do banco de dados Supabase
+    - Estrutura de tabelas, políticas RLS, índices
+    - Funções, triggers, e relacionamentos
+    - Problemas identificados (segurança e performance)
+    - Recomendações prioritárias
+    - Checklist de ações
+
+20. **`SQL_CORRECOES_RECOMENDADAS_BANCO_DADOS.sql`** ⭐ **NOVO**
+    - Script SQL com correções recomendadas
+    - Correção de search_path em funções
+    - Remoção de políticas duplicadas
+    - VACUUM para limpar dead rows
+    - Verificações pós-correção
+
+21. **`SQL_CHECKLIST_COMPLETO_SUPABASE.sql`**
+    - Checklist completo de configurações Supabase
+    - Lista todas as tabelas, políticas, funções, triggers
+
 ---
 
 ## ✅ Checklists e Resumos

@@ -279,7 +279,7 @@
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={\n  \"hasAccess\": false,\n  \"accessType\": null,\n  \"reason\": \"{{ $json.reason }}\",\n  \"userId\": \"{{ $json.userId }}\",\n  \"appId\": \"{{ $json.appId }}\",\n  \"redirectUrl\": \"https://www.lwdigitalforge.com/portal/produtos\",\n  \"message\": \"Assinatura necessária para acessar esta aplicação\",\n  \"timestamp\": \"{{ $json.debug.timestamp }}\"\n}",
+        "responseBody": "={\n  \"hasAccess\": false,\n  \"accessType\": null,\n  \"reason\": \"{{ $json.reason }}\",\n  \"userId\": \"{{ $json.userId }}\",\n  \"appId\": \"{{ $json.appId }}\",\n  \"redirectUrl\": \"https://lwdigitalforge.com/portal/dashboard\",\n  \"message\": \"Assinatura expirada ou não encontrada\",\n  \"timestamp\": \"{{ $json.debug.timestamp }}\"\n}",
         "options": {
           "responseCode": 403
         }
