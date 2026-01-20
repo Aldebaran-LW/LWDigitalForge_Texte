@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { checkUserProductAccess, startProductTrial } from '@/utils/trialHelpers';
+import { createAccessDeniedNotification } from '@/lib/accessNotifications';
 
 const PortalProdutos = () => {
   const { user } = useAuth();
@@ -392,12 +393,9 @@ const PortalProdutos = () => {
                                     return;
                                   }
 
-                                  // Importar dinamicamente para evitar dependência circular
-                                  const { checkAccessViaN8N, createAccessDeniedNotification } = await import('@/lib/n8nAccessCheck');
-                                  
-                                  // Verificar acesso via n8n antes de abrir aplicação
+                                  // Verificar acesso direto no Supabase antes de abrir aplicação
                                   try {
-                                    const accessCheck = await checkAccessViaN8N(user.id, product.id);
+                                    const accessCheck = await checkUserProductAccess(user.id, product.id, user.email);
                                     
                                     if (!accessCheck.hasAccess) {
                                       // Criar notificação no banco de dados
@@ -414,10 +412,6 @@ const PortalProdutos = () => {
                                         description: accessCheck.message || 'Você não tem acesso a este produto.',
                                       });
 
-                                      // Redirecionar conforme resposta do n8n
-                                      if (accessCheck.redirectUrl) {
-                                        window.location.href = accessCheck.redirectUrl;
-                                      }
                                       return;
                                     }
 

@@ -8,7 +8,8 @@ import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { Loader2, ExternalLink, Download, Filter, Package } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { Link, useNavigate } from 'react-router-dom';
-import { checkAccessViaN8N, createAccessDeniedNotification } from '@/lib/n8nAccessCheck';
+import { checkUserProductAccess } from '@/utils/trialHelpers';
+import { createAccessDeniedNotification } from '@/lib/accessNotifications';
 
 const PortalMeusProdutos = () => {
   const { user, role } = useAuth();
@@ -122,10 +123,10 @@ const PortalMeusProdutos = () => {
       return;
     }
 
-    // Verificar acesso via n8n antes de abrir aplicação
+    // Verificar acesso direto no Supabase antes de abrir aplicação
     setCheckingAccess(true);
     try {
-      const accessCheck = await checkAccessViaN8N(user.id, product.id);
+      const accessCheck = await checkUserProductAccess(user.id, product.id, user.email);
       
       if (!accessCheck.hasAccess) {
         // Criar notificação no banco de dados
@@ -143,11 +144,7 @@ const PortalMeusProdutos = () => {
         });
 
         // Redirecionar para página de produtos conforme especificado
-        if (accessCheck.redirectUrl) {
-          window.location.href = accessCheck.redirectUrl;
-        } else {
-          navigate('/portal/produtos');
-        }
+        navigate('/portal/produtos');
         return;
       }
 

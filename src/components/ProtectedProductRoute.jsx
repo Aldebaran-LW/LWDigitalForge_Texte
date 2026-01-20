@@ -5,7 +5,8 @@ import { supabase } from '@/lib/customSupabaseClient';
 import { Loader2, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
-import { checkAccessViaN8N, createAccessDeniedNotification } from '@/lib/n8nAccessCheck';
+import { checkUserProductAccess } from '@/utils/trialHelpers';
+import { createAccessDeniedNotification } from '@/lib/accessNotifications';
 
 /**
  * Componente que protege rotas de produtos/apps
@@ -54,8 +55,8 @@ const ProtectedProductRoute = ({ children, appId: propAppId }) => {
 
         setAppData(app);
 
-        // 2. Verificar acesso via webhook n8n (fonte da verdade)
-        const accessCheck = await checkAccessViaN8N(user.id, appId);
+        // 2. Verificar acesso direto no Supabase
+        const accessCheck = await checkUserProductAccess(user.id, appId, user.email);
 
         if (accessCheck.hasAccess) {
           setHasAccess(true);

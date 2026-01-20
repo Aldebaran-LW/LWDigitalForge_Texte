@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
-import { startProductTrial } from '@/utils/trialHelpers';
-import { checkAccessViaN8N, createAccessDeniedNotification } from '@/lib/n8nAccessCheck';
+import { startProductTrial, checkUserProductAccess } from '@/utils/trialHelpers';
+import { createAccessDeniedNotification } from '@/lib/accessNotifications';
 import { Button } from "@/components/ui/button";
 import { Rocket, CheckCircle, ExternalLink, Loader2 } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
@@ -110,10 +110,10 @@ export default function ProductCard({ app, userHasAccess = false, subscriptionTy
                 return;
               }
 
-              // Verificar acesso via n8n antes de abrir aplicação
+              // Verificar acesso direto no Supabase antes de abrir aplicação
               setCheckingAccess(true);
               try {
-                const accessCheck = await checkAccessViaN8N(user.id, app.id);
+                const accessCheck = await checkUserProductAccess(user.id, app.id, user.email);
                 
                 if (!accessCheck.hasAccess) {
                   // Criar notificação no banco de dados
@@ -130,10 +130,6 @@ export default function ProductCard({ app, userHasAccess = false, subscriptionTy
                     description: accessCheck.message || 'Você não tem acesso a este produto.',
                   });
 
-                  // Redirecionar conforme resposta do n8n
-                  if (accessCheck.redirectUrl) {
-                    navigate(accessCheck.redirectUrl);
-                  }
                   return;
                 }
 

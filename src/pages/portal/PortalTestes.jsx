@@ -8,6 +8,8 @@ import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useToast } from '@/components/ui/use-toast';
 import { Loader2, Calendar, ExternalLink, ShoppingCart, Clock } from 'lucide-react';
+import { checkUserProductAccess } from '@/utils/trialHelpers';
+import { createAccessDeniedNotification } from '@/lib/accessNotifications';
 
 const PortalTestes = () => {
   const { user, role } = useAuth();
@@ -143,11 +145,9 @@ const PortalTestes = () => {
       return;
     }
 
-    // Verificar acesso via n8n antes de abrir aplicação
+    // Verificar acesso direto no Supabase antes de abrir aplicação
     try {
-      // Importar dinamicamente para evitar dependência circular
-      const { checkAccessViaN8N, createAccessDeniedNotification } = await import('@/lib/n8nAccessCheck');
-      const accessCheck = await checkAccessViaN8N(user.id, product.id);
+      const accessCheck = await checkUserProductAccess(user.id, product.id, user.email);
       
       if (!accessCheck.hasAccess) {
         // Criar notificação no banco de dados
@@ -164,10 +164,6 @@ const PortalTestes = () => {
           description: accessCheck.message || 'Você não tem acesso a este produto.',
         });
 
-        // Redirecionar conforme resposta do n8n
-        if (accessCheck.redirectUrl) {
-          window.location.href = accessCheck.redirectUrl;
-        }
         return;
       }
 
