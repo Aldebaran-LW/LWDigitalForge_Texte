@@ -191,3 +191,76 @@ RELATORIO_SEGURANCA*.md
 
 # Configurações do Cursor MCP (contém tokens sensíveis)
 .cursor/mcp.json
+
+# Notas e relatórios locais (não versionar)
+ADICIONAR_*.md
+ANALISE_*.md
+ARQUITETURA_*.md
+ATUALIZAR_*.md
+AUTENTICACAO_*.md
+CHECKLIST_*.md
+CODIGO_*.md
+COMANDOS_*.md
+COMO_*.md
+CONFIGURAR_*.md
+CONFIRMACAO_*.md
+CORRECAO_*.md
+CORRECOES_*.md
+CORRIGIR_*.md
+DECISAO_*.md
+DIAGNOSTICO_*.md
+DIFERENCA_*.md
+DOCUMENTACAO_*.md
+ENV_*.md
+ENV_*.txt
+EXECUTAR_*.md
+EXPLICACAO_*.md
+FLUXO_*.md
+GATEKEEPER_*.md
+GUIA_*.md
+IMPLEMENTACAO_*.md
+INSTRUCOES_*.md
+INTEGRACAO_*.md
+MIGRACAO_*.md
+NOTA_*.md
+OBTER_*.md
+PASSO_A_PASSO_*.md
+PERGUNTAS_*.md
+PLANO_*.md
+POLICIES_*.md
+PROBLEMA_*.md
+PROXIMOS_PASSOS_*.md
+PUBLICAR_*.md
+QUICK_START_*.md
+RELATORIO_*.md
+RESPOSTA_*.md
+RESUMO_*.md
+RESULTADO_*.md
+SETUP_*.md
+SOLUCAO_*.md
+STATUS_*.md
+TEMPLATE_*.md
+TESTE_*.md
+TESTAR_*.md
+TROUBLESHOOTING_*.md
+URLS_*.md
+VARIAVEIS_*.md
+VERIFICACAO_*.md
+VERIFICAR_*.md
+WORKFLOW_*.md
+
+# SQL de diagnóstico/auxiliar
+SQL_*.sql
+DIAGNOSTICO_*.sql
+SCHEMA_*.sql
+VIEW_*.sql
+FUNCAO_*.sql
+CONCEDER_*.sql
+
+# Scripts de teste/execução locais
+TESTE_*.ps1
+TESTAR_*.ps1
+EXECUTAR_*.ps1
+
+# Workflows n8n locais
+n8n-workflow-*.json
