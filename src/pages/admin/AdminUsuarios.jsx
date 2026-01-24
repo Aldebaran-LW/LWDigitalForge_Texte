@@ -380,7 +380,7 @@ const AdminUsuarios = () => {
 
   const handleOpenLicenseModal = (user) => {
     setSelectedUser(user);
-    setSelectedProduct('');
+    setSelectedProduct(undefined);
     setActionType('trial');
     setTrialDays(7);
     setIsLicenseModalOpen(true);
@@ -870,7 +870,7 @@ const AdminUsuarios = () => {
             {/* Seleção de Produto */}
             <div className="grid gap-2">
               <Label className="text-sm">Produto / App</Label>
-              <Select value={selectedProduct} onValueChange={setSelectedProduct}>
+              <Select value={selectedProduct || ''} onValueChange={setSelectedProduct}>
                 <SelectTrigger className="min-h-[48px]">
                   <SelectValue placeholder="Selecione o produto..." />
                 </SelectTrigger>
