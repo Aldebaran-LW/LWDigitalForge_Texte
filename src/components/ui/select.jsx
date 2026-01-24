@@ -18,12 +18,21 @@ const Select = ({ value, onValueChange, children, ...props }) => {
 
   // Atualiza o label quando o value muda
   React.useEffect(() => {
-    if (value && React.Children.toArray(children).length > 0) {
+    // Se value é null, undefined, ou string vazia, limpa o label
+    if (!value || value === '') {
+      setSelectedLabel(null)
+      return
+    }
+
+    if (React.Children.toArray(children).length > 0) {
       // Procura o SelectItem correspondente ao value
       const findLabel = (children) => {
         return React.Children.toArray(children).find(child => {
           if (React.isValidElement(child)) {
-            if (child.type === SelectItem && child.props.value === value) {
+            // Compara valores convertendo ambos para string para garantir compatibilidade
+            const childValue = String(child.props.value || '')
+            const currentValue = String(value || '')
+            if (child.type === SelectItem && childValue === currentValue) {
               return child.props.children
             }
             if (child.props?.children) {
@@ -104,7 +113,7 @@ const SelectContent = React.forwardRef(({ className, children, ...props }, ref) 
     <div
       ref={ref}
       className={cn(
-        "absolute z-50 mt-1 max-h-96 min-w-full overflow-auto rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-lg",
+        "absolute z-[100] mt-1 max-h-96 min-w-full overflow-auto rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-lg",
         className
       )}
       {...props}
@@ -117,7 +126,8 @@ SelectContent.displayName = "SelectContent"
 
 const SelectItem = React.forwardRef(({ className, children, value: itemValue, ...props }, ref) => {
   const { value, onValueChange, setIsOpen, setSelectedLabel } = React.useContext(SelectContext)
-  const isSelected = value === itemValue
+  // Compara valores convertendo ambos para string para garantir compatibilidade
+  const isSelected = String(value || '') === String(itemValue || '')
   
   return (
     <div

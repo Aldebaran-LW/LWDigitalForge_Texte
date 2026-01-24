@@ -50,7 +50,7 @@ const AdminUsuarios = () => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [isLicenseModalOpen, setIsLicenseModalOpen] = useState(false);
   const [products, setProducts] = useState([]);
-  const [selectedProduct, setSelectedProduct] = useState('');
+  const [selectedProduct, setSelectedProduct] = useState(null);
   const [actionType, setActionType] = useState('trial'); // 'trial', 'lifetime', 'revoke'
   const [trialDays, setTrialDays] = useState(7);
   const [processingAction, setProcessingAction] = useState(false);
@@ -380,11 +380,20 @@ const AdminUsuarios = () => {
 
   const handleOpenLicenseModal = (user) => {
     setSelectedUser(user);
-    setSelectedProduct(undefined);
+    setSelectedProduct(null);
     setActionType('trial');
     setTrialDays(7);
     setIsLicenseModalOpen(true);
   };
+
+  // Resetar estado quando o modal fechar
+  useEffect(() => {
+    if (!isLicenseModalOpen) {
+      setSelectedProduct(null);
+      setActionType('trial');
+      setTrialDays(7);
+    }
+  }, [isLicenseModalOpen]);
 
   const handleViewUserDetails = async (user) => {
     setSelectedUserDetails(user);
@@ -870,14 +879,18 @@ const AdminUsuarios = () => {
             {/* Seleção de Produto */}
             <div className="grid gap-2">
               <Label className="text-sm">Produto / App</Label>
-              <Select value={selectedProduct || ''} onValueChange={setSelectedProduct}>
+              <Select value={selectedProduct ?? ''} onValueChange={(value) => setSelectedProduct(value)}>
                 <SelectTrigger className="min-h-[48px]">
                   <SelectValue placeholder="Selecione o produto..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {products.map(p => (
-                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                  ))}
+                  {products.length > 0 ? (
+                    products.map(p => (
+                      <SelectItem key={p.id} value={String(p.id)}>{p.name}</SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem value="" disabled>Nenhum produto disponível</SelectItem>
+                  )}
                 </SelectContent>
               </Select>
             </div>
