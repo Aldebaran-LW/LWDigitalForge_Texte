@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
@@ -35,58 +35,101 @@ const PortalTestes = () => {
     }
   };
 
+  // Função para buscar testes ativos (memoizada para evitar recriações desnecessárias)
+  const fetchActiveTrials = useCallback(async () => {
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Atualizar testes expirados primeiro
+      await updateExpiredTrials();
+      
+      // Buscar apenas testes realmente ativos (não expirados)
+      const now = new Date().toISOString();
+      const { data, error } = await supabase
+        .from('user_trials')
+        .select(`
+          *,
+          registered_apps:app_id (
+            id,
+            name,
+            description,
+            image_url,
+            vercel_deployment_url,
+            github_repo_url,
+            price_monthly,
+            price_annual,
+            price_lifetime
+          )
+        `)
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .gt('expires_at', now) // Apenas testes não expirados
+        .order('started_at', { ascending: false });
+
+      if (error) throw error;
+
+      setTrials(data || []);
+    } catch (error) {
+      console.error('Erro ao buscar testes:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Erro',
+        description: 'Não foi possível carregar seus testes.',
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [user, toast]);
+
   useEffect(() => {
-    const fetchActiveTrials = async () => {
-      if (!user) {
-        setLoading(false);
-        return;
-      }
+    fetchActiveTrials();
 
-      setLoading(true);
-      try {
-        // Atualizar testes expirados primeiro
-        await updateExpiredTrials();
-        
-        // Buscar apenas testes realmente ativos (não expirados)
-        const now = new Date().toISOString();
-        const { data, error } = await supabase
-          .from('user_trials')
-          .select(`
-            *,
-            registered_apps:app_id (
-              id,
-              name,
-              description,
-              image_url,
-              vercel_deployment_url,
-              github_repo_url,
-              price_monthly,
-              price_annual,
-              price_lifetime
-            )
-          `)
-          .eq('user_id', user.id)
-          .eq('is_active', true)
-          .gt('expires_at', now) // Apenas testes não expirados
-          .order('started_at', { ascending: false });
+    // Configurar listener do Supabase Realtime para atualizar automaticamente quando novos testes são criados/atualizados
+    if (!user) return;
 
-        if (error) throw error;
+    const channel = supabase
+      .channel('user_trials_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*', // INSERT, UPDATE, DELETE
+          schema: 'public',
+          table: 'user_trials',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          console.log('Mudança detectada em user_trials:', payload);
+          // Recarregar testes quando houver mudanças
+          fetchActiveTrials();
+        }
+      )
+      .subscribe();
 
-        setTrials(data || []);
-      } catch (error) {
-        console.error('Erro ao buscar testes:', error);
-        toast({
-          variant: 'destructive',
-          title: 'Erro',
-          description: 'Não foi possível carregar seus testes.',
-        });
-      } finally {
-        setLoading(false);
+    // Atualizar quando a página recebe foco (útil quando usuário volta de outra aba)
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        fetchActiveTrials();
       }
     };
 
-    fetchActiveTrials();
-  }, [user, toast]);
+    const handleFocus = () => {
+      fetchActiveTrials();
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+
+    // Cleanup: remover subscription e listeners quando componente desmontar ou usuário mudar
+    return () => {
+      supabase.removeChannel(channel);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [user, toast, fetchActiveTrials]);
 
   const calculateTimeLeft = (expiresAt) => {
     if (!expiresAt) return 'Expirado';
@@ -219,9 +262,9 @@ const PortalTestes = () => {
           <div className="space-y-3 sm:space-y-4">
             {trials.map((trial, index) => {
               const product = trial.registered_apps;
-              const isActive = trial.status === 'active';
+              const isActive = trial.is_active === true;
               const timeLeft = calculateTimeLeft(trial.expires_at);
-              const isExpired = timeLeft === 'Expirado';
+              const isExpired = timeLeft === 'Expirado' || !isActive;
 
               return (
                 <motion.div
