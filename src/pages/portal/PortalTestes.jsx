@@ -49,41 +49,59 @@ const PortalTestes = () => {
         
         // Buscar apenas testes realmente ativos (não expirados)
         const now = new Date().toISOString();
-        const { data, error } = await supabase
+        const { data: trialsData, error: trialsError } = await supabase
           .from('user_trials')
-          .select(`
-            *,
-            registered_apps:app_id (
-              id,
-              name,
-              description,
-              image_url,
-              vercel_deployment_url,
-              github_repo_url,
-              price_monthly,
-              price_annual,
-              price_lifetime
-            )
-          `)
+          .select('*')
           .eq('user_id', user.id)
           .eq('is_active', true)
           .gt('expires_at', now) // Apenas testes não expirados
           .order('started_at', { ascending: false });
 
-        if (error) {
+        if (trialsError) {
           console.error('Erro detalhado ao buscar testes:', {
-            error,
-            message: error.message,
-            code: error.code,
-            details: error.details,
-            hint: error.hint,
+            error: trialsError,
+            message: trialsError.message,
+            code: trialsError.code,
+            details: trialsError.details,
+            hint: trialsError.hint,
             userId: user.id
           });
-          throw error;
+          throw trialsError;
         }
 
-        console.log('Testes encontrados:', data?.length || 0, data);
-        setTrials(data || []);
+        if (!trialsData || trialsData.length === 0) {
+          setTrials([]);
+          return;
+        }
+
+        // Buscar informações dos produtos associados
+        const appIds = [...new Set(trialsData.map(trial => trial.app_id))];
+        const { data: productsData, error: productsError } = await supabase
+          .from('registered_apps')
+          .select('id, name, description, image_url, vercel_deployment_url, github_repo_url, price_monthly, price_annual, price_lifetime')
+          .in('id', appIds);
+
+        if (productsError) {
+          console.error('Erro ao buscar produtos:', productsError);
+          throw productsError;
+        }
+
+        // Criar mapa de produtos para facilitar o join
+        const productsMap = {};
+        if (productsData) {
+          productsData.forEach(product => {
+            productsMap[product.id] = product;
+          });
+        }
+
+        // Combinar testes com informações dos produtos
+        const trialsWithProducts = trialsData.map(trial => ({
+          ...trial,
+          registered_apps: productsMap[trial.app_id] || null
+        })).filter(trial => trial.registered_apps !== null); // Remover testes sem produto encontrado
+
+        console.log('Testes encontrados:', trialsWithProducts.length, trialsWithProducts);
+        setTrials(trialsWithProducts);
       } catch (error) {
         console.error('Erro ao buscar testes:', error);
         toast({
