@@ -37,52 +37,65 @@ const PortalTestes = () => {
 
   // Função para buscar testes ativos (memoizada para evitar recriações desnecessárias)
   const fetchActiveTrials = useCallback(async () => {
-    if (!user) {
-      setLoading(false);
-      return;
-    }
+      if (!user) {
+        setLoading(false);
+        return;
+      }
 
-    setLoading(true);
-    try {
-      // Atualizar testes expirados primeiro
-      await updateExpiredTrials();
-      
-      // Buscar apenas testes realmente ativos (não expirados)
-      const now = new Date().toISOString();
-      const { data, error } = await supabase
-        .from('user_trials')
-        .select(`
-          *,
-          registered_apps:app_id (
-            id,
-            name,
-            description,
-            image_url,
-            vercel_deployment_url,
-            github_repo_url,
-            price_monthly,
-            price_annual,
-            price_lifetime
-          )
-        `)
-        .eq('user_id', user.id)
-        .eq('is_active', true)
-        .gt('expires_at', now) // Apenas testes não expirados
-        .order('started_at', { ascending: false });
+      setLoading(true);
+      try {
+        // Atualizar testes expirados primeiro
+        await updateExpiredTrials();
+        
+        // Buscar apenas testes realmente ativos (não expirados)
+        const now = new Date().toISOString();
+        const { data, error } = await supabase
+          .from('user_trials')
+          .select(`
+            *,
+            registered_apps:app_id (
+              id,
+              name,
+              description,
+              image_url,
+              vercel_deployment_url,
+              github_repo_url,
+              price_monthly,
+              price_annual,
+              price_lifetime
+            )
+          `)
+          .eq('user_id', user.id)
+          .eq('is_active', true)
+          .gt('expires_at', now) // Apenas testes não expirados
+          .order('started_at', { ascending: false });
 
-      if (error) throw error;
+        if (error) {
+          console.error('Erro detalhado ao buscar testes:', {
+            error,
+            message: error.message,
+            code: error.code,
+            details: error.details,
+            hint: error.hint,
+            userId: user.id
+          });
+          throw error;
+        }
 
-      setTrials(data || []);
-    } catch (error) {
-      console.error('Erro ao buscar testes:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Erro',
-        description: 'Não foi possível carregar seus testes.',
-      });
-    } finally {
-      setLoading(false);
-    }
+        console.log('Testes encontrados:', data?.length || 0, data);
+        setTrials(data || []);
+      } catch (error) {
+        console.error('Erro ao buscar testes:', error);
+        toast({
+          variant: 'destructive',
+          title: 'Erro',
+          description: error.message || 'Não foi possível carregar seus testes.',
+        });
+        // Mesmo com erro, definir array vazio para não ficar em loading infinito
+        setTrials([]);
+      } finally {
+        setLoading(false);
+      }
   }, [user, toast]);
 
   useEffect(() => {

@@ -45,14 +45,17 @@ const PortalLayout = () => {
         const { count: productsCount } = await supabase
           .from('user_purchases')
           .select('*', { count: 'exact', head: true })
-          .eq('user_id', user.id);
+          .eq('user_id', user.id)
+          .eq('status', 'APPROVED');
 
-        // Contar testes ativos
+        // Contar testes ativos (não expirados) - mesma lógica do PortalTestes
+        const now = new Date().toISOString();
         const { count: trialsCount } = await supabase
           .from('user_trials')
           .select('*', { count: 'exact', head: true })
           .eq('user_id', user.id)
-          .eq('is_active', true);
+          .eq('is_active', true)
+          .gt('expires_at', now); // Apenas testes não expirados
 
         // Contar assinaturas ativas (placeholder - implementar quando tiver tabela de assinaturas)
         const subscriptionsCount = 0;
