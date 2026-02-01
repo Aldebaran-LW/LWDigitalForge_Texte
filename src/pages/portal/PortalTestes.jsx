@@ -209,14 +209,44 @@ const PortalTestes = () => {
     }
 
     // Se o produto está na lista de testes, o usuário já tem acesso validado
-    // Salvar productId no sessionStorage e abrir aplicação
-    if (typeof window !== 'undefined') {
-      sessionStorage.setItem('app_product_id', product.id);
-      sessionStorage.setItem('app_product_name', product.name);
+    // Obter sessão atual do Supabase para passar token de autenticação
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    // Construir URL com informações de autenticação
+    // Quando vem do portal, já foi verificado, então pode ir direto para a aplicação
+    let appUrl = product.vercel_deployment_url;
+    
+    // Determinar rota padrão da aplicação baseado no slug
+    let defaultRoute = '';
+    if (product.slug === 'jornadapro') {
+      defaultRoute = '/apontamentos';
+    } else if (product.slug === 'stockforge') {
+      defaultRoute = '/'; // Página inicial
     }
     
-    // Abrir app em nova aba
-    const newWindow = window.open(product.vercel_deployment_url, '_blank');
+    // Adicionar rota padrão se especificada
+    if (defaultRoute && !appUrl.endsWith('/')) {
+      appUrl = `${appUrl}${defaultRoute}`;
+    } else if (defaultRoute && appUrl.endsWith('/')) {
+      appUrl = `${appUrl.slice(0, -1)}${defaultRoute}`;
+    }
+    
+    if (session?.access_token) {
+      // Passar informações via hash
+      const authData = {
+        access_token: session.access_token,
+        user_id: user.id,
+        product_id: product.id,
+        timestamp: Date.now(),
+        from: 'portal' // Indica que veio do portal (já verificado)
+      };
+      
+      const encodedAuth = btoa(JSON.stringify(authData));
+      appUrl = `${appUrl}#auth=${encodedAuth}`;
+    }
+    
+    // Abrir app em nova aba com rota padrão e autenticação
+    const newWindow = window.open(appUrl, '_blank');
     
     // Verificar se popup foi bloqueado
     if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
