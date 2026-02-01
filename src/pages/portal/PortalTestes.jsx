@@ -213,23 +213,8 @@ const PortalTestes = () => {
     const { data: { session } } = await supabase.auth.getSession();
     
     // Construir URL com informações de autenticação
-    // Quando vem do portal, já foi verificado, então pode ir direto para a aplicação
+    // A aplicação vai redirecionar para login normalmente
     let appUrl = product.vercel_deployment_url;
-    
-    // Determinar rota padrão da aplicação baseado no slug
-    let defaultRoute = '';
-    if (product.slug === 'jornadapro') {
-      defaultRoute = '/apontamentos';
-    } else if (product.slug === 'stockforge') {
-      defaultRoute = '/'; // Página inicial
-    }
-    
-    // Adicionar rota padrão se especificada
-    if (defaultRoute && !appUrl.endsWith('/')) {
-      appUrl = `${appUrl}${defaultRoute}`;
-    } else if (defaultRoute && appUrl.endsWith('/')) {
-      appUrl = `${appUrl.slice(0, -1)}${defaultRoute}`;
-    }
     
     if (session?.access_token) {
       // Passar informações via hash
@@ -245,7 +230,7 @@ const PortalTestes = () => {
       appUrl = `${appUrl}#auth=${encodedAuth}`;
     }
     
-    // Abrir app em nova aba com rota padrão e autenticação
+    // Abrir app em nova aba (vai redirecionar para login)
     const newWindow = window.open(appUrl, '_blank');
     
     // Verificar se popup foi bloqueado
