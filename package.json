@@ -13,7 +13,8 @@
     "test:check-subscription:prod": "node scripts/test-check-subscription-production.js",
     "verify:mongodb": "node scripts/verificar-mongodb.js",
     "verify:mongodb:databases": "node scripts/verificar-mongodb-databases.js",
-    "verify:mongodb:jornadapro": "node scripts/verificar-mongodb-jornadapro.js"
+    "verify:mongodb:jornadapro": "node scripts/verificar-mongodb-jornadapro.js",
+    "verify:mongodb:stockforge": "node scripts/verificar-mongodb-stockforge.js"
   },
   "dependencies": {
     "@radix-ui/react-alert-dialog": "^1.0.5",
