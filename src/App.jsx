@@ -44,10 +44,25 @@ import PortalContato from '@/pages/portal/PortalContato';
 import PortalNotificacoes from '@/pages/portal/PortalNotificacoes';
 import AssinaturaNecessaria from '@/pages/AssinaturaNecessaria';
 import ProtectedProductRoute from '@/components/ProtectedProductRoute';
+import { usePortalAuth } from '@/hooks/usePortalAuth';
+import { Loader2 } from 'lucide-react';
 
 function App() {
   const location = useLocation();
   const isAuthRoute = location.pathname.startsWith('/admin') || location.pathname.startsWith('/portal');
+  
+  // ✅ Verificar autenticação via portal (hash na URL)
+  const { isChecking, cameFromPortal } = usePortalAuth();
+  
+  // Mostrar loading enquanto verifica autenticação do portal
+  if (isChecking) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+        <span className="ml-2 text-gray-600 dark:text-gray-400">Carregando...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 overflow-x-hidden">

@@ -1,0 +1,26 @@
+# Comandos para Implementar no JornadaPro
+
+## 1. Navegar para o repositório
+cd Ponto_Diario-1
+
+## 2. Atualizar repositório
+git pull origin main
+
+## 3. Criar pasta hooks
+mkdir -p src/hooks
+
+## 4. Criar arquivo usePortalAuth.js
+# Copiar conteúdo de: APLICACOES/PONTO_DIARIO-usePortalAuth.js
+# Para: src/hooks/usePortalAuth.js
+
+## 5. Modificar App.jsx
+# Adicionar imports e hook conforme EXEMPLO-APP-JSX-JORNADAPRO.jsx
+
+## 6. Testar localmente
+npm run dev
+
+## 7. Commit e push
+git add src/hooks/usePortalAuth.js
+git add src/App.jsx
+git commit -m "feat: adiciona integração com portal para acesso automático"
+git push origin main
