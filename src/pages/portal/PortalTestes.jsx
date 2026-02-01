@@ -178,7 +178,7 @@ const PortalTestes = () => {
     return `${hours} hora${hours > 1 ? 's' : ''}`;
   };
 
-  const handleAccessProduct = (trial) => {
+  const handleAccessProduct = async (trial) => {
     const product = trial.registered_apps;
     
     // Validar se URL existe
