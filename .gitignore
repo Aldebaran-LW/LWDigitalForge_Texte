@@ -188,6 +188,8 @@ RELATORIO_SEGURANCA*.md
 *_SECRET*.txt
 *SECRET*.txt
 *TOKEN*.txt
+TOKENS_*.md
+*TOKENS*.md
 
 # Configurações do Cursor MCP (contém tokens sensíveis)
 .cursor/mcp.json
