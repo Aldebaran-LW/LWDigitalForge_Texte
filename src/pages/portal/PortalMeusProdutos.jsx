@@ -29,14 +29,22 @@ const PortalMeusProdutos = () => {
       }
 
       try {
-        // Buscar produtos comprados pelo usuário
+        // Buscar produtos comprados pelo usuário (apenas aprovados e não expirados)
+        // Inclui: acesso vitalício do admin + compras via pagamento (mensal, anual, vitalício)
+        const now = new Date().toISOString();
         const { data: purchases, error: purchasesError } = await supabase
           .from('user_purchases')
           .select(`
             *,
             registered_apps:app_id (*)
           `)
-          .eq('user_id', user.id);
+          .eq('user_id', user.id)
+          .eq('status', 'APPROVED');
+        
+        // Filtrar compras não expiradas (expires_at IS NULL ou expires_at > now)
+        const validPurchases = purchases?.filter(purchase => 
+          !purchase.expires_at || new Date(purchase.expires_at) > new Date(now)
+        ) || [];
 
         if (purchasesError) {
           console.error('Erro ao buscar compras:', purchasesError);
@@ -47,8 +55,8 @@ const PortalMeusProdutos = () => {
           });
           setMyProducts([]);
         } else {
-          // Mapear compras para produtos
-          const products = (purchases || [])
+          // Mapear compras válidas para produtos
+          const products = validPurchases
             .map(purchase => purchase.registered_apps)
             .filter(Boolean);
           
@@ -144,18 +152,37 @@ const PortalMeusProdutos = () => {
         });
 
         // Redirecionar para página de produtos conforme especificado
-        navigate('/portal/produtos');
+          navigate('/portal/produtos');
         return;
       }
 
-      // Se tem acesso, salvar productId no sessionStorage e abrir aplicação
-      if (typeof window !== 'undefined') {
-        sessionStorage.setItem('app_product_id', product.id);
-        sessionStorage.setItem('app_product_name', product.name);
+      // Se tem acesso, preparar informações para passar para a aplicação
+      // Obter sessão atual do Supabase para passar token de autenticação
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      // Construir URL com informações de autenticação (via hash para segurança)
+      // A aplicação vai redirecionar para login normalmente
+      let appUrl = product.vercel_deployment_url;
+      
+      if (session?.access_token) {
+        // Passar informações via hash (não aparece no servidor, mais seguro)
+        // A aplicação deve ler isso e usar para autenticar
+        // O parâmetro 'from=portal' indica que veio do portal (já verificado)
+        const authData = {
+          access_token: session.access_token,
+          user_id: user.id,
+          product_id: product.id,
+          timestamp: Date.now(),
+          from: 'portal' // Indica que veio do portal (já verificado)
+        };
+        
+        // Codificar em base64 para passar via hash
+        const encodedAuth = btoa(JSON.stringify(authData));
+        appUrl = `${appUrl}#auth=${encodedAuth}`;
       }
       
-      // Abrir app com URL limpa (sem parâmetros)
-      const newWindow = window.open(product.vercel_deployment_url, '_blank');
+      // Abrir app em nova aba (vai redirecionar para login)
+      const newWindow = window.open(appUrl, '_blank');
       
       // Verificar se popup foi bloqueado
       if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {

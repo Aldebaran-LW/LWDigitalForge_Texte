@@ -8,8 +8,6 @@ import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useToast } from '@/components/ui/use-toast';
 import { Loader2, Calendar, ExternalLink, ShoppingCart, Clock } from 'lucide-react';
-import { checkUserProductAccess } from '@/utils/trialHelpers';
-import { createAccessDeniedNotification } from '@/lib/accessNotifications';
 
 const PortalTestes = () => {
   const { user, role } = useAuth();
@@ -210,60 +208,37 @@ const PortalTestes = () => {
       return;
     }
 
-    if (!user) {
-      toast({
-        variant: 'destructive',
-        title: 'Erro',
-        description: 'Você precisa estar logado para acessar esta aplicação.',
-      });
-      return;
+    // Se o produto está na lista de testes, o usuário já tem acesso validado
+    // Obter sessão atual do Supabase para passar token de autenticação
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    // Construir URL com informações de autenticação
+    // A aplicação vai redirecionar para login normalmente
+    let appUrl = product.vercel_deployment_url;
+    
+    if (session?.access_token) {
+      // Passar informações via hash
+      const authData = {
+        access_token: session.access_token,
+        user_id: user.id,
+        product_id: product.id,
+        timestamp: Date.now(),
+        from: 'portal' // Indica que veio do portal (já verificado)
+      };
+      
+      const encodedAuth = btoa(JSON.stringify(authData));
+      appUrl = `${appUrl}#auth=${encodedAuth}`;
     }
-
-    // Verificar acesso direto no Supabase antes de abrir aplicação
-    try {
-      const accessCheck = await checkUserProductAccess(user.id, product.id, user.email);
-      
-      if (!accessCheck.hasAccess) {
-        // Criar notificação no banco de dados
-        await createAccessDeniedNotification(
-          user.id,
-          accessCheck.reason || 'Acesso negado',
-          product.name
-        );
-
-        // Mostrar toast e redirecionar
-        toast({
-          variant: 'destructive',
-          title: 'Acesso Negado',
-          description: accessCheck.message || 'Você não tem acesso a este produto.',
-        });
-
-        return;
-      }
-
-      // Se tem acesso, salvar productId no sessionStorage e abrir aplicação
-      if (typeof window !== 'undefined') {
-        sessionStorage.setItem('app_product_id', product.id);
-        sessionStorage.setItem('app_product_name', product.name);
-      }
-      
-      // Abrir app com URL limpa (sem parâmetros)
-      const newWindow = window.open(product.vercel_deployment_url, '_blank');
-      
-      // Verificar se popup foi bloqueado
-      if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
-        toast({
-          variant: 'destructive',
-          title: 'Popup Bloqueado',
-          description: 'Por favor, permita popups para este site e tente novamente.',
-        });
-      }
-    } catch (error) {
-      console.error('Erro ao verificar acesso:', error);
+    
+    // Abrir app em nova aba (vai redirecionar para login)
+    const newWindow = window.open(appUrl, '_blank');
+    
+    // Verificar se popup foi bloqueado
+    if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
       toast({
         variant: 'destructive',
-        title: 'Erro',
-        description: 'Erro ao verificar acesso. Tente novamente.',
+        title: 'Popup Bloqueado',
+        description: 'Por favor, permita popups para este site e tente novamente.',
       });
     }
   };

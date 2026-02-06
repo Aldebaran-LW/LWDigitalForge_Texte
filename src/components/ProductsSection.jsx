@@ -17,6 +17,7 @@ const ProductsSection = () => {
         const { data, error } = await supabase
           .from('registered_apps')
           .select('*')
+          .eq('is_active', true)
           .order('created_at', { ascending: false })
           .limit(4);
 
