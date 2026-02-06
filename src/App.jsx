@@ -62,7 +62,7 @@ const LoadingFallback = () => (
 function App() {
   const location = useLocation();
   const isAuthRoute = location.pathname.startsWith('/admin') || location.pathname.startsWith('/portal');
-
+  
   // ✅ Verificar autenticação via portal (hash na URL)
   const { isChecking, cameFromPortal } = usePortalAuth();
 

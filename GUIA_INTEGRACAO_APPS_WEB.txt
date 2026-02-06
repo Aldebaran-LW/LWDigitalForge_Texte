@@ -1,0 +1,676 @@
+================================================================================
+GUIA DE INTEGRAÇÃO - APPS WEB COM VERIFICAÇÃO DE ACESSO
+LWDigitalForge - Sistema de Liberação de Produtos
+================================================================================
+
+Data: 2026-01-21
+Versão: 1.0
+
+================================================================================
+SUMÁRIO
+================================================================================
+
+1. VISÃO GERAL DO SISTEMA
+2. ARQUITETURA DE ACESSO
+3. CONFIGURAÇÃO INICIAL
+4. IMPLEMENTAÇÃO NO APP
+5. VARIÁVEIS DE AMBIENTE
+6. CHECKLIST DE IMPLEMENTAÇÃO
+7. TESTES E VALIDAÇÃO
+8. TROUBLESHOOTING
+
+================================================================================
+1. VISÃO GERAL DO SISTEMA
+================================================================================
+
+O sistema de liberação de acesso funciona da seguinte forma:
+
+- SITE PRINCIPAL (lwdigitalforge_texte):
+  * Usuários compram produtos ou ativam trials
+  * Dados são salvos em: user_purchases e user_trials (Supabase)
+  * Portal valida acesso antes de abrir o app
+
+- APP WEB (produto vendido):
+  * Verifica acesso DIRETO no Supabase (sem n8n)
+  * Consulta user_purchases e user_trials
+  * Libera ou bloqueia acesso automaticamente
+
+- MONGODB:
+  * Usado APENAS para salvar conteúdo do usuário
+  * NÃO interfere na liberação de acesso
+
+================================================================================
+2. ARQUITETURA DE ACESSO
+================================================================================
+
+FLUXO DE LIBERAÇÃO:
+
+1. Usuário compra/trial no portal → Grava no Supabase
+2. Usuário clica "Acessar Aplicação" no portal
+3. Portal valida acesso direto no Supabase
+4. Portal salva app_id no sessionStorage
+5. Portal abre app em nova aba
+6. App detecta app_id (sessionStorage → env → domínio)
+7. App verifica acesso direto no Supabase
+8. App libera ou bloqueia
+
+PRIORIDADE DE ACESSO (ordem de verificação):
+
+1. LIFETIME (vitalício) → Sempre libera se APPROVED
+2. MONTHLY/ANNUAL → Libera se expires_at > agora
+3. Compras específicas → Libera se válidas
+4. TRIAL → Libera se is_active=true e expires_at > agora
+5. Sem acesso → Bloqueia e redireciona
+
+================================================================================
+3. CONFIGURAÇÃO INICIAL
+================================================================================
+
+3.1. CRIAR PRODUTO NO SUPABASE
+
+Execute no Supabase SQL Editor:
+
+INSERT INTO registered_apps (
+  id,
+  name,
+  slug,
+  description,
+  vercel_deployment_url,
+  is_active,
+  trial_period_days
+) VALUES (
+  gen_random_uuid(),  -- ou use UUID específico
+  'Nome do App',
+  'slug-do-app',
+  'Descrição do app',
+  'https://app.lwdigitalforge.com',
+  true,
+  30  -- dias de trial padrão
+);
+
+IMPORTANTE: Anote o ID gerado (será usado nas variáveis de ambiente)
+
+3.2. CONFIGURAR PREÇOS (OPCIONAL)
+
+UPDATE registered_apps
+SET 
+  price_monthly = 9900,    -- R$ 99,00 em centavos
+  price_annual = 99000,    -- R$ 990,00 em centavos
+  price_lifetime = 29900   -- R$ 299,00 em centavos
+WHERE id = 'ID_DO_APP';
+
+================================================================================
+4. IMPLEMENTAÇÃO NO APP
+================================================================================
+
+4.1. ESTRUTURA DE ARQUIVOS NECESSÁRIOS
+
+Seu app precisa ter:
+
+lib/
+  └── subscription-service.js    (verificação de acesso)
+hooks/
+  └── use-subscription.js        (hook React para acesso)
+  └── use-require-auth.js        (hook para proteger rotas)
+
+4.2. CRIAR lib/subscription-service.js
+
+Este arquivo verifica acesso direto no Supabase:
+
+import { supabase } from './supabase-client'
+
+/**
+ * Detecta Product ID automaticamente pelo domínio
+ */
+async function detectProductIdByDomain() {
+  if (typeof window === 'undefined') return null;
+  
+  const currentDomain = window.location.hostname;
+  
+  try {
+    const { data: products, error } = await supabase
+      .from('registered_apps')
+      .select('id, name, vercel_deployment_url')
+      .not('vercel_deployment_url', 'is', null);
+    
+    if (error) return null;
+    
+    const product = products?.find(p => {
+      if (!p.vercel_deployment_url) return false;
+      try {
+        const url = new URL(p.vercel_deployment_url);
+        return url.hostname === currentDomain;
+      } catch {
+        return false;
+      }
+    });
+    
+    return product?.id || null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Obtém Product ID de várias fontes (prioridade)
+ */
+async function getProductId() {
+  // 1. SessionStorage (se veio do portal)
+  if (typeof window !== 'undefined') {
+    const fromStorage = sessionStorage.getItem('app_product_id');
+    if (fromStorage) {
+      sessionStorage.removeItem('app_product_id');
+      return fromStorage;
+    }
+  }
+  
+  // 2. Variável de ambiente
+  if (process.env.NEXT_PUBLIC_PRODUCT_ID) {
+    return process.env.NEXT_PUBLIC_PRODUCT_ID;
+  }
+  
+  // 3. Detecção automática por domínio
+  const detected = await detectProductIdByDomain();
+  if (detected) return detected;
+  
+  return null;
+}
+
+/**
+ * Verifica se o usuário tem acesso ao aplicativo
+ * @param {string} userId - ID do usuário autenticado
+ * @returns {Promise<{hasAccess: boolean, isSubscriber: boolean, isTrial: boolean}>}
+ */
+export async function verifyAccess(userId) {
+  try {
+    if (!userId) {
+      return {
+        hasAccess: false,
+        isSubscriber: false,
+        isTrial: false,
+      };
+    }
+
+    // Obter Product ID
+    const productId = await getProductId();
+    
+    if (!productId) {
+      // Fallback seguro: permitir acesso se não conseguir detectar
+      return {
+        hasAccess: true,
+        isSubscriber: false,
+        isTrial: false,
+      };
+    }
+
+    // 1. Buscar TODAS as compras aprovadas (evita erro com múltiplas linhas)
+    const { data: allPurchases, error: allPurchasesError } = await supabase
+      .from('user_purchases')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('app_id', productId)
+      .eq('status', 'APPROVED');
+
+    if (allPurchasesError) {
+      console.error('Erro ao verificar compras:', allPurchasesError);
+    }
+
+    if (allPurchases && allPurchases.length > 0) {
+      const now = new Date();
+
+      // 1.1 LIFETIME tem prioridade absoluta
+      const lifetime = allPurchases.find(p => p.purchase_type === 'LIFETIME');
+      if (lifetime) {
+        return {
+          hasAccess: true,
+          isSubscriber: true,
+          isTrial: false,
+        };
+      }
+
+      // 1.2 Assinaturas MONTHLY/ANNUAL ativas
+      const subscriptionPurchases = allPurchases.filter(p =>
+        ['MONTHLY', 'ANNUAL'].includes(p.purchase_type)
+      );
+      const activeSubscriptions = subscriptionPurchases.filter(
+        p => p.expires_at && new Date(p.expires_at) > now
+      );
+      if (activeSubscriptions.length > 0) {
+        return {
+          hasAccess: true,
+          isSubscriber: true,
+          isTrial: false,
+        };
+      }
+
+      // 1.3 Compras específicas ainda válidas
+      const specificPurchases = allPurchases.filter(
+        p => !['MONTHLY', 'ANNUAL', 'LIFETIME'].includes(p.purchase_type)
+      );
+      const activeSpecific = specificPurchases.find(
+        p => !p.expires_at || new Date(p.expires_at) > now
+      );
+      if (activeSpecific) {
+        return {
+          hasAccess: true,
+          isSubscriber: true,
+          isTrial: false,
+        };
+      }
+    }
+
+    // 2. Verificar trial ativo
+    const { data: trial, error: trialError } = await supabase
+      .from('user_trials')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('app_id', productId)
+      .eq('is_active', true)
+      .gt('expires_at', new Date().toISOString())
+      .order('expires_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (trialError && trialError.code !== 'PGRST116') {
+      console.error('Erro ao verificar trial:', trialError);
+    }
+
+    if (trial) {
+      return {
+        hasAccess: true,
+        isSubscriber: false,
+        isTrial: true,
+      };
+    }
+
+    // SEM ACESSO
+    return {
+      hasAccess: false,
+      isSubscriber: false,
+      isTrial: false,
+    };
+  } catch (error) {
+    console.error('Erro ao verificar acesso:', error);
+    // Em caso de erro, negar acesso por segurança
+    return {
+      hasAccess: false,
+      isSubscriber: false,
+      isTrial: false,
+    };
+  }
+}
+
+4.3. CRIAR hooks/use-subscription.js
+
+'use client'
+
+import { useState, useEffect } from 'react'
+import { verifyAccess } from '@/lib/subscription-service'
+
+/**
+ * Hook para verificar status de assinatura do usuário
+ * @param {string} userId - ID do usuário autenticado
+ * @returns {{ hasAccess: boolean, isSubscriber: boolean, isTrial: boolean, loading: boolean, error: Error | null }}
+ */
+export function useSubscription(userId) {
+  const [hasAccess, setHasAccess] = useState(false)
+  const [isSubscriber, setIsSubscriber] = useState(false)
+  const [isTrial, setIsTrial] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  useEffect(() => {
+    async function checkSubscription() {
+      if (!userId) {
+        setLoading(false)
+        setHasAccess(false)
+        return
+      }
+
+      try {
+        setLoading(true)
+        const subscriptionStatus = await verifyAccess(userId)
+        
+        setHasAccess(subscriptionStatus.hasAccess)
+        setIsSubscriber(subscriptionStatus.isSubscriber)
+        setIsTrial(subscriptionStatus.isTrial)
+        setError(null)
+      } catch (err) {
+        console.error('Erro ao verificar assinatura:', err)
+        setError(err)
+        setHasAccess(false)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    checkSubscription()
+  }, [userId])
+
+  return { hasAccess, isSubscriber, isTrial, loading, error }
+}
+
+4.4. CRIAR hooks/use-require-auth.js
+
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { useAuth } from './use-auth'
+import { useEmpresa } from './use-empresa'  // Seu hook de empresa
+import { useSubscription } from './use-subscription'
+
+/**
+ * Hook que garante que o usuário está autenticado e tem acesso
+ * Redireciona para login ou assinatura se necessário
+ * @param {boolean} requireEmpresa - Se true, requer que o usuário tenha uma empresa
+ * @returns {{ user: object | null, empresa: object | null, loading: boolean, hasAccess: boolean }}
+ */
+export function useRequireAuth(requireEmpresa = true) {
+  const router = useRouter()
+  const { user, loading: authLoading, error: authError } = useAuth()
+  const { empresa, loading: empresaLoading } = useEmpresa(user?.id)
+  const { hasAccess, loading: subscriptionLoading } = useSubscription(user?.id)
+
+  const loading = authLoading || (requireEmpresa && empresaLoading) || subscriptionLoading
+
+  useEffect(() => {
+    // NÃO redirecionar enquanto está carregando
+    if (loading) {
+      return
+    }
+
+    if (authError || !user) {
+      router.push('/login')
+      return
+    }
+
+    // Verificar acesso ANTES de redirecionar
+    // IMPORTANTE: Só redireciona se loading=false E hasAccess=false
+    if (!hasAccess && !subscriptionLoading && !loading) {
+      router.push('/assinatura-necessaria')
+      return
+    }
+
+    // Redirecionar para onboarding se não tiver empresa
+    if (requireEmpresa && !empresa && !empresaLoading) {
+      const empresaJustCreated = typeof window !== 'undefined' && 
+        sessionStorage.getItem('empresa_just_created') === 'true'
+      const delay = empresaJustCreated ? 2000 : 500
+      
+      const timer = setTimeout(() => {
+        if (!empresa) {
+          router.push('/onboarding')
+        }
+      }, delay)
+      
+      return () => clearTimeout(timer)
+    }
+  }, [loading, user, empresa, authError, requireEmpresa, router, empresaLoading, hasAccess, subscriptionLoading])
+
+  return { user, empresa, loading, hasAccess }
+}
+
+4.5. USAR NOS COMPONENTES
+
+Exemplo em app/page.js:
+
+'use client'
+
+import { useRequireAuth } from '@/hooks/use-require-auth'
+import { useEffect } from 'react'
+
+export default function HomePage() {
+  const { user, empresa, loading, hasAccess } = useRequireAuth(true)
+
+  useEffect(() => {
+    if (!loading && hasAccess && empresa) {
+      // Redirecionar para página principal do app
+      window.location.href = '/apontamentos'  // ou sua rota principal
+    }
+  }, [loading, hasAccess, empresa])
+
+  if (loading) {
+    return <div>Carregando...</div>
+  }
+
+  return null
+}
+
+Exemplo em app/apontamentos/page.js:
+
+'use client'
+
+import { useRequireAuth } from '@/hooks/use-require-auth'
+
+export default function ApontamentosPage() {
+  const { user, empresa, loading } = useRequireAuth(true)
+
+  if (loading) {
+    return <div>Carregando...</div>
+  }
+
+  if (!user || !empresa) {
+    return null  // useRequireAuth já redireciona
+  }
+
+  return (
+    <div>
+      {/* Seu conteúdo aqui */}
+    </div>
+  )
+}
+
+================================================================================
+5. VARIÁVEIS DE AMBIENTE
+================================================================================
+
+Configure no Vercel/Render (Settings → Environment Variables):
+
+OBRIGATÓRIAS:
+- NEXT_PUBLIC_SUPABASE_URL=https://seu-projeto.supabase.co
+- NEXT_PUBLIC_SUPABASE_ANON_KEY=sua-chave-anon-key
+
+OPCIONAIS (recomendadas):
+- NEXT_PUBLIC_PRODUCT_ID=uuid-do-app-no-registered_apps
+- NEXT_PUBLIC_SUBSCRIPTION_URL=https://www.lwdigitalforge.com/portal/produtos
+
+NOTA: Se não configurar NEXT_PUBLIC_PRODUCT_ID, o app tentará detectar
+automaticamente pelo domínio (comparando com registered_apps.vercel_deployment_url)
+
+================================================================================
+6. CHECKLIST DE IMPLEMENTAÇÃO
+================================================================================
+
+[ ] 1. Criar produto em registered_apps no Supabase
+[ ] 2. Configurar vercel_deployment_url no Supabase (deve bater com domínio do app)
+[ ] 3. Criar lib/subscription-service.js no app
+[ ] 4. Criar hooks/use-subscription.js no app
+[ ] 5. Criar hooks/use-require-auth.js no app
+[ ] 6. Configurar variáveis de ambiente no Vercel/Render
+[ ] 7. Implementar useRequireAuth nas páginas protegidas
+[ ] 8. Criar página /assinatura-necessaria (redireciona para portal)
+[ ] 9. Testar acesso com usuário com LIFETIME
+[ ] 10. Testar acesso com usuário com trial
+[ ] 11. Testar acesso com usuário sem acesso (deve bloquear)
+
+================================================================================
+7. TESTES E VALIDAÇÃO
+================================================================================
+
+7.1. TESTE DE ACESSO VITALÍCIO
+
+1. No portal admin, conceder LIFETIME para um usuário de teste
+2. Usuário acessa portal → Meus Produtos → "Acessar Aplicação"
+3. App deve abrir e liberar acesso imediatamente
+
+7.2. TESTE DE TRIAL
+
+1. No portal, usuário clica "Testar Grátis"
+2. Trial é criado em user_trials
+3. Usuário acessa app → Deve liberar acesso
+4. Após expires_at → Deve bloquear acesso
+
+7.3. TESTE DE BLOQUEIO
+
+1. Usuário sem compra/trial acessa app
+2. Deve redirecionar para /assinatura-necessaria
+3. Botão "Assinar Agora" deve redirecionar para portal
+
+7.4. VERIFICAÇÃO NO CONSOLE
+
+Abra DevTools → Console e verifique logs:
+
+✅ Esperado:
+- "✅ Product ID obtido da variável de ambiente" ou "✅ Product ID detectado automaticamente"
+- "✅ Acesso permitido: LIFETIME" ou "✅ Acesso permitido: Trial ativo"
+- "✅ [useRequireAuth] Com acesso ou ainda carregando, não redirecionando"
+
+❌ Problemas:
+- "❌ Acesso negado" → Verificar se compra/trial existe no Supabase
+- "⚠️ Product ID não encontrado" → Verificar variável de ambiente ou detecção por domínio
+
+================================================================================
+8. TROUBLESHOOTING
+================================================================================
+
+PROBLEMA: App sempre bloqueia acesso mesmo com compra LIFETIME
+
+SOLUÇÃO:
+1. Verificar se NEXT_PUBLIC_PRODUCT_ID está correto (deve ser o ID de registered_apps)
+2. Verificar se user_purchases.app_id bate com o Product ID
+3. Verificar se user_purchases.status = 'APPROVED'
+4. Verificar se user_purchases.purchase_type = 'LIFETIME'
+5. Verificar logs do console para ver qual Product ID está sendo usado
+
+PROBLEMA: App não detecta Product ID automaticamente
+
+SOLUÇÃO:
+1. Verificar se registered_apps.vercel_deployment_url está configurado
+2. Verificar se o domínio do app bate com o hostname da URL configurada
+3. Configurar NEXT_PUBLIC_PRODUCT_ID explicitamente como fallback
+
+PROBLEMA: Redireciona para /assinatura-necessaria antes de verificar acesso
+
+SOLUÇÃO:
+1. Verificar se useRequireAuth está aguardando subscriptionLoading
+2. Verificar se useSubscription está retornando loading=true enquanto verifica
+3. Adicionar logs para debugar timing de loading states
+
+PROBLEMA: SessionStorage não funciona entre domínios
+
+SOLUÇÃO:
+1. Isso é esperado - sessionStorage não compartilha entre domínios diferentes
+2. Use NEXT_PUBLIC_PRODUCT_ID ou detecção automática por domínio
+3. Ou passe app_id via query string na URL (menos seguro)
+
+PROBLEMA: Múltiplas compras causam erro
+
+SOLUÇÃO:
+1. Já resolvido no código - usa .select() em vez de .single()
+2. Verifica todas as compras e prioriza LIFETIME → Assinaturas → Trials
+
+================================================================================
+9. ESTRUTURA DE DADOS NO SUPABASE
+================================================================================
+
+TABELA: registered_apps
+- id (UUID) → ID único do produto
+- name (TEXT) → Nome do produto
+- vercel_deployment_url (TEXT) → URL de deploy (usado para detecção automática)
+- is_active (BOOLEAN) → Se o produto está ativo
+- trial_period_days (INTEGER) → Dias de trial padrão
+
+TABELA: user_purchases
+- id (BIGINT) → ID da compra
+- user_id (UUID) → ID do usuário
+- app_id (UUID) → ID do produto (FK para registered_apps)
+- purchase_type (TEXT) → 'LIFETIME', 'MONTHLY', 'ANNUAL', etc.
+- status (TEXT) → 'APPROVED', 'PENDING', 'CANCELLED', 'REFUNDED'
+- expires_at (TIMESTAMP) → Data de expiração (null para LIFETIME)
+
+TABELA: user_trials
+- id (UUID) → ID do trial
+- user_id (UUID) → ID do usuário
+- app_id (UUID) → ID do produto (FK para registered_apps)
+- is_active (BOOLEAN) → Se o trial está ativo
+- expires_at (TIMESTAMP) → Data de expiração do trial
+
+================================================================================
+10. EXEMPLO DE PÁGINA DE ASSINATURA NECESSÁRIA
+================================================================================
+
+Criar app/assinatura-necessaria/page.js:
+
+'use client'
+
+import { useRouter } from 'next/navigation'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { CreditCard, Lock } from 'lucide-react'
+
+export default function AssinaturaNecessariaPage() {
+  const router = useRouter()
+
+  return (
+    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-50 to-green-50">
+      <Card className="max-w-md w-full">
+        <CardHeader className="space-y-1">
+          <div className="flex items-center justify-center mb-4">
+            <div className="bg-primary/10 p-3 rounded-full">
+              <Lock className="h-8 w-8 text-primary" />
+            </div>
+          </div>
+          <CardTitle className="text-2xl text-center">Assinatura Necessária</CardTitle>
+          <CardDescription className="text-center">
+            Acesso restrito a assinantes
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-center text-sm text-muted-foreground">
+            Para acessar este aplicativo, você precisa ter uma assinatura ativa ou estar em período de teste.
+          </p>
+          
+          <div className="space-y-2">
+            <Button 
+              className="w-full" 
+              onClick={() => {
+                const subscriptionUrl = process.env.NEXT_PUBLIC_SUBSCRIPTION_URL || 
+                  'https://www.lwdigitalforge.com/portal/produtos'
+                window.location.href = subscriptionUrl
+              }}
+            >
+              <CreditCard className="mr-2 h-4 w-4" />
+              Assinar Agora
+            </Button>
+            
+            <Button 
+              variant="outline" 
+              className="w-full"
+              onClick={() => router.push('/login')}
+            >
+              Voltar para Login
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+================================================================================
+11. NOTAS IMPORTANTES
+================================================================================
+
+- NÃO use n8n para verificação de acesso (foi removido do sistema)
+- NÃO use triggers HTTP no Supabase (foram removidos)
+- SEMPRE verifique acesso direto no Supabase (user_purchases + user_trials)
+- MongoDB é APENAS para conteúdo do usuário (não interfere em acesso)
+- Product ID pode ser detectado automaticamente pelo domínio
+- Fallback seguro: se não conseguir detectar Product ID, permite acesso (evita bloquear usuários legítimos)
+
+================================================================================
+FIM DO DOCUMENTO
+================================================================================
+
+Para dúvidas ou problemas, consulte:
+- Código de referência: ponto_diario_temp/lib/subscription-service.js
+- Exemplo completo: repositório ponto_diario-1
