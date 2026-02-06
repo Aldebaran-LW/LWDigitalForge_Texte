@@ -1,0 +1,45 @@
+{
+  "extends": [
+    "react-app",
+    "prettier"
+  ],
+  "parserOptions": {
+    "ecmaVersion": 2022,
+    "sourceType": "module",
+    "ecmaFeatures": {
+      "jsx": true
+    }
+  },
+  "env": {
+    "browser": true,
+    "es2021": true,
+    "node": true
+  },
+  "settings": {
+    "react": {
+      "version": "detect"
+    }
+  },
+  "rules": {
+    "react/prop-types": "off",
+    "react/react-in-jsx-scope": "off",
+    "no-unused-vars": ["warn", { 
+      "argsIgnorePattern": "^_",
+      "varsIgnorePattern": "^_",
+      "ignoreRestSiblings": true
+    }],
+    "no-console": ["warn", { 
+      "allow": ["warn", "error"] 
+    }],
+    "@typescript-eslint/no-unused-vars": "off"
+  },
+  "ignorePatterns": [
+    "node_modules",
+    "dist",
+    "build",
+    ".next",
+    "coverage",
+    "*.config.js",
+    "vite.config.js"
+  ]
+}
