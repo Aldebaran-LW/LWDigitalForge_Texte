@@ -54,6 +54,7 @@ const Header = () => {
           <div className="hidden md:flex items-center space-x-4 lg:space-x-6">
             <Link to="/" className="text-sm lg:text-base text-gray-700 dark:text-[#F9FAFB] hover:text-[#3B82F6] transition-colors duration-300 py-2 px-1">Início</Link>
             <Link to="/produtos" className="text-sm lg:text-base text-gray-700 dark:text-[#F9FAFB] hover:text-[#3B82F6] transition-colors duration-300 py-2 px-1">Produtos</Link>
+            <Link to="/portfolio" className="text-sm lg:text-base text-gray-700 dark:text-[#F9FAFB] hover:text-[#3B82F6] transition-colors duration-300 py-2 px-1">Portfólio</Link>
             <Link to="/sobre" className="text-sm lg:text-base text-gray-700 dark:text-[#F9FAFB] hover:text-[#3B82F6] transition-colors duration-300 py-2 px-1">Sobre</Link>
             
             {user ? (
@@ -131,6 +132,7 @@ const Header = () => {
             <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-6 space-y-1">
               <Link to="/" onClick={closeMenu} className="block w-full text-left py-3 px-2 text-base text-gray-700 dark:text-[#F9FAFB] hover:text-[#3B82F6] hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors min-h-[44px] flex items-center">Início</Link>
               <Link to="/produtos" onClick={closeMenu} className="block w-full text-left py-3 px-2 text-base text-gray-700 dark:text-[#F9FAFB] hover:text-[#3B82F6] hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors min-h-[44px] flex items-center">Produtos</Link>
+              <Link to="/portfolio" onClick={closeMenu} className="block w-full text-left py-3 px-2 text-base text-gray-700 dark:text-[#F9FAFB] hover:text-[#3B82F6] hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors min-h-[44px] flex items-center">Portfólio</Link>
               <Link to="/sobre" onClick={closeMenu} className="block w-full text-left py-3 px-2 text-base text-gray-700 dark:text-[#F9FAFB] hover:text-[#3B82F6] hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors min-h-[44px] flex items-center">Sobre</Link>
               
               {user ? (

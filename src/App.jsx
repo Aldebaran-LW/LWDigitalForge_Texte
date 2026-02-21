@@ -13,6 +13,7 @@ import ProtectedRoute from '@/components/admin/ProtectedRoute';
 // Lazy load page components
 const HomePage = lazy(() => import('@/pages/HomePage'));
 const PaginaProdutos = lazy(() => import('@/pages/PaginaProdutos'));
+const PaginaPortfolio = lazy(() => import('@/pages/PaginaPortfolio'));
 const PaginaSobre = lazy(() => import('@/pages/PaginaSobre'));
 const PaginaLogin = lazy(() => import('@/pages/PaginaLogin'));
 const PaginaContatoOrcamento = lazy(() => import('@/pages/PaginaContatoOrcamento'));
@@ -35,6 +36,8 @@ const PortalLayout = lazy(() => import('@/components/portal/PortalLayout'));
 const AdminDashboard = lazy(() => import('@/pages/admin/AdminDashboard'));
 const AdminGerenciarProdutos = lazy(() => import('@/pages/admin/AdminGerenciarProdutos'));
 const AdminFormularioProduto = lazy(() => import('@/pages/admin/AdminFormularioProduto'));
+const AdminPortfolio = lazy(() => import('@/pages/admin/AdminPortfolio'));
+const AdminFormularioPortfolio = lazy(() => import('@/pages/admin/AdminFormularioPortfolio'));
 const AdminVendas = lazy(() => import('@/pages/admin/AdminVendas'));
 const AdminUsuarios = lazy(() => import('@/pages/admin/AdminUsuarios'));
 const AdminTiposDeProduto = lazy(() => import('@/pages/admin/AdminTiposDeProduto'));
@@ -88,6 +91,7 @@ function App() {
             <Route path="/produtos" element={<PaginaProdutos />} />
             <Route path="/produtos/:id" element={<ProductDetailPage />} />
             <Route path="/product/:id" element={<ProductDetailPage />} />
+            <Route path="/portfolio" element={<PaginaPortfolio />} />
             <Route path="/sobre" element={<PaginaSobre />} />
             <Route path="/login" element={<PaginaLogin />} />
             <Route path="/contato-orcamento" element={<PaginaContatoOrcamento />} />
@@ -113,6 +117,9 @@ function App() {
               <Route path="produtos" element={<AdminGerenciarProdutos />} />
               <Route path="produtos/novo" element={<AdminFormularioProduto />} />
               <Route path="produtos/:id/editar" element={<AdminFormularioProduto />} />
+              <Route path="portfolio" element={<AdminPortfolio />} />
+              <Route path="portfolio/novo" element={<AdminFormularioPortfolio />} />
+              <Route path="portfolio/:id/editar" element={<AdminFormularioPortfolio />} />
               <Route path="tipos-produto" element={<AdminTiposDeProduto />} />
               <Route path="vendas" element={<AdminVendas />} />
               <Route path="usuarios" element={<AdminUsuarios />} />

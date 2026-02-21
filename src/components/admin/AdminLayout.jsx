@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Package, ShoppingCart, Users, LogOut, Tag, Menu, X, MessageSquare } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingCart, Users, LogOut, Tag, Menu, X, MessageSquare, Briefcase } from 'lucide-react';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import ThemeToggle from '@/components/ThemeToggle';
 import { getAssetUrl } from '@/config/assets';
@@ -15,6 +15,7 @@ const AdminLayout = () => {
   const navLinks = [
     { href: '/admin/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { href: '/admin/produtos', icon: Package, label: 'Produtos' },
+    { href: '/admin/portfolio', icon: Briefcase, label: 'Portfólio' },
     { href: '/admin/tipos-produto', icon: Tag, label: 'Tipos de Produto' },
     { href: '/admin/vendas', icon: ShoppingCart, label: 'Vendas' },
     { href: '/admin/usuarios', icon: Users, label: 'Usuários' },

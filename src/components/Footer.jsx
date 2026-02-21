@@ -42,8 +42,8 @@ const Footer = () => {
               </span>
             </Link>
             <p className="text-sm sm:text-base text-[#F9FAFB]/70 mb-4 sm:mb-6 max-w-md leading-relaxed">
-              Transformamos ideias em soluções automatizadas que impulsionam sua produtividade. 
-              Especialistas em bots Telegram e planilhas inteligentes.
+              Desenvolvemos aplicações web e sites personalizados para empresas. 
+              Especialistas em soluções sob medida que transformam processos e impulsionam resultados.
             </p>
             
             <div className="flex space-x-3 sm:space-x-4">
