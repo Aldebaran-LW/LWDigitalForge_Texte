@@ -284,10 +284,15 @@ const ProductDetailPage = () => {
                                             Anual 
                                             <span className="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded-full">Economize</span>
                                         </p>
-                                        <p className="text-xs sm:text-sm text-gray-500">Faturamento único anual</p>
+                                        <p className="text-xs sm:text-sm text-gray-500">
+                                          {formatPrice(Math.round(product.price_annual / 12))}/mês em 12x sem juros
+                                        </p>
                                     </div>
                                 </div>
-                                <span className="text-lg sm:text-xl font-bold text-blue-600 ml-2 flex-shrink-0">{formatPrice(product.price_annual)}</span>
+                                <div className="text-right ml-2 flex-shrink-0">
+                                    <div className="text-lg sm:text-xl font-bold text-blue-600">{formatPrice(product.price_annual)}</div>
+                                    <div className="text-xs text-gray-500">ou 12x de {formatPrice(Math.round(product.price_annual / 12))}</div>
+                                </div>
                             </div>
                         )}
 
@@ -305,10 +310,15 @@ const ProductDetailPage = () => {
                                             <Zap className="w-4 h-4 text-purple-500 flex-shrink-0" /> 
                                             <span>Vitalício</span>
                                         </p>
-                                        <p className="text-xs sm:text-sm text-gray-500">Pague uma única vez</p>
+                                        <p className="text-xs sm:text-sm text-gray-500">
+                                          {formatPrice(Math.round(product.price_lifetime / 12))}/mês em 12x sem juros
+                                        </p>
                                     </div>
                                 </div>
-                                <span className="text-lg sm:text-xl font-bold text-purple-600 ml-2 flex-shrink-0">{formatPrice(product.price_lifetime)}</span>
+                                <div className="text-right ml-2 flex-shrink-0">
+                                    <div className="text-lg sm:text-xl font-bold text-purple-600">{formatPrice(product.price_lifetime)}</div>
+                                    <div className="text-xs text-gray-500">ou 12x de {formatPrice(Math.round(product.price_lifetime / 12))}</div>
+                                </div>
                             </div>
                         )}
                     </div>

@@ -4,12 +4,18 @@ import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/customSupabaseClient';
-import { Loader2 } from 'lucide-react';
+import { Loader2, TestTube2 } from 'lucide-react';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { useToast } from '@/components/ui/use-toast';
+import { startProductTrial } from '@/utils/trialHelpers';
 
 const ProductsSection = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [startingTrials, setStartingTrials] = useState({});
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { toast } = useToast();
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -41,6 +47,66 @@ const ProductsSection = () => {
   const formatPrice = (priceInCents) => {
     if (!priceInCents) return 'Consulte valores';
     return `R$ ${(priceInCents / 100).toFixed(2).replace('.', ',')}`;
+  };
+
+  const handleStartTrial = async (product) => {
+    if (!user) {
+      toast({
+        title: "Login Necessário",
+        description: "Faça login ou cadastre-se para iniciar o teste grátis.",
+      });
+      navigate('/login');
+      return;
+    }
+
+    setStartingTrials(prev => ({ ...prev, [product.id]: true }));
+
+    try {
+      const result = await startProductTrial(
+        user.id,
+        product.id,
+        product.name,
+        product.trial_period_days || 30,
+        user.email
+      );
+
+      if (result.success) {
+        toast({
+          title: "Teste Iniciado!",
+          description: `Você tem ${product.trial_period_days} dias para testar ${product.name}.`,
+        });
+        if (result.redirectUrl) {
+          setTimeout(() => {
+            window.open(result.redirectUrl, '_blank');
+          }, 1500);
+        }
+      } else {
+        if (result.redirectUrl) {
+          toast({
+            title: "Você já tem acesso!",
+            description: "Redirecionando para o aplicativo...",
+          });
+          setTimeout(() => {
+            window.open(result.redirectUrl, '_blank');
+          }, 1000);
+        } else {
+          toast({
+            variant: "destructive",
+            title: "Erro",
+            description: result.message || "Não foi possível iniciar o teste.",
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao iniciar teste:', error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível iniciar o teste.",
+      });
+    } finally {
+      setStartingTrials(prev => ({ ...prev, [product.id]: false }));
+    }
   };
 
   return (
@@ -118,9 +184,39 @@ const ProductsSection = () => {
                     )}
                   </div>
 
-                  <Button className="btn-primary w-full py-3 sm:py-4 text-sm sm:text-base font-semibold rounded-lg mt-auto min-h-[48px] group-hover:shadow-lg transition-all">
-                    Ver Detalhes →
-                  </Button>
+                  <div className="flex flex-col gap-2 mt-auto">
+                    {product.trial_period_days && product.trial_period_days > 0 && (
+                      <Button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleStartTrial(product);
+                        }}
+                        className="btn-secondary w-full py-2.5 sm:py-3 text-sm sm:text-base font-semibold rounded-lg bg-transparent border-2 border-teal-500 text-teal-500 hover:bg-teal-500 hover:text-white min-h-[44px]"
+                        disabled={startingTrials[product.id]}
+                      >
+                        {startingTrials[product.id] ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Iniciando...
+                          </>
+                        ) : (
+                          <>
+                            <TestTube2 className="mr-2 h-4 w-4" />
+                            Testar Grátis
+                          </>
+                        )}
+                      </Button>
+                    )}
+                    <Button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/product/${product.id}`);
+                      }}
+                      className="btn-primary w-full py-3 sm:py-4 text-sm sm:text-base font-semibold rounded-lg min-h-[48px] group-hover:shadow-lg transition-all"
+                    >
+                      Ver Detalhes →
+                    </Button>
+                  </div>
                 </div>
               </motion.div>
             ))}
