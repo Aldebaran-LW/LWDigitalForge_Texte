@@ -57,6 +57,15 @@ const AdminUsuarios = () => {
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [selectedUserDetails, setSelectedUserDetails] = useState(null);
   const [loadingDetails, setLoadingDetails] = useState(false);
+  
+  // Estados para o Modal de Criar Usuário
+  const [isCreateUserModalOpen, setIsCreateUserModalOpen] = useState(false);
+  const [newUserEmail, setNewUserEmail] = useState('');
+  const [newUserPassword, setNewUserPassword] = useState('');
+  const [newUserFullName, setNewUserFullName] = useState('');
+  const [newUserPhone, setNewUserPhone] = useState('');
+  const [newUserRole, setNewUserRole] = useState('USER');
+  const [creatingUser, setCreatingUser] = useState(false);
 
   useEffect(() => {
     fetchUsers();
@@ -549,20 +558,83 @@ const AdminUsuarios = () => {
     }
   };
 
-  const handleCreateTestAccount = () => {
-    toast({
-      title: "✅ Conta de Teste Criada!",
-      description: "Login: teste@lwdigitalforge.com | Senha: teste123"
-    });
-  }
-  
-  const handleRemoveTestAccount = () => {
-    toast({
-      variant: "destructive",
-      title: "🗑️ Conta de Teste Removida!",
-      description: "A conta de teste foi removida com sucesso."
-    });
-  }
+  const handleCreateUser = async () => {
+    if (!newUserEmail || !newUserPassword) {
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Email e senha são obrigatórios."
+      });
+      return;
+    }
+
+    if (newUserPassword.length < 6) {
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "A senha deve ter no mínimo 6 caracteres."
+      });
+      return;
+    }
+
+    setCreatingUser(true);
+    try {
+      // Obter token de autenticação
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error("Você precisa estar autenticado para criar usuários.");
+      }
+
+      // Chamar Edge Function para criar usuário
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://wwwwyuwighdehmvnolrl.supabase.co';
+      const response = await fetch(`${supabaseUrl}/functions/v1/create-user`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind3d3d5dXdpZ2hkZWhtdm5vbHJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMzNDI3MDgsImV4cCI6MjA3ODcwMjcwOH0.m5r_mc9zIKsnc13rXGi6fkfRAoL2cGhgzZH3yRScnVA'
+        },
+        body: JSON.stringify({
+          email: newUserEmail,
+          password: newUserPassword,
+          full_name: newUserFullName || newUserEmail.split('@')[0],
+          phone: newUserPhone || null,
+          role: newUserRole
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Erro ao criar usuário');
+      }
+
+      toast({
+        title: "✅ Usuário Criado!",
+        description: `Usuário ${newUserEmail} criado com sucesso.`
+      });
+
+      // Limpar formulário
+      setNewUserEmail('');
+      setNewUserPassword('');
+      setNewUserFullName('');
+      setNewUserPhone('');
+      setNewUserRole('USER');
+      setIsCreateUserModalOpen(false);
+
+      // Recarregar lista de usuários
+      await fetchUsers();
+    } catch (error) {
+      console.error('Erro ao criar usuário:', error);
+      toast({
+        variant: "destructive",
+        title: "Erro ao Criar Usuário",
+        description: error.message || "Não foi possível criar o usuário. Tente novamente."
+      });
+    } finally {
+      setCreatingUser(false);
+    }
+  };
 
   return (
     <>
@@ -630,7 +702,7 @@ const AdminUsuarios = () => {
             </div>
         </motion.div>
 
-        {/* Gerenciar Contas de Teste */}
+        {/* Ações Rápidas */}
         <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -639,11 +711,11 @@ const AdminUsuarios = () => {
         >
             <h2 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">Ações Rápidas</h2>
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-                <Button onClick={handleCreateTestAccount} className="btn-primary w-full sm:w-auto min-h-[44px]">
-                    <UserPlus className="mr-2 h-4 w-4" /> Criar Conta Fake
-                </Button>
-                <Button onClick={handleRemoveTestAccount} variant="destructive" className="w-full sm:w-auto min-h-[44px]">
-                    <Trash2 className="mr-2 h-4 w-4" /> Limpar Contas Fake
+                <Button 
+                  onClick={() => setIsCreateUserModalOpen(true)} 
+                  className="btn-primary w-full sm:w-auto min-h-[44px]"
+                >
+                    <UserPlus className="mr-2 h-4 w-4" /> Criar Novo Usuário
                 </Button>
             </div>
         </motion.div>
@@ -1111,6 +1183,114 @@ const AdminUsuarios = () => {
             >
               <Settings2 className="h-4 w-4 mr-2" />
               Gerenciar Acesso
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Criar Novo Usuário */}
+      <Dialog open={isCreateUserModalOpen} onOpenChange={setIsCreateUserModalOpen}>
+        <DialogContent className="max-w-[90vw] sm:max-w-[500px] bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800">
+          <DialogHeader>
+            <DialogTitle className="text-lg sm:text-xl">Criar Novo Usuário</DialogTitle>
+            <DialogDescription className="text-sm">
+              Preencha os dados para criar um novo usuário. O email será confirmado automaticamente.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid gap-4 py-4">
+            {/* Email */}
+            <div className="grid gap-2">
+              <Label htmlFor="email" className="text-sm">Email *</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="usuario@exemplo.com"
+                value={newUserEmail}
+                onChange={(e) => setNewUserEmail(e.target.value)}
+                className="min-h-[48px]"
+                required
+              />
+            </div>
+
+            {/* Senha */}
+            <div className="grid gap-2">
+              <Label htmlFor="password" className="text-sm">Senha *</Label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="Mínimo 6 caracteres"
+                value={newUserPassword}
+                onChange={(e) => setNewUserPassword(e.target.value)}
+                className="min-h-[48px]"
+                required
+                minLength={6}
+              />
+            </div>
+
+            {/* Nome Completo */}
+            <div className="grid gap-2">
+              <Label htmlFor="fullName" className="text-sm">Nome Completo</Label>
+              <Input
+                id="fullName"
+                type="text"
+                placeholder="Nome do usuário (opcional)"
+                value={newUserFullName}
+                onChange={(e) => setNewUserFullName(e.target.value)}
+                className="min-h-[48px]"
+              />
+            </div>
+
+            {/* Telefone */}
+            <div className="grid gap-2">
+              <Label htmlFor="phone" className="text-sm">Telefone</Label>
+              <Input
+                id="phone"
+                type="tel"
+                placeholder="(00) 00000-0000 (opcional)"
+                value={newUserPhone}
+                onChange={(e) => setNewUserPhone(e.target.value)}
+                className="min-h-[48px]"
+              />
+            </div>
+
+            {/* Role */}
+            <div className="grid gap-2">
+              <Label htmlFor="role" className="text-sm">Tipo de Usuário</Label>
+              <Select value={newUserRole} onValueChange={setNewUserRole}>
+                <SelectTrigger className="min-h-[48px]">
+                  <SelectValue placeholder="Selecione o tipo..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="USER">Usuário</SelectItem>
+                  <SelectItem value="ADMIN">Administrador</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setIsCreateUserModalOpen(false);
+                setNewUserEmail('');
+                setNewUserPassword('');
+                setNewUserFullName('');
+                setNewUserPhone('');
+                setNewUserRole('USER');
+              }} 
+              className="w-full sm:w-auto min-h-[44px]"
+            >
+              Cancelar
+            </Button>
+            <Button 
+              onClick={handleCreateUser} 
+              disabled={creatingUser || !newUserEmail || !newUserPassword} 
+              className="w-full sm:w-auto min-h-[44px]"
+            >
+              {creatingUser && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Criar Usuário
             </Button>
           </DialogFooter>
         </DialogContent>
