@@ -579,39 +579,34 @@ const AdminUsuarios = () => {
 
     setCreatingUser(true);
     try {
-      // Obter token de autenticação
+      // Verificar se está autenticado
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         throw new Error("Você precisa estar autenticado para criar usuários.");
       }
 
-      // Chamar Edge Function para criar usuário
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://wwwwyuwighdehmvnolrl.supabase.co';
-      const response = await fetch(`${supabaseUrl}/functions/v1/create-user`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
-          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind3d3d5dXdpZ2hkZWhtdm5vbHJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMzNDI3MDgsImV4cCI6MjA3ODcwMjcwOH0.m5r_mc9zIKsnc13rXGi6fkfRAoL2cGhgzZH3yRScnVA'
-        },
-        body: JSON.stringify({
+      // Chamar Edge Function usando o cliente Supabase (mais confiável)
+      const { data, error } = await supabase.functions.invoke('create-user', {
+        body: {
           email: newUserEmail,
           password: newUserPassword,
           full_name: newUserFullName || newUserEmail.split('@')[0],
           phone: newUserPhone || null,
           role: newUserRole
-        })
+        }
       });
 
-      const data = await response.json();
+      if (error) {
+        throw new Error(error.message || 'Erro ao criar usuário');
+      }
 
-      if (!response.ok) {
+      if (data?.error) {
         throw new Error(data.error || 'Erro ao criar usuário');
       }
 
       toast({
         title: "✅ Usuário Criado!",
-        description: `Usuário ${newUserEmail} criado com sucesso.`
+        description: `Usuário ${newUserEmail} criado com sucesso.${data?.message ? ` ${data.message}` : ''}`
       });
 
       // Limpar formulário
