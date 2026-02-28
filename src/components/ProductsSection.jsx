@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/customSupabaseClient';
-import { Loader2, TestTube2 } from 'lucide-react';
+import { Loader2, TestTube2, ArrowRight, Star, Sparkles } from 'lucide-react';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useToast } from '@/components/ui/use-toast';
 import { startProductTrial } from '@/utils/trialHelpers';
@@ -76,162 +76,186 @@ const ProductsSection = () => {
           description: `Você tem ${product.trial_period_days} dias para testar ${product.name}.`,
         });
         if (result.redirectUrl) {
-          setTimeout(() => {
-            window.open(result.redirectUrl, '_blank');
-          }, 1500);
+          setTimeout(() => window.open(result.redirectUrl, '_blank'), 1500);
         }
       } else {
         if (result.redirectUrl) {
-          toast({
-            title: "Você já tem acesso!",
-            description: "Redirecionando para o aplicativo...",
-          });
-          setTimeout(() => {
-            window.open(result.redirectUrl, '_blank');
-          }, 1000);
+          toast({ title: "Você já tem acesso!", description: "Redirecionando..." });
+          setTimeout(() => window.open(result.redirectUrl, '_blank'), 1000);
         } else {
-          toast({
-            variant: "destructive",
-            title: "Erro",
-            description: result.message || "Não foi possível iniciar o teste.",
-          });
+          toast({ variant: "destructive", title: "Erro", description: result.message || "Não foi possível iniciar o teste." });
         }
       }
     } catch (error) {
-      console.error('Erro ao iniciar teste:', error);
-      toast({
-        variant: "destructive",
-        title: "Erro",
-        description: "Não foi possível iniciar o teste.",
-      });
+      toast({ variant: "destructive", title: "Erro", description: "Não foi possível iniciar o teste." });
     } finally {
       setStartingTrials(prev => ({ ...prev, [product.id]: false }));
     }
   };
 
+  const cardColors = [
+    { from: '#2563EB', to: '#06B6D4' },
+    { from: '#7C3AED', to: '#2563EB' },
+    { from: '#059669', to: '#06B6D4' },
+    { from: '#D97706', to: '#7C3AED' },
+  ];
+
   return (
-    <section className="py-12 sm:py-16 md:py-20 px-4 sm:px-6 bg-[var(--light-bg)] dark:bg-[var(--dark-bg)]">
+    <section className="py-20 md:py-28 px-6 bg-[var(--light-bg)] dark:bg-[var(--dark-bg)] relative overflow-hidden">
+      {/* Subtle glow */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[1px] bg-gradient-to-r from-transparent via-blue-500/30 to-transparent" />
+
       <div className="container mx-auto">
+        {/* Section header */}
         <motion.div
-          initial={{ opacity: 0, y: 50 }}
+          initial={{ opacity: 0, y: 32 }}
           whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
+          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
           viewport={{ once: true }}
-          className="text-center mb-10 sm:mb-12 md:mb-16"
+          className="text-center mb-14"
         >
-          <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-4 sm:mb-6 text-gradient px-2">
-            Nossas Aplicações Web
+          <div className="section-divider mb-4" />
+          <p className="text-xs font-semibold tracking-widest uppercase text-blue-500 dark:text-blue-400 mb-3">
+            Nossas Soluções
+          </p>
+          <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold text-gray-900 dark:text-white mb-4 leading-tight">
+            Aplicações{' '}
+            <span className="text-gradient">Desenvolvidas</span>
+            <br />para Empresas
           </h2>
-          <p className="text-lg sm:text-xl md:text-2xl text-gray-600 dark:text-[#F9FAFB]/80 max-w-3xl mx-auto px-2 font-medium">
-            Aplicações web desenvolvidas para empresas que buscam soluções personalizadas e resultados reais
+          <p className="text-lg text-gray-500 dark:text-gray-400 max-w-2xl mx-auto">
+            Soluções web personalizadas que automatizam, organizam e impulsionam resultados reais
           </p>
         </motion.div>
 
         {loading ? (
-          <div className="flex justify-center items-center py-12 sm:py-16 md:py-20">
-            <Loader2 className="h-10 w-10 sm:h-12 sm:w-12 text-blue-500 dark:text-white animate-spin" />
+          <div className="flex flex-col items-center justify-center py-24 gap-4">
+            <Loader2 className="h-10 w-10 text-blue-500 animate-spin" />
+            <p className="text-sm text-gray-400">Carregando soluções...</p>
           </div>
         ) : products.length === 0 ? (
-          <div className="text-center py-12 sm:py-16 md:py-20 text-gray-500 dark:text-gray-400">
-            <p className="text-sm sm:text-base">Nenhum produto disponível no momento.</p>
+          <div className="text-center py-24 text-gray-400">
+            <Sparkles className="w-10 h-10 mx-auto mb-3 opacity-40" />
+            <p>Nenhum produto disponível no momento.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 sm:gap-8 md:gap-10">
-            {products.map((product, index) => (
-              <motion.div
-                key={product.id}
-                initial={{ opacity: 0, y: 50 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: index * 0.1 }}
-                viewport={{ once: true }}
-                whileHover={{ y: -12, scale: 1.03 }}
-                onClick={() => navigate(`/product/${product.id}`)}
-                className="bg-white dark:bg-[#111827]/60 backdrop-blur-sm rounded-2xl p-6 sm:p-8 border-2 border-gray-200 dark:border-blue-500/20 hover:border-blue-400 dark:hover:border-blue-500/60 transition-all duration-300 relative flex flex-col cursor-pointer shadow-lg hover:shadow-2xl group overflow-hidden"
-              >
-                {/* Gradiente de fundo sutil no hover */}
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-500/0 to-teal-500/0 group-hover:from-blue-500/5 group-hover:to-teal-500/5 transition-all duration-300 rounded-2xl" />
-                
-                <div className="relative z-10">
-                  {product.image_url && (
-                    <div className="flex justify-center mb-6 overflow-hidden rounded-xl">
-                      <img 
-                        src={product.image_url} 
-                        alt={product.name}
-                        className="w-full h-48 sm:h-56 md:h-64 object-cover rounded-xl group-hover:scale-110 transition-transform duration-500"
-                        onError={(e) => {
-                          e.target.style.display = 'none';
-                        }}
-                      />
-                    </div>
-                  )}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 md:gap-6">
+            {products.map((product, index) => {
+              const color = cardColors[index % cardColors.length];
+              return (
+                <motion.div
+                  key={product.id}
+                  initial={{ opacity: 0, y: 40 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: index * 0.09, ease: [0.22, 1, 0.36, 1] }}
+                  viewport={{ once: true }}
+                  whileHover={{ y: -6 }}
+                  onClick={() => navigate(`/product/${product.id}`)}
+                  className="group relative cursor-pointer"
+                >
+                  {/* Card */}
+                  <div className="relative h-full flex flex-col rounded-2xl overflow-hidden bg-white dark:bg-[#0D1526] border border-gray-200/80 dark:border-white/6 shadow-sm hover:shadow-xl dark:hover:shadow-blue-500/5 transition-all duration-400">
+                    {/* Top accent bar */}
+                    <div
+                      className="absolute top-0 left-0 right-0 h-[2px] opacity-70 group-hover:opacity-100 transition-opacity"
+                      style={{ background: `linear-gradient(90deg, ${color.from}, ${color.to})` }}
+                    />
 
-                  <h3 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white mb-3 text-center group-hover:text-blue-600 dark:group-hover:text-teal-400 transition-colors">
-                    {product.name}
-                  </h3>
-                  
-                  <p className="text-gray-600 dark:text-gray-300/80 text-sm sm:text-base mb-6 text-center leading-relaxed flex-grow line-clamp-3">
-                    {product.description || 'Descrição não disponível'}
-                  </p>
-
-                  <div className="text-center mb-6 bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4">
-                    {product.price_monthly ? (
-                      <div className="text-2xl sm:text-3xl font-bold text-teal-500 dark:text-teal-400">
-                        {formatPrice(product.price_monthly)}
-                        <span className="text-sm sm:text-base font-normal text-gray-500 dark:text-gray-400">/mês</span>
+                    {/* Product image */}
+                    {product.image_url && (
+                      <div className="relative overflow-hidden h-44">
+                        <img
+                          src={product.image_url}
+                          alt={product.name}
+                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                          onError={(e) => { e.target.style.display = 'none'; }}
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-white/20 dark:from-black/40 to-transparent" />
                       </div>
-                    ) : (
-                      <span className="text-sm text-gray-500 dark:text-gray-400">Consulte valores</span>
                     )}
-                  </div>
 
-                  <div className="flex flex-col gap-2 mt-auto">
-                    {product.trial_period_days && product.trial_period_days > 0 && (
-                      <Button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleStartTrial(product);
-                        }}
-                        className="btn-secondary w-full py-2.5 sm:py-3 text-sm sm:text-base font-semibold rounded-lg bg-transparent border-2 border-teal-500 text-teal-500 hover:bg-teal-500 hover:text-white min-h-[44px]"
-                        disabled={startingTrials[product.id]}
-                      >
-                        {startingTrials[product.id] ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Iniciando...
-                          </>
+                    {/* Content */}
+                    <div className="flex flex-col flex-1 p-5">
+                      {/* Trial badge */}
+                      {product.trial_period_days && product.trial_period_days > 0 && (
+                        <div className="inline-flex items-center gap-1.5 self-start mb-3 px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[11px] font-semibold">
+                          <Star className="w-3 h-3" />
+                          {product.trial_period_days} dias grátis
+                        </div>
+                      )}
+
+                      <h3 className="text-base font-bold text-gray-900 dark:text-white mb-2 leading-snug group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                        {product.name}
+                      </h3>
+
+                      <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed mb-5 flex-1 line-clamp-3">
+                        {product.description || 'Descrição não disponível'}
+                      </p>
+
+                      {/* Price */}
+                      <div className="mb-4">
+                        {product.price_monthly ? (
+                          <div className="flex items-baseline gap-1">
+                            <span
+                              className="text-2xl font-bold"
+                              style={{ color: color.from }}
+                            >
+                              {formatPrice(product.price_monthly)}
+                            </span>
+                            <span className="text-xs text-gray-400">/mês</span>
+                          </div>
                         ) : (
-                          <>
-                            <TestTube2 className="mr-2 h-4 w-4" />
-                            Testar Grátis
-                          </>
+                          <span className="text-sm text-gray-400 italic">Consulte valores</span>
                         )}
-                      </Button>
-                    )}
-                    <Button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigate(`/product/${product.id}`);
-                      }}
-                      className="btn-primary w-full py-3 sm:py-4 text-sm sm:text-base font-semibold rounded-lg min-h-[48px] group-hover:shadow-lg transition-all"
-                    >
-                      Ver Detalhes →
-                    </Button>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex flex-col gap-2 mt-auto">
+                        {product.trial_period_days && product.trial_period_days > 0 && (
+                          <Button
+                            onClick={(e) => { e.stopPropagation(); handleStartTrial(product); }}
+                            className="w-full h-10 rounded-xl text-sm font-semibold btn-secondary"
+                            disabled={startingTrials[product.id]}
+                          >
+                            {startingTrials[product.id] ? (
+                              <><Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />Iniciando...</>
+                            ) : (
+                              <><TestTube2 className="mr-2 h-3.5 w-3.5" />Testar Grátis</>
+                            )}
+                          </Button>
+                        )}
+                        <Button
+                          onClick={(e) => { e.stopPropagation(); navigate(`/product/${product.id}`); }}
+                          className="w-full h-10 rounded-xl text-sm font-semibold btn-primary group/btn"
+                        >
+                          <span>Ver Detalhes</span>
+                          <ArrowRight className="ml-1.5 h-3.5 w-3.5 group-hover/btn:translate-x-1 transition-transform" />
+                        </Button>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </motion.div>
-            ))}
+                </motion.div>
+              );
+            })}
           </div>
         )}
 
+        {/* View all */}
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.4 }}
+          transition={{ duration: 0.5, delay: 0.3 }}
           viewport={{ once: true }}
-          className="text-center mt-10 sm:mt-12 md:mt-16"
+          className="text-center mt-12"
         >
-          <Button asChild className="btn-primary w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-semibold rounded-lg pulse-glow min-h-[48px]">
-            <Link to="/produtos">Ver Todos os Produtos</Link>
+          <Button
+            asChild
+            className="btn-primary h-12 px-8 rounded-2xl font-semibold text-sm pulse-glow"
+          >
+            <Link to="/produtos" className="flex items-center gap-2">
+              Ver Todas as Soluções
+              <ArrowRight size={16} />
+            </Link>
           </Button>
         </motion.div>
       </div>

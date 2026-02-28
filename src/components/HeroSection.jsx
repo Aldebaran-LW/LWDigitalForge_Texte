@@ -3,116 +3,153 @@ import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { getAssetUrl } from '@/config/assets';
-import { Zap, Clock, TrendingUp, Shield, Globe } from 'lucide-react';
+import { Zap, Globe, Shield, TrendingUp, ArrowRight, Sparkles } from 'lucide-react';
 
 const HeroSection = () => {
-  const quickStats = [
-    { icon: Globe, value: 'Web', label: 'Aplicações Modernas' },
-    { icon: Zap, value: '100%', label: 'Personalizado' },
-    { icon: TrendingUp, value: 'Empresas', label: 'Soluções B2B' },
-    { icon: Shield, value: '100%', label: 'Seguro e Confiável' }
+  const stats = [
+    { value: '100%', label: 'Personalizado', icon: Zap, color: '#3B82F6' },
+    { value: 'Web', label: 'Aplicações Modernas', icon: Globe, color: '#06B6D4' },
+    { value: 'B2B', label: 'Soluções Empresariais', icon: TrendingUp, color: '#7C3AED' },
+    { value: 'Seguro', label: 'Infraestrutura Robusta', icon: Shield, color: '#10B981' },
   ];
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: { staggerChildren: 0.12, delayChildren: 0.2 },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 24 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] },
+    },
+  };
+
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20 pb-12 md:pb-20">
+    <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
+      {/* Background layers */}
+      <div className="absolute inset-0 bg-[var(--light-bg)] dark:bg-[var(--dark-bg)]" />
+
+      {/* Grid pattern */}
+      <div className="absolute inset-0 grid-bg opacity-100 dark:opacity-100" />
+
+      {/* Background image */}
       <div className="absolute inset-0">
         <img
           src={getAssetUrl('Capa')}
-          alt="Fundo tecnológico com circuitos e linhas de dados"
-          className="w-full h-full object-cover opacity-20 dark:opacity-30"
+          alt=""
+          aria-hidden="true"
+          className="w-full h-full object-cover opacity-[0.04] dark:opacity-[0.07] mix-blend-luminosity"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-[var(--light-bg)] dark:from-[var(--dark-bg)] via-transparent to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[var(--light-bg)] dark:to-[var(--dark-bg)]" />
       </div>
 
-      <div className="container mx-auto px-4 sm:px-6 text-center relative z-10">
+      {/* Radial glows */}
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/4 w-[800px] h-[600px] rounded-full bg-blue-500/10 dark:bg-blue-500/15 blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-0 left-1/4 w-[400px] h-[400px] rounded-full bg-cyan-500/8 dark:bg-cyan-500/12 blur-[100px] pointer-events-none" />
+      <div className="absolute top-1/3 right-1/4 w-[300px] h-[300px] rounded-full bg-violet-500/6 dark:bg-violet-500/10 blur-[80px] pointer-events-none" />
+
+      {/* Fade bottom */}
+      <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-[var(--light-bg)] dark:from-[var(--dark-bg)] to-transparent pointer-events-none" />
+
+      {/* Content */}
+      <div className="relative z-10 container mx-auto px-6 lg:px-8 pt-28 pb-20 text-center">
         <motion.div
-          initial={{ opacity: 0, y: 50 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.2 }}
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
           className="max-w-5xl mx-auto"
         >
-          {/* Badge de Destaque */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.3, delay: 0.3 }}
-            className="inline-flex items-center gap-2 px-4 py-2 mb-6 rounded-full bg-gradient-to-r from-blue-500/10 to-teal-500/10 border border-blue-500/20 dark:border-teal-500/20"
-          >
-            <Zap className="w-4 h-4 text-blue-500 dark:text-teal-400" />
-            <span className="text-sm font-semibold text-blue-600 dark:text-teal-400">
-              Aplicações Web e Sites Personalizados para Empresas
-            </span>
+          {/* Badge */}
+          <motion.div variants={itemVariants}>
+            <div className="inline-flex items-center gap-2 px-4 py-2 mb-8 rounded-full bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20 text-blue-600 dark:text-blue-400">
+              <Sparkles className="w-3.5 h-3.5" />
+              <span className="text-xs font-semibold tracking-wider uppercase">
+                Soluções Web para Empresas
+              </span>
+              <Sparkles className="w-3.5 h-3.5" />
+            </div>
           </motion.div>
 
+          {/* Headline */}
           <motion.h1
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.3, delay: 0.4 }}
-            className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold mb-4 sm:mb-6 text-gradient leading-tight px-2"
+            variants={itemVariants}
+            className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold leading-[1.05] tracking-tight mb-6"
           >
-            Aplicações Web
+            <span className="text-gray-900 dark:text-white">Aplicações Web</span>
             <br />
-            <span className="text-gray-800 dark:text-[#F9FAFB]">que Impulsionam seu Negócio</span>
+            <span className="text-gradient">que Transformam</span>
+            <br />
+            <span className="text-gray-900 dark:text-white">seu Negócio</span>
           </motion.h1>
 
+          {/* Subheadline */}
           <motion.p
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: 0.6 }}
-            className="text-xl sm:text-2xl md:text-3xl font-semibold mb-4 sm:mb-6 text-gray-700 dark:text-[#F9FAFB]/90 px-2"
+            variants={itemVariants}
+            className="text-lg sm:text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto mb-10 leading-relaxed"
           >
-            Sites e Aplicações Web Personalizadas para Transformar sua Empresa
+            Desenvolvemos{' '}
+            <span className="text-blue-600 dark:text-blue-400 font-semibold">aplicações web modernas</span>,{' '}
+            <span className="text-cyan-600 dark:text-cyan-400 font-semibold">sites institucionais</span> e{' '}
+            <span className="text-violet-600 dark:text-violet-400 font-semibold">sistemas personalizados</span>{' '}
+            que automatizam processos e geram resultados reais.
           </motion.p>
 
-          <motion.p
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: 0.8 }}
-            className="text-base sm:text-lg md:text-xl mb-8 sm:mb-10 md:mb-12 text-gray-600 dark:text-[#F9FAFB]/80 max-w-3xl mx-auto leading-relaxed px-2"
-          >
-            Desenvolvemos <strong className="text-blue-600 dark:text-teal-400">aplicações web modernas</strong>, 
-            <strong className="text-blue-600 dark:text-teal-400"> sites institucionais</strong> e 
-            <strong className="text-blue-600 dark:text-teal-400"> sistemas personalizados</strong> que 
-            automatizam processos, melhoram a produtividade e geram resultados reais para sua empresa.
-          </motion.p>
-
+          {/* CTAs */}
           <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: 1 }}
-            className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center px-2 mb-12 sm:mb-16"
+            variants={itemVariants}
+            className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16"
           >
-            <Button asChild className="btn-primary w-full sm:w-auto px-8 sm:px-10 py-4 sm:py-5 text-base sm:text-lg font-bold rounded-lg pulse-glow min-h-[52px] shadow-lg hover:shadow-xl">
-              <Link to="/produtos">🚀 Explorar Soluções</Link>
+            <Button
+              asChild
+              className="btn-primary group w-full sm:w-auto h-14 px-8 text-base font-semibold rounded-2xl pulse-glow shadow-lg"
+            >
+              <Link to="/produtos" className="flex items-center gap-2">
+                Explorar Soluções
+                <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+              </Link>
             </Button>
-            
-            <Button asChild className="btn-secondary w-full sm:w-auto px-8 sm:px-10 py-4 sm:py-5 text-base sm:text-lg font-semibold rounded-lg bg-transparent min-h-[52px] border-2">
-              <Link to="/contato-orcamento">💬 Falar com Especialista</Link>
+
+            <Button
+              asChild
+              className="btn-secondary w-full sm:w-auto h-14 px-8 text-base font-semibold rounded-2xl"
+            >
+              <Link to="/contato-orcamento">
+                💬 Falar com Especialista
+              </Link>
             </Button>
           </motion.div>
 
-          {/* Quick Stats */}
+          {/* Stats */}
           <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: 1.2 }}
-            className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6 max-w-4xl mx-auto px-2"
+            variants={itemVariants}
+            className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 max-w-3xl mx-auto"
           >
-            {quickStats.map((stat, index) => (
+            {stats.map((stat, i) => (
               <motion.div
-                key={index}
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.3, delay: 1.3 + index * 0.1 }}
-                whileHover={{ scale: 1.05, y: -5 }}
-                className="bg-white/60 dark:bg-[#111827]/60 backdrop-blur-sm rounded-xl p-4 sm:p-5 border border-gray-200 dark:border-blue-500/20 hover:border-blue-400 dark:hover:border-blue-500/60 transition-all duration-300"
+                key={i}
+                whileHover={{ y: -4, scale: 1.02 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+                className="relative group overflow-hidden rounded-2xl bg-white/70 dark:bg-white/3 border border-gray-200/80 dark:border-white/6 backdrop-blur-md p-4 sm:p-5"
               >
-                <stat.icon className="w-6 h-6 sm:w-8 sm:h-8 mx-auto mb-2 text-blue-500 dark:text-teal-400" />
-                <div className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-white mb-1">
+                <div
+                  className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                  style={{
+                    background: `radial-gradient(circle at 50% 0%, ${stat.color}15, transparent 70%)`,
+                  }}
+                />
+                <stat.icon
+                  className="w-5 h-5 mb-3 mx-auto"
+                  style={{ color: stat.color }}
+                />
+                <div className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-0.5">
                   {stat.value}
                 </div>
-                <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+                <div className="text-xs text-gray-500 dark:text-gray-500 leading-tight">
                   {stat.label}
                 </div>
               </motion.div>

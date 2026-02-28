@@ -7,10 +7,10 @@ import { Button } from '@/components/ui/button';
 import { useCart } from '@/hooks/useCart';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
-import { ShoppingCart, Loader2, ArrowLeft, CheckCircle, Shield, Zap, Calendar, TestTube2 } from 'lucide-react';
+import { ShoppingCart, Loader2, ArrowLeft, CheckCircle2, Shield, Zap, Calendar, TestTube2, Star, Badge } from 'lucide-react';
 import { checkUserProductAccess, startProductTrial } from '@/utils/trialHelpers';
 
-const placeholderImage = "https://placehold.co/600x400/1e293b/white?text=Produto+Digital";
+const placeholderImage = 'https://placehold.co/800x450/1e293b/white?text=Produto+Digital';
 
 const ProductDetailPage = () => {
   const { id } = useParams();
@@ -18,181 +18,92 @@ const ProductDetailPage = () => {
   const { toast } = useToast();
   const { user } = useAuth();
   const navigate = useNavigate();
-  
+
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [selectedPrice, setSelectedPrice] = useState(null); // 'monthly', 'annual', 'lifetime'
+  const [selectedPrice, setSelectedPrice] = useState(null);
   const [hasActiveTrial, setHasActiveTrial] = useState(false);
   const [startingTrial, setStartingTrial] = useState(false);
 
   useEffect(() => {
     const fetchProduct = async () => {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('registered_apps')
-        .select('*')
-        .eq('id', id)
-        .single();
-
+      const { data, error } = await supabase.from('registered_apps').select('*').eq('id', id).single();
       if (error) {
-        console.error('Erro ao buscar produto:', error);
-        toast({
-          variant: 'destructive',
-          title: 'Erro',
-          description: 'Produto não encontrado.',
-        });
+        toast({ variant: 'destructive', title: 'Erro', description: 'Produto não encontrado.' });
       } else {
         setProduct(data);
-        // Define um preço padrão inicial baseado nos preços disponíveis
-        if (data && data.price_lifetime) {
-          setSelectedPrice('lifetime');
-        } else if (data && data.price_annual) {
-          setSelectedPrice('annual');
-        } else if (data && data.price_monthly) {
-          setSelectedPrice('monthly');
-        }
+        if (data?.price_lifetime) setSelectedPrice('lifetime');
+        else if (data?.price_annual) setSelectedPrice('annual');
+        else if (data?.price_monthly) setSelectedPrice('monthly');
       }
       setLoading(false);
     };
 
     const checkActiveTrial = async () => {
       if (!user || !id) return;
-      
       const access = await checkUserProductAccess(user.id, id, user.email);
-      if (access.hasAccess) {
-        // Se tem acesso via assinatura, também considerar como acesso válido
-        if (access.accessType === 'trial' || access.accessType === 'subscription' || access.accessType === 'subscription_trial') {
-          setHasActiveTrial(true);
-        }
+      if (access.hasAccess && ['trial', 'subscription', 'subscription_trial'].includes(access.accessType)) {
+        setHasActiveTrial(true);
       }
     };
 
-    if (id) {
-      fetchProduct();
-      checkActiveTrial();
-    }
+    if (id) { fetchProduct(); checkActiveTrial(); }
   }, [id, user]);
 
   const handleAddToCart = () => {
     if (!product || !selectedPrice) return;
-
-    let price = 0;
-    let variantName = '';
-
-    if (selectedPrice === 'monthly') {
-        if (!product.price_monthly) {
-            toast({ variant: "destructive", title: "Erro", description: "Preço mensal não disponível." });
-            return;
-        }
-        price = product.price_monthly;
-        variantName = 'Plano Mensal';
-    } else if (selectedPrice === 'annual') {
-        if (!product.price_annual) {
-            toast({ variant: "destructive", title: "Erro", description: "Preço anual não disponível." });
-            return;
-        }
-        price = product.price_annual;
-        variantName = 'Plano Anual';
-    } else if (selectedPrice === 'lifetime') {
-        if (!product.price_lifetime) {
-            toast({ variant: "destructive", title: "Erro", description: "Preço vitalício não disponível." });
-            return;
-        }
-        price = product.price_lifetime;
-        variantName = 'Licença Vitalícia';
-    } else {
-        toast({ variant: "destructive", title: "Erro", description: "Plano selecionado inválido." });
-        return;
-    }
+    const priceMap = {
+      monthly: { price: product.price_monthly, label: 'Plano Mensal' },
+      annual: { price: product.price_annual, label: 'Plano Anual' },
+      lifetime: { price: product.price_lifetime, label: 'Licença Vitalícia' },
+    };
+    const { price, label } = priceMap[selectedPrice];
+    if (!price) { toast({ variant: 'destructive', title: 'Erro', description: 'Preço não disponível.' }); return; }
 
     const cartItem = {
-        id: product.id,
-        title: product.name,
-        image: product.image_url,
-        variants: [{
-            id: `${product.id}_${selectedPrice}`,
-            title: variantName,
-            price_in_cents: price,
-            price_formatted: `R$ ${(price / 100).toFixed(2).replace('.', ',')}`,
-            currency_info: { code: 'BRL', symbol: 'R$', template: '$1' },
-            inventory_quantity: 999,
-            manage_inventory: false
-        }]
+      id: product.id,
+      title: product.name,
+      image: product.image_url,
+      variants: [{
+        id: `${product.id}_${selectedPrice}`,
+        title: label,
+        price_in_cents: price,
+        price_formatted: `R$ ${(price / 100).toFixed(2).replace('.', ',')}`,
+        currency_info: { code: 'BRL', symbol: 'R$', template: '$1' },
+        inventory_quantity: 999,
+        manage_inventory: false,
+      }],
     };
 
     addToCart(cartItem, cartItem.variants[0], 1, 999)
-      .then(() => {
-        toast({
-          title: "Adicionado ao Carrinho!",
-          description: `${product.name} (${variantName}) foi adicionado.`,
-        });
-      })
-      .catch(err => {
-         toast({ variant: "destructive", title: "Erro", description: err.message });
-      });
+      .then(() => toast({ title: 'Adicionado ao Carrinho!', description: `${product.name} (${label}) foi adicionado.` }))
+      .catch((err) => toast({ variant: 'destructive', title: 'Erro', description: err.message }));
   };
 
   const handleStartTrial = async () => {
     if (!user) {
-      toast({
-        title: "Login Necessário",
-        description: "Faça login ou cadastre-se para iniciar o teste grátis.",
-      });
+      toast({ title: 'Login Necessário', description: 'Faça login ou cadastre-se para iniciar o teste grátis.' });
       navigate('/login');
       return;
     }
-
     setStartingTrial(true);
-
     try {
-      const result = await startProductTrial(
-        user.id, 
-        product.id, 
-        product.name, 
-        product.trial_period_days || 30,
-        user.email
-      );
-      
+      const result = await startProductTrial(user.id, product.id, product.name, product.trial_period_days || 30, user.email);
       if (result.success) {
-        toast({
-          title: "Teste Iniciado!",
-          description: `Você tem ${product.trial_period_days} dias para testar ${product.name}. Redirecionando...`,
-        });
+        toast({ title: 'Teste Iniciado!', description: `Você tem ${product.trial_period_days} dias para testar. Redirecionando...` });
         setHasActiveTrial(true);
-        
-        // Redirecionar para o app após 2 segundos
-        setTimeout(() => {
-          if (result.redirectUrl) {
-            window.open(result.redirectUrl, '_blank');
-          } else {
-            navigate('/portal/testes');
-          }
-        }, 2000);
+        setTimeout(() => { result.redirectUrl ? window.open(result.redirectUrl, '_blank') : navigate('/portal/testes'); }, 2000);
       } else {
-        // Se já tem acesso, redirecionar direto para o app
         if (result.redirectUrl) {
-          toast({
-            title: "Você já tem acesso!",
-            description: "Redirecionando para o aplicativo...",
-          });
-          setTimeout(() => {
-            window.open(result.redirectUrl, '_blank');
-          }, 1000);
+          toast({ title: 'Você já tem acesso!', description: 'Redirecionando para o aplicativo...' });
+          setTimeout(() => window.open(result.redirectUrl, '_blank'), 1000);
         } else {
-          toast({
-            variant: "destructive",
-            title: "Erro",
-            description: result.message || "Não foi possível iniciar o teste.",
-          });
+          toast({ variant: 'destructive', title: 'Erro', description: result.message || 'Não foi possível iniciar o teste.' });
         }
       }
     } catch (error) {
-      console.error('Erro ao iniciar teste:', error);
-      toast({
-        variant: "destructive",
-        title: "Erro",
-        description: "Não foi possível iniciar o teste.",
-      });
+      toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível iniciar o teste.' });
     } finally {
       setStartingTrial(false);
     }
@@ -200,193 +111,259 @@ const ProductDetailPage = () => {
 
   const formatPrice = (cents) => `R$ ${(cents / 100).toFixed(2).replace('.', ',')}`;
 
-  if (loading) return <div className="flex justify-center items-center h-screen"><Loader2 className="h-16 w-16 animate-spin text-blue-500" /></div>;
-  if (!product) return <div className="text-center p-10">Produto não encontrado.</div>;
+  if (loading) return (
+    <div className="flex justify-center items-center min-h-screen">
+      <Loader2 className="h-10 w-10 animate-spin text-blue-500" />
+    </div>
+  );
+  if (!product) return (
+    <div className="text-center p-20 text-gray-500 dark:text-gray-400">Produto não encontrado.</div>
+  );
+
+  const plans = [
+    product.price_monthly && { key: 'monthly', label: 'Mensal', sublabel: 'Cancele quando quiser', price: product.price_monthly, accent: '#3B82F6', badge: null },
+    product.price_annual && { key: 'annual', label: 'Anual', sublabel: `${formatPrice(Math.round(product.price_annual / 12))}/mês em 12x`, price: product.price_annual, accent: '#06B6D4', badge: 'Economize' },
+    product.price_lifetime && { key: 'lifetime', label: 'Vitalício', sublabel: `${formatPrice(Math.round(product.price_lifetime / 12))}/mês em 12x`, price: product.price_lifetime, accent: '#7C3AED', badge: 'Melhor Opção' },
+  ].filter(Boolean);
 
   return (
     <>
       <Helmet>
         <title>{product.name} - LWDigitalForge</title>
       </Helmet>
-      
-      <div className="container mx-auto px-4 sm:px-6 py-6 sm:py-8 md:py-12">
-        <Link to="/produtos" className="inline-flex items-center mb-4 sm:mb-6 text-sm sm:text-base text-gray-600 dark:text-gray-400 hover:text-blue-500 transition-colors min-h-[44px]">
-            <ArrowLeft className="mr-2 h-4 w-4" /> Voltar aos Produtos
-        </Link>
 
-        <div className="grid md:grid-cols-2 gap-6 sm:gap-8 md:gap-12">
-            {/* Coluna da Esquerda: Imagem e Descrição */}
-            <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
-                <div className="rounded-xl sm:rounded-2xl overflow-hidden shadow-xl sm:shadow-2xl border border-gray-200 dark:border-gray-700 mb-6 sm:mb-8">
-                    <img src={product.image_url || placeholderImage} alt={product.name} className="w-full h-auto max-h-[300px] sm:max-h-[400px] md:max-h-none object-cover" />
+      <div className="min-h-screen bg-[var(--light-bg)] dark:bg-[var(--dark-bg)]">
+        {/* Breadcrumb */}
+        <div className="sticky top-16 z-20 bg-white/80 dark:bg-[#080C14]/80 backdrop-blur-md border-b border-gray-200/80 dark:border-white/6">
+          <div className="container mx-auto px-6 py-3">
+            <Link
+              to="/produtos"
+              className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Voltar aos Produtos
+            </Link>
+          </div>
+        </div>
+
+        <div className="container mx-auto px-6 py-10 md:py-16">
+          <div className="grid lg:grid-cols-5 gap-10">
+            {/* Left — product info */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5 }}
+              className="lg:col-span-3"
+            >
+              {/* Image */}
+              <div className="rounded-3xl overflow-hidden border border-gray-200/80 dark:border-white/6 mb-8 shadow-xl">
+                <img
+                  src={product.image_url || placeholderImage}
+                  alt={product.name}
+                  className="w-full h-auto max-h-[380px] object-cover"
+                />
+              </div>
+
+              {/* Title */}
+              <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-3">
+                {product.name}
+              </h1>
+              <p className="text-base text-gray-500 dark:text-gray-400 leading-relaxed mb-8">
+                {product.description}
+              </p>
+
+              {/* Detailed description */}
+              {product.detailed_description && (
+                <div className="mb-8">
+                  <h3 className="text-base font-bold text-gray-900 dark:text-white mb-3">
+                    Sobre este produto
+                  </h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line">
+                    {product.detailed_description}
+                  </p>
                 </div>
-                
-                <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 sm:mb-4 text-gray-900 dark:text-white">{product.name}</h1>
-                <p className="text-base sm:text-lg md:text-xl text-gray-600 dark:text-gray-300 mb-4 sm:mb-6">{product.description}</p>
+              )}
 
-                {product.detailed_description && (
-                    <div className="prose dark:prose-invert max-w-none mb-6 sm:mb-8 text-sm sm:text-base">
-                        <h3 className="text-base sm:text-lg font-semibold mb-2">Sobre este produto</h3>
-                        <p className="whitespace-pre-line">{product.detailed_description}</p>
-                    </div>
-                )}
+              {/* Features */}
+              {product.features && product.features.length > 0 && (
+                <div className="p-6 rounded-2xl bg-white dark:bg-[#0D1526] border border-gray-200/80 dark:border-white/6">
+                  <h3 className="text-base font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                    <Star size={16} className="text-amber-400" />
+                    O que está incluído
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    {product.features.map((feature, idx) => (
+                      <div key={idx} className="flex items-start gap-2.5">
+                        <CheckCircle2 size={15} className="text-emerald-500 flex-shrink-0 mt-0.5" />
+                        <span className="text-sm text-gray-600 dark:text-gray-400">{feature}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
-                {product.features && product.features.length > 0 && (
-                    <div className="bg-gray-50 dark:bg-gray-800/50 p-4 sm:p-5 md:p-6 rounded-xl border border-gray-200 dark:border-gray-700">
-                        <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">O que está incluído:</h3>
-                        <ul className="space-y-2 sm:space-y-3">
-                            {product.features.map((feature, idx) => (
-                                <li key={idx} className="flex items-start text-sm sm:text-base text-gray-700 dark:text-gray-300">
-                                    <CheckCircle className="h-5 w-5 text-green-500 mr-3 flex-shrink-0 mt-0.5" />
-                                    <span>{feature}</span>
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
-                )}
+              {/* Trust badges */}
+              <div className="flex flex-wrap gap-3 mt-6">
+                {[
+                  { icon: Shield, label: 'Pagamento Seguro', color: '#10B981' },
+                  { icon: Zap, label: 'Acesso Imediato', color: '#3B82F6' },
+                  { icon: Star, label: 'Suporte Dedicado', color: '#F59E0B' },
+                ].map((badge, i) => (
+                  <div key={i} className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gray-100 dark:bg-white/5 text-xs text-gray-600 dark:text-gray-400">
+                    <badge.icon size={13} style={{ color: badge.color }} />
+                    {badge.label}
+                  </div>
+                ))}
+              </div>
             </motion.div>
 
-            {/* Coluna da Direita: Preços e Checkout */}
-            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
-                <div className="sticky top-20 md:top-24 bg-white dark:bg-[#111827] p-4 sm:p-6 md:p-8 rounded-xl sm:rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700">
-                    <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Escolha seu plano</h2>
+            {/* Right — pricing */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+              className="lg:col-span-2"
+            >
+              <div className="sticky top-28">
+                <div className="p-6 rounded-3xl bg-white dark:bg-[#0D1526] border border-gray-200/80 dark:border-white/6 shadow-xl">
+                  <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-5">
+                    Escolha seu plano
+                  </h2>
 
-                    <div className="space-y-3 sm:space-y-4 mb-6 sm:mb-8">
-                        {product.price_monthly && (
-                            <div 
-                                onClick={() => setSelectedPrice('monthly')}
-                                className={`cursor-pointer p-3 sm:p-4 rounded-lg sm:rounded-xl border-2 transition-all flex justify-between items-center min-h-[60px] sm:min-h-[70px] ${selectedPrice === 'monthly' ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-200 dark:border-gray-700 hover:border-blue-300'}`}
+                  {/* Plans */}
+                  <div className="space-y-3 mb-5">
+                    {plans.map((plan) => (
+                      <button
+                        key={plan.key}
+                        type="button"
+                        onClick={() => setSelectedPrice(plan.key)}
+                        className={`w-full p-4 rounded-2xl border-2 transition-all duration-200 text-left group ${
+                          selectedPrice === plan.key
+                            ? 'border-opacity-100 shadow-sm'
+                            : 'border-gray-200 dark:border-white/8 hover:border-opacity-60'
+                        }`}
+                        style={selectedPrice === plan.key ? {
+                          borderColor: plan.accent,
+                          background: `${plan.accent}06`,
+                        } : {}}
+                      >
+                        <div className="flex justify-between items-start">
+                          <div className="flex items-start gap-2.5 flex-1 min-w-0">
+                            {/* Radio */}
+                            <div
+                              className="w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5 transition-colors"
+                              style={{
+                                borderColor: selectedPrice === plan.key ? plan.accent : '#9CA3AF',
+                              }}
                             >
-                                <div className="flex items-center gap-2 sm:gap-3 flex-1">
-                                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${selectedPrice === 'monthly' ? 'border-blue-500' : 'border-gray-400'}`}>
-                                        {selectedPrice === 'monthly' && <div className="w-2.5 h-2.5 rounded-full bg-blue-500" />}
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <p className="font-bold text-sm sm:text-base">Assinatura Mensal</p>
-                                        <p className="text-xs sm:text-sm text-gray-500">Cancele quando quiser</p>
-                                    </div>
-                                </div>
-                                <span className="text-lg sm:text-xl font-bold text-blue-600 ml-2 flex-shrink-0">{formatPrice(product.price_monthly)}</span>
+                              {selectedPrice === plan.key && (
+                                <div className="w-2 h-2 rounded-full" style={{ background: plan.accent }} />
+                              )}
                             </div>
-                        )}
 
-                        {product.price_annual && (
-                            <div 
-                                onClick={() => setSelectedPrice('annual')}
-                                className={`cursor-pointer p-3 sm:p-4 rounded-lg sm:rounded-xl border-2 transition-all flex justify-between items-center min-h-[60px] sm:min-h-[70px] ${selectedPrice === 'annual' ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-200 dark:border-gray-700 hover:border-blue-300'}`}
-                            >
-                                <div className="flex items-center gap-2 sm:gap-3 flex-1">
-                                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${selectedPrice === 'annual' ? 'border-blue-500' : 'border-gray-400'}`}>
-                                        {selectedPrice === 'annual' && <div className="w-2.5 h-2.5 rounded-full bg-blue-500" />}
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <p className="font-bold text-sm sm:text-base flex items-center flex-wrap gap-1">
-                                            Anual 
-                                            <span className="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded-full">Economize</span>
-                                        </p>
-                                        <p className="text-xs sm:text-sm text-gray-500">
-                                          {formatPrice(Math.round(product.price_annual / 12))}/mês em 12x sem juros
-                                        </p>
-                                    </div>
-                                </div>
-                                <div className="text-right ml-2 flex-shrink-0">
-                                    <div className="text-lg sm:text-xl font-bold text-blue-600">{formatPrice(product.price_annual)}</div>
-                                    <div className="text-xs text-gray-500">ou 12x de {formatPrice(Math.round(product.price_annual / 12))}</div>
-                                </div>
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                                <span className="text-sm font-bold text-gray-900 dark:text-white">
+                                  {plan.label}
+                                </span>
+                                {plan.badge && (
+                                  <span
+                                    className="text-xs px-2 py-0.5 rounded-full font-semibold"
+                                    style={{ background: `${plan.accent}15`, color: plan.accent }}
+                                  >
+                                    {plan.badge}
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-xs text-gray-400">{plan.sublabel}</p>
                             </div>
-                        )}
+                          </div>
 
-                        {product.price_lifetime && (
-                            <div 
-                                onClick={() => setSelectedPrice('lifetime')}
-                                className={`cursor-pointer p-3 sm:p-4 rounded-lg sm:rounded-xl border-2 transition-all flex justify-between items-center min-h-[60px] sm:min-h-[70px] ${selectedPrice === 'lifetime' ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20' : 'border-gray-200 dark:border-gray-700 hover:border-purple-300'}`}
-                            >
-                                <div className="flex items-center gap-2 sm:gap-3 flex-1">
-                                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${selectedPrice === 'lifetime' ? 'border-purple-500' : 'border-gray-400'}`}>
-                                        {selectedPrice === 'lifetime' && <div className="w-2.5 h-2.5 rounded-full bg-purple-500" />}
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <p className="font-bold text-sm sm:text-base flex items-center gap-2">
-                                            <Zap className="w-4 h-4 text-purple-500 flex-shrink-0" /> 
-                                            <span>Vitalício</span>
-                                        </p>
-                                        <p className="text-xs sm:text-sm text-gray-500">
-                                          {formatPrice(Math.round(product.price_lifetime / 12))}/mês em 12x sem juros
-                                        </p>
-                                    </div>
-                                </div>
-                                <div className="text-right ml-2 flex-shrink-0">
-                                    <div className="text-lg sm:text-xl font-bold text-purple-600">{formatPrice(product.price_lifetime)}</div>
-                                    <div className="text-xs text-gray-500">ou 12x de {formatPrice(Math.round(product.price_lifetime / 12))}</div>
-                                </div>
+                          <div className="text-right ml-3 flex-shrink-0">
+                            <div className="text-lg font-bold" style={{ color: plan.accent }}>
+                              {formatPrice(plan.price)}
                             </div>
-                        )}
-                    </div>
-
-                    {product.trial_period_days && product.trial_period_days > 0 && (
-                        <div className="bg-indigo-50 dark:bg-indigo-900/30 p-3 sm:p-4 rounded-lg mb-4 sm:mb-6 flex items-start gap-2 sm:gap-3">
-                            <Calendar className="w-5 h-5 text-indigo-600 mt-0.5 flex-shrink-0" />
-                            <div>
-                                <p className="font-semibold text-sm sm:text-base text-indigo-700 dark:text-indigo-300">Teste Grátis de {product.trial_period_days} Dias</p>
-                                <p className="text-xs sm:text-sm text-indigo-600/80 dark:text-indigo-400">Experimente antes de comprar. Sem compromisso!</p>
-                            </div>
+                          </div>
                         </div>
-                    )}
+                      </button>
+                    ))}
+                  </div>
 
+                  {/* Trial banner */}
+                  {product.trial_period_days && product.trial_period_days > 0 && (
+                    <div className="p-3.5 rounded-2xl bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20 flex items-center gap-3 mb-4">
+                      <Calendar className="w-5 h-5 text-indigo-600 dark:text-indigo-400 flex-shrink-0" />
+                      <div>
+                        <p className="text-sm font-semibold text-indigo-700 dark:text-indigo-300">
+                          Teste Grátis por {product.trial_period_days} dias
+                        </p>
+                        <p className="text-xs text-indigo-500 dark:text-indigo-400">
+                          Experimente sem compromisso
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Trial active */}
+                  {hasActiveTrial && (
+                    <div className="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 flex items-center gap-3 mb-4">
+                      <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+                      <div>
+                        <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">
+                          Teste ativo
+                        </p>
+                        <Link to="/portal/testes" className="text-xs text-emerald-600 dark:text-emerald-400 hover:underline">
+                          Ver meus testes →
+                        </Link>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* CTA buttons */}
+                  <div className="space-y-2.5">
                     {product.trial_period_days && product.trial_period_days > 0 && !hasActiveTrial && (
-                        <Button 
-                            onClick={handleStartTrial} 
-                            size="lg" 
-                            className="w-full py-4 sm:py-5 md:py-6 text-base sm:text-lg font-bold shadow-lg hover:shadow-xl transition-all mb-3 sm:mb-4 bg-green-600 hover:bg-green-700 min-h-[48px] sm:min-h-[56px]"
-                            disabled={startingTrial}
-                        >
-                            {startingTrial ? (
-                                <>
-                                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                                    Iniciando Teste...
-                                </>
-                            ) : (
-                                <>
-                                    <TestTube2 className="mr-2 h-5 w-5" />
-                                    <span className="hidden sm:inline">Iniciar Teste Grátis ({product.trial_period_days} dias)</span>
-                                    <span className="sm:hidden">Teste Grátis ({product.trial_period_days}d)</span>
-                                </>
-                            )}
-                        </Button>
-                    )}
-
-                    {hasActiveTrial && (
-                        <div className="bg-green-50 dark:bg-green-900/30 p-3 sm:p-4 rounded-lg mb-3 sm:mb-4 text-center">
-                            <p className="font-semibold text-sm sm:text-base text-green-700 dark:text-green-300">✓ Você já tem um teste ativo deste produto</p>
-                            <Link to="/portal/testes" className="text-xs sm:text-sm text-green-600 dark:text-green-400 hover:underline">
-                                Ver meus testes
-                            </Link>
-                        </div>
-                    )}
-
-                    <Button 
-                        onClick={handleAddToCart} 
-                        size="lg" 
-                        className="w-full py-4 sm:py-5 md:py-6 text-base sm:text-lg font-bold shadow-lg hover:shadow-xl transition-all min-h-[48px] sm:min-h-[56px]"
-                        disabled={!selectedPrice}
-                    >
-                        <ShoppingCart className="mr-2 h-5 w-5" />
-                        {selectedPrice ? (
-                            <>
-                                <span className="hidden sm:inline">Adicionar ao Carrinho</span>
-                                <span className="sm:hidden">Adicionar</span>
-                            </>
+                      <Button
+                        onClick={handleStartTrial}
+                        disabled={startingTrial}
+                        className="w-full h-11 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm shadow-lg shadow-emerald-500/20 transition-all"
+                      >
+                        {startingTrial ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
                         ) : (
-                            'Selecione uma Opção'
+                          <>
+                            <TestTube2 className="mr-2 h-4 w-4" />
+                            Iniciar Teste Grátis ({product.trial_period_days} dias)
+                          </>
                         )}
+                      </Button>
+                    )}
+
+                    <Button
+                      onClick={handleAddToCart}
+                      disabled={!selectedPrice}
+                      className="w-full h-11 rounded-2xl bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold text-sm shadow-lg shadow-blue-500/20 transition-all group"
+                    >
+                      <ShoppingCart className="mr-2 h-4 w-4" />
+                      {selectedPrice ? 'Adicionar ao Carrinho' : 'Selecione um Plano'}
                     </Button>
-                    
-                    <div className="mt-4 sm:mt-6 flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-500">
-                        <span className="flex items-center gap-1"><Shield className="w-4 h-4" /> Pagamento Seguro</span>
-                        <span className="flex items-center gap-1"><Zap className="w-4 h-4" /> Acesso Imediato</span>
-                    </div>
+                  </div>
+
+                  {/* Trust line */}
+                  <div className="mt-4 pt-4 border-t border-gray-100 dark:border-white/6 flex flex-wrap justify-center gap-4">
+                    {[
+                      { icon: Shield, label: 'Seguro' },
+                      { icon: Zap, label: 'Imediato' },
+                    ].map((b, i) => (
+                      <span key={i} className="flex items-center gap-1.5 text-xs text-gray-400">
+                        <b.icon size={13} className="text-gray-400" />
+                        {b.label}
+                      </span>
+                    ))}
+                  </div>
                 </div>
+              </div>
             </motion.div>
+          </div>
         </div>
       </div>
     </>

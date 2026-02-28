@@ -1,8 +1,8 @@
 
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, Sun, Moon, ShoppingCart as ShoppingCartIcon, User, LogOut } from 'lucide-react';
+import { Menu, X, Sun, Moon, ShoppingCart as ShoppingCartIcon, User, LogOut, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useCart } from '@/hooks/useCart';
@@ -13,12 +13,20 @@ import { getAssetUrl } from '@/config/assets';
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const { theme, toggleTheme } = useTheme();
   const { cartItems } = useCart();
   const { user, profile, signOut } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 20);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const closeMenu = () => setIsMenuOpen(false);
 
@@ -28,140 +36,240 @@ const Header = () => {
     closeMenu();
   };
 
+  const navLinks = [
+    { to: '/', label: 'Início' },
+    { to: '/produtos', label: 'Produtos' },
+    { to: '/portfolio', label: 'Portfólio' },
+    { to: '/sobre', label: 'Sobre' },
+  ];
+
+  const isActive = (path) => location.pathname === path;
+
   return (
     <>
       <motion.header
         initial={{ y: -100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.8 }}
-        className="fixed top-0 left-0 right-0 z-40 bg-white/80 dark:bg-[#0D1117]/80 backdrop-blur-md border-b border-gray-200 dark:border-[#3B82F6]/20"
+        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+        className={`fixed top-0 left-0 right-0 z-40 transition-all duration-500 ${
+          scrolled
+            ? 'bg-white/90 dark:bg-[#080C14]/90 backdrop-blur-xl shadow-lg shadow-black/5 dark:shadow-black/30 border-b border-gray-200/50 dark:border-white/5'
+            : 'bg-transparent'
+        }`}
       >
-        <nav className="container mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
-          <Link to="/" className="flex items-center min-h-[44px] min-w-[44px]" onClick={closeMenu}>
-            <motion.div whileHover={{ scale: 1.05 }} className="flex items-center">
-              <img
-                src={getAssetUrl('Logo')}
-                alt="LWDigitalForge Logo"
-                className="h-7 sm:h-8 mr-2"
-              />
-              <span className="text-xl sm:text-2xl font-bold text-gradient hidden sm:block">
+        <nav className="container mx-auto px-6 lg:px-8 py-4 flex items-center justify-between gap-4">
+          {/* Logo */}
+          <Link to="/" className="flex items-center gap-3 shrink-0" onClick={closeMenu}>
+            <motion.div
+              whileHover={{ scale: 1.03 }}
+              transition={{ type: 'spring', stiffness: 400 }}
+              className="flex items-center gap-2.5"
+            >
+              <div className="relative">
+                <img
+                  src={getAssetUrl('Logo')}
+                  alt="LWDigitalForge Logo"
+                  className="h-8 w-8 rounded-lg"
+                />
+                <div className="absolute inset-0 rounded-lg bg-blue-500/20 blur-md" />
+              </div>
+              <span className="text-lg font-bold hidden sm:block bg-gradient-to-r from-gray-900 to-gray-700 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
                 LWDigitalForge
               </span>
             </motion.div>
           </Link>
 
-          {/* Desktop Menu */}
-          <div className="hidden md:flex items-center space-x-4 lg:space-x-6">
-            <Link to="/" className="text-sm lg:text-base text-gray-700 dark:text-[#F9FAFB] hover:text-[#3B82F6] transition-colors duration-300 py-2 px-1">Início</Link>
-            <Link to="/produtos" className="text-sm lg:text-base text-gray-700 dark:text-[#F9FAFB] hover:text-[#3B82F6] transition-colors duration-300 py-2 px-1">Produtos</Link>
-            <Link to="/portfolio" className="text-sm lg:text-base text-gray-700 dark:text-[#F9FAFB] hover:text-[#3B82F6] transition-colors duration-300 py-2 px-1">Portfólio</Link>
-            <Link to="/sobre" className="text-sm lg:text-base text-gray-700 dark:text-[#F9FAFB] hover:text-[#3B82F6] transition-colors duration-300 py-2 px-1">Sobre</Link>
-            
-            {user ? (
-              <>
-                <Button asChild className="btn-primary px-4 lg:px-6 py-2 text-sm lg:text-base rounded-lg font-semibold min-h-[44px]">
-                  <Link to="/portal/meus-produtos">
-                    <User size={16} className="mr-2" />
-                    <span className="hidden lg:inline">{profile?.full_name || 'Minha Conta'}</span>
-                    <span className="lg:hidden">Conta</span>
-                  </Link>
-                </Button>
-                <button onClick={handleLogout} className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center" title="Sair">
-                  <LogOut size={20} />
-                </button>
-              </>
-            ) : (
-              <Button asChild className="btn-primary px-4 lg:px-6 py-2 text-sm lg:text-base rounded-lg font-semibold min-h-[44px]">
-                <Link to="/login">Portal do Cliente</Link>
-              </Button>
-            )}
-            
-            <button onClick={() => setIsCartOpen(true)} className="relative p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center">
-              <ShoppingCartIcon size={20} />
-              {totalItems > 0 && (
-                <span className="absolute top-1 right-1 block h-5 w-5 rounded-full bg-red-500 text-white text-xs font-bold text-center leading-5">
-                  {totalItems > 99 ? '99+' : totalItems}
-                </span>
-              )}
-            </button>
-            <button onClick={toggleTheme} className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center">
-              {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
-            </button>
+          {/* Desktop Nav */}
+          <div className="hidden md:flex items-center gap-1">
+            {navLinks.map((link) => (
+              <Link
+                key={link.to}
+                to={link.to}
+                className={`relative px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
+                  isActive(link.to)
+                    ? 'text-blue-600 dark:text-blue-400'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100/70 dark:hover:bg-white/5'
+                }`}
+              >
+                {link.label}
+                {isActive(link.to) && (
+                  <motion.div
+                    layoutId="nav-indicator"
+                    className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-4 h-0.5 rounded-full bg-blue-500"
+                  />
+                )}
+              </Link>
+            ))}
           </div>
 
-          {/* Mobile Menu Button */}
-          <div className="md:hidden flex items-center gap-2">
-            <button onClick={() => setIsCartOpen(true)} className="relative p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center">
-              <ShoppingCartIcon size={20} />
+          {/* Desktop Actions */}
+          <div className="hidden md:flex items-center gap-2">
+            {/* Theme toggle */}
+            <button
+              onClick={toggleTheme}
+              className="p-2.5 rounded-xl text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/8 transition-all duration-200"
+              aria-label="Alternar tema"
+            >
+              {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
+            </button>
+
+            {/* Cart */}
+            <button
+              onClick={() => setIsCartOpen(true)}
+              className="relative p-2.5 rounded-xl text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/8 transition-all duration-200"
+              aria-label="Carrinho"
+            >
+              <ShoppingCartIcon size={18} />
               {totalItems > 0 && (
-                <span className="absolute top-1 right-1 block h-5 w-5 rounded-full bg-red-500 text-white text-xs font-bold text-center leading-5">
-                  {totalItems > 99 ? '99+' : totalItems}
+                <span className="absolute -top-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-[10px] font-bold text-white ring-2 ring-white dark:ring-[#080C14]">
+                  {totalItems > 9 ? '9+' : totalItems}
                 </span>
               )}
             </button>
-            <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="text-gray-700 dark:text-[#F9FAFB] hover:text-[#3B82F6] transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center">
-              {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+
+            {/* Auth */}
+            {user ? (
+              <div className="flex items-center gap-2 ml-1">
+                <Button
+                  asChild
+                  className="btn-primary h-9 px-4 text-sm font-semibold rounded-xl"
+                >
+                  <Link to="/portal/meus-produtos" className="flex items-center gap-1.5">
+                    <User size={14} />
+                    <span>{profile?.full_name?.split(' ')[0] || 'Portal'}</span>
+                  </Link>
+                </Button>
+                <button
+                  onClick={handleLogout}
+                  className="p-2.5 rounded-xl text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all duration-200"
+                  title="Sair"
+                >
+                  <LogOut size={16} />
+                </button>
+              </div>
+            ) : (
+              <Button
+                asChild
+                className="btn-primary h-9 px-5 text-sm font-semibold rounded-xl ml-1"
+              >
+                <Link to="/login" className="flex items-center gap-1.5">
+                  Portal do Cliente
+                  <ChevronRight size={14} />
+                </Link>
+              </Button>
+            )}
+          </div>
+
+          {/* Mobile Controls */}
+          <div className="md:hidden flex items-center gap-1">
+            <button
+              onClick={() => setIsCartOpen(true)}
+              className="relative p-2.5 rounded-xl text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/8"
+            >
+              <ShoppingCartIcon size={20} />
+              {totalItems > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-blue-600 text-[9px] font-bold text-white">
+                  {totalItems}
+                </span>
+              )}
+            </button>
+            <button
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="p-2.5 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/8 transition-colors"
+            >
+              <AnimatePresence mode="wait" initial={false}>
+                {isMenuOpen ? (
+                  <motion.div key="close" initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }} transition={{ duration: 0.15 }}>
+                    <X size={22} />
+                  </motion.div>
+                ) : (
+                  <motion.div key="menu" initial={{ rotate: 90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: -90, opacity: 0 }} transition={{ duration: 0.15 }}>
+                    <Menu size={22} />
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </button>
           </div>
         </nav>
       </motion.header>
 
-      {/* Mobile Menu Overlay */}
+      {/* Mobile Menu */}
       <AnimatePresence>
         {isMenuOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-30 bg-black/50 md:hidden"
-            onClick={closeMenu}
-          />
+          <>
+            <motion.div
+              key="backdrop"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 z-30 bg-black/40 backdrop-blur-sm md:hidden"
+              onClick={closeMenu}
+            />
+            <motion.div
+              key="panel"
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+              className="fixed top-[68px] left-4 right-4 z-40 md:hidden rounded-2xl bg-white dark:bg-[#0D1526] border border-gray-200/80 dark:border-white/8 shadow-2xl shadow-black/20 overflow-hidden"
+            >
+              <div className="p-4 space-y-1">
+                {navLinks.map((link) => (
+                  <Link
+                    key={link.to}
+                    to={link.to}
+                    onClick={closeMenu}
+                    className={`flex items-center justify-between w-full px-4 py-3 rounded-xl text-sm font-medium transition-all ${
+                      isActive(link.to)
+                        ? 'bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400'
+                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5'
+                    }`}
+                  >
+                    {link.label}
+                    <ChevronRight size={14} className="opacity-40" />
+                  </Link>
+                ))}
+              </div>
+              <div className="px-4 pb-4 pt-1 border-t border-gray-100 dark:border-white/5 space-y-2">
+                {user ? (
+                  <>
+                    <Link
+                      to="/portal/meus-produtos"
+                      onClick={closeMenu}
+                      className="flex items-center gap-2.5 w-full px-4 py-3 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
+                    >
+                      <User size={16} className="text-blue-500" />
+                      {profile?.full_name || 'Minha Conta'}
+                    </Link>
+                    <button
+                      onClick={handleLogout}
+                      className="flex items-center gap-2.5 w-full px-4 py-3 rounded-xl text-sm font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+                    >
+                      <LogOut size={16} />
+                      Sair
+                    </button>
+                  </>
+                ) : (
+                  <Button asChild className="btn-primary w-full h-11 rounded-xl font-semibold">
+                    <Link to="/login" onClick={closeMenu}>
+                      Portal do Cliente
+                    </Link>
+                  </Button>
+                )}
+                <button
+                  onClick={toggleTheme}
+                  className="flex items-center gap-2.5 w-full px-4 py-3 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
+                >
+                  {theme === 'light' ? <Moon size={16} /> : <Sun size={16} />}
+                  {theme === 'light' ? 'Modo Escuro' : 'Modo Claro'}
+                </button>
+              </div>
+            </motion.div>
+          </>
         )}
       </AnimatePresence>
 
-      {/* Mobile Menu Panel */}
-      <AnimatePresence>
-        {isMenuOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -50 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -50 }}
-            transition={{ duration: 0.3 }}
-            className="fixed top-0 left-0 right-0 z-40 mt-[60px] sm:mt-[68px] bg-white/95 dark:bg-[#0D1117]/95 backdrop-blur-md border-b border-gray-200 dark:border-[#3B82F6]/20 md:hidden max-h-[calc(100vh-60px)] sm:max-h-[calc(100vh-68px)] overflow-y-auto"
-          >
-            <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-6 space-y-1">
-              <Link to="/" onClick={closeMenu} className="block w-full text-left py-3 px-2 text-base text-gray-700 dark:text-[#F9FAFB] hover:text-[#3B82F6] hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors min-h-[44px] flex items-center">Início</Link>
-              <Link to="/produtos" onClick={closeMenu} className="block w-full text-left py-3 px-2 text-base text-gray-700 dark:text-[#F9FAFB] hover:text-[#3B82F6] hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors min-h-[44px] flex items-center">Produtos</Link>
-              <Link to="/portfolio" onClick={closeMenu} className="block w-full text-left py-3 px-2 text-base text-gray-700 dark:text-[#F9FAFB] hover:text-[#3B82F6] hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors min-h-[44px] flex items-center">Portfólio</Link>
-              <Link to="/sobre" onClick={closeMenu} className="block w-full text-left py-3 px-2 text-base text-gray-700 dark:text-[#F9FAFB] hover:text-[#3B82F6] hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors min-h-[44px] flex items-center">Sobre</Link>
-              
-              {user ? (
-                <>
-                  <Link to="/portal/meus-produtos" onClick={closeMenu} className="block w-full text-left py-3 px-2 text-base text-gray-700 dark:text-[#F9FAFB] hover:text-[#3B82F6] hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors min-h-[44px] flex items-center">
-                    <User size={18} className="mr-3" />
-                    {profile?.full_name || 'Minha Conta'}
-                  </Link>
-                  <button onClick={handleLogout} className="block w-full text-left py-3 px-2 text-base text-gray-700 dark:text-[#F9FAFB] hover:text-[#3B82F6] hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors min-h-[44px] flex items-center">
-                    <LogOut size={18} className="mr-3" />
-                    Sair
-                  </button>
-                </>
-              ) : (
-                <Button asChild className="w-full btn-primary py-3 rounded-lg font-semibold min-h-[48px] mt-2">
-                  <Link to="/login" onClick={closeMenu}>Portal do Cliente</Link>
-                </Button>
-              )}
-              <div className="pt-4 mt-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between gap-2">
-                <button onClick={toggleTheme} className="flex items-center gap-2 px-3 py-2.5 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors min-h-[44px] flex-1">
-                  {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
-                  <span className="text-sm">Alternar Tema</span>
-                </button>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-      
       <ShoppingCart isCartOpen={isCartOpen} setIsCartOpen={setIsCartOpen} />
     </>
   );
