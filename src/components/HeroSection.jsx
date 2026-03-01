@@ -139,7 +139,7 @@ const HeroSection = () => {
                 <div
                   className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
                   style={{
-                    background: `radial-gradient(circle at 50% 0%, ${stat.color}15, transparent 70%)`,
+                    background: `radial-gradient(circle at 50% 0%, ${stat.color}25, transparent 70%)`,
                   }}
                 />
                 <stat.icon

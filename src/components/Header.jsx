@@ -153,8 +153,8 @@ const Header = () => {
                 className="btn-primary h-9 px-5 text-sm font-semibold rounded-xl ml-1"
               >
                 <Link to="/login" className="flex items-center gap-1.5">
-                  Portal do Cliente
-                  <ChevronRight size={14} />
+                  <User size={14} />
+                  Entrar
                 </Link>
               </Button>
             )}
@@ -252,8 +252,9 @@ const Header = () => {
                   </>
                 ) : (
                   <Button asChild className="btn-primary w-full h-11 rounded-xl font-semibold">
-                    <Link to="/login" onClick={closeMenu}>
-                      Portal do Cliente
+                    <Link to="/login" onClick={closeMenu} className="flex items-center justify-center gap-1.5">
+                      <User size={16} />
+                      Entrar
                     </Link>
                   </Button>
                 )}
