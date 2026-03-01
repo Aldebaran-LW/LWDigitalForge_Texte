@@ -134,23 +134,43 @@ const HeroSection = () => {
                 key={i}
                 whileHover={{ y: -4, scale: 1.02 }}
                 transition={{ type: 'spring', stiffness: 400, damping: 20 }}
-                className="relative group overflow-hidden rounded-2xl bg-white/70 dark:bg-white/3 border border-gray-200/80 dark:border-white/6 backdrop-blur-md p-4 sm:p-5"
+                className="relative group overflow-hidden rounded-2xl bg-white/80 dark:bg-white/5 border-2 backdrop-blur-md p-4 sm:p-5 shadow-sm hover:shadow-xl transition-all duration-300"
+                style={{
+                  borderColor: `${stat.color}30`,
+                }}
               >
+                {/* Background gradient - sempre visível mas mais intenso no hover */}
+                <div
+                  className="absolute inset-0 transition-opacity duration-500"
+                  style={{
+                    background: `radial-gradient(circle at 50% 0%, ${stat.color}12, transparent 70%)`,
+                    opacity: 1,
+                  }}
+                />
                 <div
                   className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
                   style={{
-                    background: `radial-gradient(circle at 50% 0%, ${stat.color}25, transparent 70%)`,
+                    background: `radial-gradient(circle at 50% 0%, ${stat.color}40, transparent 70%)`,
                   }}
                 />
-                <stat.icon
-                  className="w-5 h-5 mb-3 mx-auto"
-                  style={{ color: stat.color }}
+                {/* Top accent line */}
+                <div
+                  className="absolute top-0 left-0 right-0 h-1 opacity-60 group-hover:opacity-100 transition-opacity"
+                  style={{
+                    background: `linear-gradient(90deg, ${stat.color}, ${stat.color}80)`,
+                  }}
                 />
-                <div className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-0.5">
-                  {stat.value}
-                </div>
-                <div className="text-xs text-gray-500 dark:text-gray-500 leading-tight">
-                  {stat.label}
+                <div className="relative z-10">
+                  <stat.icon
+                    className="w-6 h-6 mb-3 mx-auto transition-transform duration-300 group-hover:scale-110"
+                    style={{ color: stat.color }}
+                  />
+                  <div className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-0.5">
+                    {stat.value}
+                  </div>
+                  <div className="text-xs text-gray-600 dark:text-gray-400 leading-tight font-medium">
+                    {stat.label}
+                  </div>
                 </div>
               </motion.div>
             ))}
