@@ -52,6 +52,7 @@ const PortalAssinaturas = lazy(() => import('@/pages/portal/PortalAssinaturas'))
 const PortalPagamentos = lazy(() => import('@/pages/portal/PortalPagamentos'));
 const PortalContato = lazy(() => import('@/pages/portal/PortalContato'));
 const PortalNotificacoes = lazy(() => import('@/pages/portal/PortalNotificacoes'));
+const PhotoVaultPage = lazy(() => import('@/pages/portal/PhotoVaultPage'));
 
 // Loading component
 const LoadingFallback = () => (
@@ -140,6 +141,7 @@ function App() {
               <Route path="pagamentos" element={<PortalPagamentos />} />
               <Route path="contato" element={<PortalContato />} />
               <Route path="notificacoes" element={<PortalNotificacoes />} />
+              <Route path="photo-vault" element={<PhotoVaultPage />} />
             </Route>
 
           </Routes>

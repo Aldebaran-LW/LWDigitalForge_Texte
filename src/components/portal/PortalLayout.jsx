@@ -14,7 +14,8 @@ import {
   ChevronRight,
   Bell,
   Menu,
-  X
+  X,
+  Shield
 } from 'lucide-react';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { supabase } from '@/lib/customSupabaseClient';
@@ -114,6 +115,12 @@ const PortalLayout = () => {
       href: '/portal/contato', 
       icon: MessageSquare, 
       label: 'Contato',
+      badge: null
+    },
+    {
+      href: '/portal/photo-vault',
+      icon: Shield,
+      label: 'PhotoVault',
       badge: null
     },
   ];
