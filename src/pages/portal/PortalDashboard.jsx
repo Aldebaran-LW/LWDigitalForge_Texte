@@ -13,13 +13,11 @@ import {
   Clock, 
   ExternalLink,
   ShoppingCart,
-  Calendar,
   Loader2,
   Bell,
-  Gift,
+  HardDrive,
   Sparkles,
   MessageSquare,
-  Tag
 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 
@@ -430,7 +428,7 @@ const PortalDashboard = () => {
             </div>
             {recentProducts.length > 0 ? (
               <div className="space-y-3">
-                {recentProducts.map((product, index) => (
+                {recentProducts.map((product) => (
                   <div
                     key={product.id}
                     className="flex items-center gap-4 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
@@ -493,7 +491,7 @@ const PortalDashboard = () => {
             </div>
             {activeTrials.length > 0 ? (
               <div className="space-y-3">
-                {activeTrials.map((trial, index) => {
+                {activeTrials.map((trial) => {
                   const product = trial.registered_apps;
                   const timeLeft = calculateTimeLeft(trial.expires_at);
                   return (
@@ -550,11 +548,17 @@ const PortalDashboard = () => {
           className="bg-blue-600 dark:bg-blue-500 rounded-xl p-6 text-white"
         >
           <h2 className="text-xl font-bold mb-4">Ações Rápidas</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
             <Link to="/portal/produtos">
               <Button variant="secondary" className="w-full">
                 <ShoppingCart className="w-4 h-4 mr-2" />
                 Explorar Produtos
+              </Button>
+            </Link>
+            <Link to="/portal/photovault">
+              <Button variant="secondary" className="w-full">
+                <HardDrive className="w-4 h-4 mr-2" />
+                Abrir PhotoVault
               </Button>
             </Link>
             <Link to="/portal/pagamentos">

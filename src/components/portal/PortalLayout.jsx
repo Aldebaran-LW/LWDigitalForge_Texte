@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
+import { Outlet, Link, useLocation } from 'react-router-dom';
 import { 
   Package, 
   CreditCard, 
@@ -10,9 +10,8 @@ import {
   Settings, 
   MessageSquare, 
   LayoutDashboard,
-  User,
+  HardDrive,
   ChevronRight,
-  Bell,
   Menu,
   X
 } from 'lucide-react';
@@ -25,7 +24,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 const PortalLayout = () => {
   const { profile, user, signOut } = useAuth();
   const location = useLocation();
-  const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [stats, setStats] = useState({
     products: 0,
@@ -91,6 +89,12 @@ const PortalLayout = () => {
       icon: Package, 
       label: 'Meus Produtos',
       badge: stats.products > 0 ? stats.products : null
+    },
+    {
+      href: '/portal/photovault',
+      icon: HardDrive,
+      label: 'PhotoVault',
+      badge: null
     },
     { 
       href: '/portal/testes', 

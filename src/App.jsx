@@ -47,6 +47,7 @@ const AdminContato = lazy(() => import('@/pages/admin/AdminContato'));
 const PortalDashboard = lazy(() => import('@/pages/portal/PortalDashboard'));
 const PortalProdutos = lazy(() => import('@/pages/portal/PortalProdutos'));
 const PortalMeusProdutos = lazy(() => import('@/pages/portal/PortalMeusProdutos'));
+const PortalPhotoVault = lazy(() => import('@/pages/portal/PortalPhotoVault'));
 const PortalTestes = lazy(() => import('@/pages/portal/PortalTestes'));
 const PortalAssinaturas = lazy(() => import('@/pages/portal/PortalAssinaturas'));
 const PortalPagamentos = lazy(() => import('@/pages/portal/PortalPagamentos'));
@@ -67,7 +68,7 @@ function App() {
   const isAuthRoute = location.pathname.startsWith('/admin') || location.pathname.startsWith('/portal');
   
   // ✅ Verificar autenticação via portal (hash na URL)
-  const { isChecking, cameFromPortal } = usePortalAuth();
+  const { isChecking } = usePortalAuth();
 
   // Mostrar loading enquanto verifica autenticação do portal
   if (isChecking) {
@@ -135,6 +136,7 @@ function App() {
               <Route path="dashboard" element={<PortalDashboard />} />
               <Route path="produtos" element={<PortalProdutos />} />
               <Route path="meus-produtos" element={<PortalMeusProdutos />} />
+              <Route path="photovault" element={<PortalPhotoVault />} />
               <Route path="testes" element={<PortalTestes />} />
               <Route path="assinaturas" element={<PortalAssinaturas />} />
               <Route path="pagamentos" element={<PortalPagamentos />} />
