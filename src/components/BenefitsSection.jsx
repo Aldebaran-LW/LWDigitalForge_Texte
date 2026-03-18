@@ -1,6 +1,19 @@
-import React from 'react';
-import { motion } from 'framer-motion';
-import { Clock, TrendingUp, Headphones, Zap, Shield, BarChart3, Globe, Bot, CheckCircle2, Code2 } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
+import {
+  Clock,
+  TrendingUp,
+  Headphones,
+  Zap,
+  Shield,
+  BarChart3,
+  Globe,
+  Bot,
+  CheckCircle2,
+  Code2,
+  ChevronLeft,
+  ChevronRight,
+} from 'lucide-react';
 
 const BenefitsSection = () => {
   const benefits = [
@@ -81,6 +94,109 @@ const BenefitsSection = () => {
     },
   ];
 
+  // Duplica os cards para permitir um "loop infinito" visualmente contínuo.
+  // Assim, ao voltar o scroll, o conteúdo mostrado é o equivalente no segundo bloco.
+  const benefitsLoop = [...benefits, ...benefits];
+
+  const scrollRef = useRef(null);
+  const carouselRegionRef = useRef(null);
+  const reducedMotion = useReducedMotion();
+  const [isCarouselVisible, setIsCarouselVisible] = useState(false);
+
+  const isAutoPausedRef = useRef(false);
+  const pauseTimerRef = useRef(null);
+
+  const isDraggingRef = useRef(false);
+  const dragStartXRef = useRef(0);
+  const dragStartScrollLeftRef = useRef(0);
+
+  const isUserScrollingRef = useRef(false);
+  const userScrollTimeoutRef = useRef(null);
+
+  const pauseAuto = (ms = 3000) => {
+    if (reducedMotion) return;
+    isAutoPausedRef.current = true;
+    if (pauseTimerRef.current) window.clearTimeout(pauseTimerRef.current);
+    pauseTimerRef.current = window.setTimeout(() => {
+      isAutoPausedRef.current = false;
+    }, ms);
+  };
+
+  const handleUserScroll = (ms = 2500) => {
+    if (reducedMotion) return;
+    isUserScrollingRef.current = true;
+    pauseAuto(ms);
+    if (userScrollTimeoutRef.current) window.clearTimeout(userScrollTimeoutRef.current);
+    userScrollTimeoutRef.current = window.setTimeout(() => {
+      isUserScrollingRef.current = false;
+    }, 900);
+  };
+
+  const scrollByCards = (dir) => {
+    if (!scrollRef.current) return;
+    pauseAuto(3500);
+    const amount = scrollRef.current.clientWidth * 0.85 * dir;
+    scrollRef.current.scrollBy({ left: amount, behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    if (reducedMotion) return;
+    if (!isCarouselVisible) return;
+
+    let rafId;
+    let lastTs = performance.now();
+    const pxPerSecond = 55;
+
+    const step = (ts) => {
+      const dtMs = ts - lastTs;
+      lastTs = ts;
+
+      if (!isAutoPausedRef.current) {
+        if (isDraggingRef.current) {
+          rafId = window.requestAnimationFrame(step);
+          return;
+        }
+
+        if (isUserScrollingRef.current) {
+          rafId = window.requestAnimationFrame(step);
+          return;
+        }
+
+        const half = el.scrollWidth / 2;
+        if (half > 1) {
+          el.scrollLeft += (pxPerSecond * dtMs) / 1000;
+          // Faz o wrap contínuo quando chegar no meio do conteúdo duplicado.
+          if (el.scrollLeft >= half - 2) el.scrollLeft -= half;
+        }
+      }
+
+      rafId = window.requestAnimationFrame(step);
+    };
+
+    rafId = window.requestAnimationFrame(step);
+    return () => window.cancelAnimationFrame(rafId);
+  }, [reducedMotion, isCarouselVisible]);
+
+  useEffect(() => {
+    const region = carouselRegionRef.current;
+    if (!region) return;
+
+    // Começa a rolar apenas quando o carrossel estiver visível.
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (!entry) return;
+        setIsCarouselVisible(entry.isIntersecting);
+      },
+      { threshold: [0, 0.1, 0.25] }
+    );
+
+    observer.observe(region);
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <section className="py-20 md:py-28 px-6 bg-gradient-to-b from-white to-[var(--light-bg)] dark:from-[#0D1526] dark:to-[var(--dark-bg)] relative overflow-hidden">
       {/* Background decorations */}
@@ -110,58 +226,112 @@ const BenefitsSection = () => {
           </p>
         </motion.div>
 
-        {/* Benefits grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mb-20">
-          {benefits.map((benefit, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, y: 40 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: i * 0.07, ease: [0.22, 1, 0.36, 1] }}
-              viewport={{ once: true }}
-              whileHover={{ y: -4 }}
-              className="group relative p-6 rounded-2xl bg-white dark:bg-[#0D1526] border border-gray-200/80 dark:border-white/6 shadow-sm hover:shadow-lg dark:hover:shadow-blue-500/5 transition-all duration-300 overflow-hidden"
-            >
+        {/* Benefits carousel */}
+        <div ref={carouselRegionRef} className="relative mb-20">
+          <button
+            type="button"
+            aria-label="Rolagem para esquerda"
+            onClick={() => scrollByCards(-1)}
+            className="hidden sm:flex absolute left-1 top-1/2 -translate-y-1/2 z-20 items-center justify-center w-10 h-10 rounded-full border border-gray-200/80 dark:border-white/10 bg-white/70 dark:bg-[#0D1526]/70 shadow-sm hover:shadow transition-all duration-200 backdrop-blur"
+          >
+            <ChevronLeft size={18} />
+          </button>
+
+          <button
+            type="button"
+            aria-label="Rolagem para direita"
+            onClick={() => scrollByCards(1)}
+            className="hidden sm:flex absolute right-1 top-1/2 -translate-y-1/2 z-20 items-center justify-center w-10 h-10 rounded-full border border-gray-200/80 dark:border-white/10 bg-white/70 dark:bg-[#0D1526]/70 shadow-sm hover:shadow transition-all duration-200 backdrop-blur"
+          >
+            <ChevronRight size={18} />
+          </button>
+
+          <div
+            ref={scrollRef}
+            role="region"
+            aria-label="Lista de diferenciais"
+            className="flex gap-5 overflow-x-auto scroll-smooth px-1 pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden cursor-grab active:cursor-grabbing"
+            onScroll={() => handleUserScroll(2500)}
+            onPointerDown={(e) => {
+              if (!scrollRef.current) return;
+              pauseAuto(8000);
+              isDraggingRef.current = true;
+              dragStartXRef.current = e.clientX;
+              dragStartScrollLeftRef.current = scrollRef.current.scrollLeft;
+              scrollRef.current.setPointerCapture?.(e.pointerId);
+            }}
+            onPointerMove={(e) => {
+              if (!isDraggingRef.current || !scrollRef.current) return;
+              const dx = e.clientX - dragStartXRef.current;
+              scrollRef.current.scrollLeft = dragStartScrollLeftRef.current - dx;
+            }}
+            onPointerUp={() => {
+              isDraggingRef.current = false;
+              pauseAuto(1200);
+            }}
+            onPointerCancel={() => {
+              isDraggingRef.current = false;
+              pauseAuto(1200);
+            }}
+            onMouseEnter={() => pauseAuto(1200)}
+            onWheel={() => handleUserScroll(3000)}
+          >
+            {benefitsLoop.map((benefit, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 40 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: (i % benefits.length) * 0.07, ease: [0.22, 1, 0.36, 1] }}
+                viewport={{ once: true }}
+                whileHover={{ y: -4 }}
+                className="group relative shrink-0 w-[320px] sm:w-[360px] lg:w-[380px] p-6 rounded-2xl bg-white dark:bg-[#0D1526] border border-gray-200/80 dark:border-white/6 shadow-sm hover:shadow-lg dark:hover:shadow-blue-500/5 transition-all duration-300 overflow-hidden"
+              >
               {/* Hover glow */}
               <div
                 className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
                 style={{ background: `radial-gradient(circle at 0% 0%, ${benefit.color}08, transparent 60%)` }}
               />
 
-              {/* Icon */}
-              <div
-                className="w-12 h-12 rounded-xl flex items-center justify-center mb-5 transition-transform duration-300 group-hover:scale-110"
-                style={{
-                  background: `linear-gradient(135deg, ${benefit.color}18, ${benefit.color}08)`,
-                  border: `1px solid ${benefit.color}25`,
-                }}
-              >
-                <benefit.icon size={22} style={{ color: benefit.color }} />
+              {/* Top content: texto à esquerda e icone à direita */}
+              <div className="flex items-start gap-4">
+                <div className="flex-1">
+                  <h3 className="text-base font-bold text-gray-900 dark:text-white mb-2">
+                    {benefit.title}
+                  </h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed mb-4">
+                    {benefit.description}
+                  </p>
+
+                  <ul className="space-y-1.5">
+                    {benefit.features.map((f, idx) => (
+                      <li key={idx} className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                        <CheckCircle2 size={13} className="text-emerald-500 flex-shrink-0" />
+                        {f}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* Icon */}
+                <div
+                  className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-transform duration-300 group-hover:scale-110"
+                  style={{
+                    background: `linear-gradient(135deg, ${benefit.color}18, ${benefit.color}08)`,
+                    border: `1px solid ${benefit.color}25`,
+                  }}
+                >
+                  <benefit.icon size={22} style={{ color: benefit.color }} />
+                </div>
               </div>
-
-              <h3 className="text-base font-bold text-gray-900 dark:text-white mb-2">
-                {benefit.title}
-              </h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed mb-4">
-                {benefit.description}
-              </p>
-
-              <ul className="space-y-1.5">
-                {benefit.features.map((f, idx) => (
-                  <li key={idx} className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-                    <CheckCircle2 size={13} className="text-emerald-500 flex-shrink-0" />
-                    {f}
-                  </li>
-                ))}
-              </ul>
 
               {/* Bottom accent */}
               <div
                 className="absolute bottom-0 left-0 right-0 h-[2px] opacity-0 group-hover:opacity-60 transition-opacity duration-300"
                 style={{ background: `linear-gradient(90deg, transparent, ${benefit.color}, transparent)` }}
               />
-            </motion.div>
-          ))}
+              </motion.div>
+            ))}
+          </div>
         </div>
 
         {/* Specialties */}
