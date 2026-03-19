@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Helmet } from 'react-helmet';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { supabase } from '@/lib/customSupabaseClient';
-import { Eye, EyeOff, Loader2, Mail, Lock, ArrowRight, Code2 } from 'lucide-react';
+import { Eye, EyeOff, Loader2, Mail, Lock, ArrowRight } from 'lucide-react';
+import { getAssetUrl } from '@/config/assets';
 
 const PaginaLogin = () => {
   const [email, setEmail] = useState('');
@@ -14,13 +15,9 @@ const PaginaLogin = () => {
   const { signIn, signInWithGoogle, loading, user } = useAuth();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    if (user) {
-      checkAccessAndRedirect();
-    }
-  }, [user]);
+  const checkAccessAndRedirect = useCallback(async () => {
+    if (!user) return;
 
-  async function checkAccessAndRedirect() {
     try {
       const { data, error } = await supabase.rpc('get_user_apps_status', {
         p_user_id: user.id,
@@ -40,7 +37,13 @@ const PaginaLogin = () => {
     } catch (err) {
       navigate('/portal/dashboard');
     }
-  }
+  }, [navigate, user]);
+
+  useEffect(() => {
+    if (user) {
+      checkAccessAndRedirect();
+    }
+  }, [user, checkAccessAndRedirect]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -70,8 +73,13 @@ const PaginaLogin = () => {
 
           <div className="relative z-10 max-w-md">
             <Link to="/" className="flex items-center gap-2 mb-12">
-              <div className="w-9 h-9 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30">
-                <Code2 size={18} className="text-white" />
+              <div className="w-9 h-9 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30 overflow-hidden">
+                <img
+                  src={getAssetUrl('Logo')}
+                  alt="LW Digital Forge logo"
+                  className="w-full h-full object-contain p-0"
+                  draggable={false}
+                />
               </div>
               <span className="text-xl font-bold text-white">LWDigitalForge</span>
             </Link>
@@ -110,7 +118,12 @@ const PaginaLogin = () => {
             <div className="lg:hidden flex justify-center mb-8">
               <Link to="/" className="flex items-center gap-2">
                 <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center">
-                  <Code2 size={18} className="text-white" />
+                  <img
+                    src={getAssetUrl('Logo')}
+                    alt="LW Digital Forge logo"
+                    className="w-full h-full object-contain p-0"
+                    draggable={false}
+                  />
                 </div>
                 <span className="text-xl font-bold text-gray-900 dark:text-white">LWDigitalForge</span>
               </Link>

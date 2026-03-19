@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { Briefcase, ShoppingBag, TrendingUp, Users, FileText, Globe, ChevronLeft, ChevronRight } from 'lucide-react';
 
@@ -72,6 +72,18 @@ const UseCasesSection = () => {
   const isUserScrollingRef = useRef(false);
   const userScrollTimeoutRef = useRef(null);
 
+  const isProgrammaticScrollRef = useRef(false);
+  const programmaticScrollTimeoutRef = useRef(null);
+
+  const markProgrammaticScroll = useCallback(() => {
+    if (reducedMotion) return;
+    isProgrammaticScrollRef.current = true;
+    if (programmaticScrollTimeoutRef.current) window.clearTimeout(programmaticScrollTimeoutRef.current);
+    programmaticScrollTimeoutRef.current = window.setTimeout(() => {
+      isProgrammaticScrollRef.current = false;
+    }, 650);
+  }, [reducedMotion]);
+
   const pauseAuto = (ms = 3000) => {
     if (reducedMotion) return;
     isAutoPausedRef.current = true;
@@ -83,6 +95,7 @@ const UseCasesSection = () => {
 
   const handleUserScroll = (ms = 2500) => {
     if (reducedMotion) return;
+    if (isProgrammaticScrollRef.current) return;
     isUserScrollingRef.current = true;
     pauseAuto(ms);
     if (userScrollTimeoutRef.current) window.clearTimeout(userScrollTimeoutRef.current);
@@ -94,6 +107,7 @@ const UseCasesSection = () => {
   const scrollByCards = (dir) => {
     if (!scrollRef.current) return;
     pauseAuto(3500);
+    markProgrammaticScroll();
     const amount = scrollRef.current.clientWidth * 0.85 * dir;
     scrollRef.current.scrollBy({ left: amount, behavior: 'smooth' });
   };
@@ -125,6 +139,7 @@ const UseCasesSection = () => {
 
         const half = el.scrollWidth / 2;
         if (half > 1) {
+          markProgrammaticScroll();
           el.scrollLeft += (pxPerSecond * dtMs) / 1000;
           if (el.scrollLeft >= half - 2) el.scrollLeft -= half;
         }
@@ -135,7 +150,7 @@ const UseCasesSection = () => {
 
     rafId = window.requestAnimationFrame(step);
     return () => window.cancelAnimationFrame(rafId);
-  }, [reducedMotion, isCarouselVisible]);
+  }, [reducedMotion, isCarouselVisible, markProgrammaticScroll]);
 
   useEffect(() => {
     const region = carouselRegionRef.current;

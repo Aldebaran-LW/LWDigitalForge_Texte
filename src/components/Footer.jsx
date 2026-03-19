@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { Instagram, Linkedin, Mail, Phone, ArrowUpRight, Code2 } from 'lucide-react';
+import { Instagram, Linkedin, Mail, Phone, ArrowUpRight } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { getAssetUrl } from '@/config/assets';
 
@@ -51,8 +51,13 @@ const Footer = () => {
             className="md:col-span-5"
           >
             <Link to="/" className="flex items-center gap-2 mb-5 group">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center">
-                <Code2 size={16} className="text-white" />
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center overflow-hidden">
+                <img
+                  src={getAssetUrl('Logo')}
+                  alt="LW Digital Forge logo"
+                  className="w-full h-full object-contain p-0"
+                  draggable={false}
+                />
               </div>
               <span className="text-lg font-bold text-white">
                 LW<span className="text-blue-400">Digital</span>Forge

@@ -5,7 +5,7 @@
 
 export const ASSETS = {
   Capa: 'https://wwwwyuwighdehmvnolrl.supabase.co/storage/v1/object/public/assets-publicos/Capa.jpg',
-  Logo: 'https://wwwwyuwighdehmvnolrl.supabase.co/storage/v1/object/public/assets-publicos/Logo.png',
+  Logo: 'https://wwwwyuwighdehmvnolrl.supabase.co/storage/v1/object/public/assets-publicos/Logo-LW.jpg',
 };
 
 /**
