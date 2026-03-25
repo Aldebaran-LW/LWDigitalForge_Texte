@@ -16,23 +16,36 @@ jobs:
     name: Atualizar Status de Liberação
     runs-on: ubuntu-latest
     
+    # Preferir PROD (sem sufixo). Se não existir, cair no DEV (com _DEV).
     env:
-      VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-      VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+      VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL || secrets.VITE_SUPABASE_URL_DEV }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY || secrets.SUPABASE_SERVICE_ROLE_KEY_DEV }}
+      VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY || secrets.VITE_SUPABASE_ANON_KEY_DEV }}
     
     steps:
       - name: 📥 Checkout código
         uses: actions/checkout@v4
+
+      - name: Verificar secret obrigatório
+        run: |
+          if [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
+            echo "::error::Defina SUPABASE_SERVICE_ROLE_KEY (PROD) ou SUPABASE_SERVICE_ROLE_KEY_DEV (DEV) no repositório (Settings → Secrets). Sem a service role o agente não consegue chamar as RPCs."
+            exit 1
+          fi
+          if [ -z "$VITE_SUPABASE_URL" ] || [ -z "$VITE_SUPABASE_ANON_KEY" ]; then
+            echo "::error::Defina VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY (ou as variantes *_DEV) para o script conectar no Supabase."
+            exit 1
+          fi
       
       - name: 🔧 Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '22'
           cache: 'npm'
       
+      # npm ci exige lock 100% alinhado ao package.json; este job só precisa do runtime para o script.
       - name: 📦 Instalar dependências
-        run: npm ci
+        run: npm install --legacy-peer-deps
       
       - name: 🤖 Executar Agente de Liberação Automática
         run: node scripts/agente-liberacao-automatica.js
