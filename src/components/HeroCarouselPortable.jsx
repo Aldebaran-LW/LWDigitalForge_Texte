@@ -45,6 +45,7 @@ export function HeroCarouselPortable({
   const s = slides[currentIndex];
   const hasLink = !!s.href?.trim();
   const external = hasLink && /^https?:\/\//i.test(s.href);
+  const href = hasLink ? s.href.trim() : '';
 
   const ctaClassName =
     'mt-4 inline-flex rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-700 sm:mt-6 sm:px-5 sm:py-2.5 sm:text-base';
@@ -66,6 +67,22 @@ export function HeroCarouselPortable({
               className="relative z-0 mx-auto block h-auto w-full max-h-[min(85vh,920px)] object-contain object-center"
             />
             <div className="pointer-events-none absolute inset-0 z-[1] rounded-3xl bg-gradient-to-t from-black/30 via-black/5 to-transparent" />
+            {hasLink &&
+              (external ? (
+                <a
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={s.title ? `Abrir: ${s.title}` : 'Abrir link do banner'}
+                  className="absolute inset-0 z-[1] rounded-3xl"
+                />
+              ) : (
+                <Link
+                  to={href}
+                  aria-label={s.title ? `Ir para: ${s.title}` : 'Ir para link do banner'}
+                  className="absolute inset-0 z-[1] rounded-3xl"
+                />
+              ))}
           </>
         ) : (
           <>
@@ -99,7 +116,7 @@ export function HeroCarouselPortable({
               {hasLink &&
                 (external ? (
                   <a
-                    href={s.href}
+                    href={href}
                     target="_blank"
                     rel="noopener noreferrer"
                     className={ctaClassName}
@@ -107,7 +124,7 @@ export function HeroCarouselPortable({
                     Saiba mais
                   </a>
                 ) : (
-                  <Link to={s.href.trim()} className={ctaClassName}>
+                  <Link to={href} className={ctaClassName}>
                     Saiba mais
                   </Link>
                 ))}
