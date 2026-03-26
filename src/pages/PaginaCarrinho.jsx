@@ -61,31 +61,39 @@ const PaginaCarrinho = () => {
     try {
       // Processar cada item do carrinho
       for (const item of cartItems) {
-        let purchaseType = 'LIFETIME'; // padrão
-        
-        // Extrair o tipo de compra do variant.id (formato: ${product.id}_monthly, ${product.id}_annual, etc.)
+        let purchaseType = null;
+
         if (item.variant.id) {
           const idParts = item.variant.id.split('_');
           if (idParts.length > 1) {
             const type = idParts[idParts.length - 1].toLowerCase();
-            if (type === 'monthly') {
-              purchaseType = 'MONTHLY';
-            } else if (type === 'annual') {
-              purchaseType = 'ANNUAL';
-            } else if (type === 'lifetime') {
-              purchaseType = 'LIFETIME';
-            }
+            if (type === 'monthly') purchaseType = 'MONTHLY';
+            else if (type === 'annual') purchaseType = 'ANNUAL';
+            else if (type === 'lifetime') purchaseType = 'LIFETIME';
           }
         }
-        
-        // Fallback: tentar extrair do variant.title se o ID não tiver o formato esperado
-        if (purchaseType === 'LIFETIME' && item.variant.title) {
+
+        if (purchaseType === 'LIFETIME') {
+          throw new Error(
+            'O plano vitalício não está disponível para compra. Remova o item do carrinho e escolha mensal ou anual no produto.',
+          );
+        }
+
+        if (!purchaseType && item.variant.title) {
           const titleLower = item.variant.title.toLowerCase();
-          if (titleLower.includes('mensal')) {
-            purchaseType = 'MONTHLY';
-          } else if (titleLower.includes('anual')) {
-            purchaseType = 'ANNUAL';
+          if (titleLower.includes('vitalíci') || titleLower.includes('vitalicio')) {
+            throw new Error(
+              'O plano vitalício não está disponível para compra. Remova o item do carrinho e escolha mensal ou anual no produto.',
+            );
           }
+          if (titleLower.includes('mensal')) purchaseType = 'MONTHLY';
+          else if (titleLower.includes('anual')) purchaseType = 'ANNUAL';
+        }
+
+        if (!purchaseType) {
+          throw new Error(
+            'Não foi possível identificar o plano. Remova o item e adicione novamente ao carrinho.',
+          );
         }
 
         // Chamar a Edge Function para criar o checkout

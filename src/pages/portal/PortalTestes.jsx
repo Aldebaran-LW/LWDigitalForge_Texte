@@ -76,7 +76,7 @@ const PortalTestes = () => {
         const appIds = [...new Set(trialsData.map(trial => trial.app_id))];
         const { data: productsData, error: productsError } = await supabase
           .from('registered_apps')
-          .select('id, name, description, image_url, vercel_deployment_url, github_repo_url, price_monthly, price_annual, price_lifetime')
+          .select('id, name, description, image_url, vercel_deployment_url, github_repo_url, price_monthly, price_annual')
           .in('id', appIds);
 
         if (productsError) {
@@ -345,11 +345,6 @@ const PortalTestes = () => {
                             {product.price_annual && (
                               <span className="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded whitespace-nowrap">
                                 Anual: {formatPrice(product.price_annual)}
-                              </span>
-                            )}
-                            {product.price_lifetime && (
-                              <span className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-2 py-1 rounded font-semibold whitespace-nowrap">
-                                Vitalício: {formatPrice(product.price_lifetime)}
                               </span>
                             )}
                           </div>

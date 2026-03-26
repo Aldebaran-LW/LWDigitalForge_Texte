@@ -42,6 +42,7 @@ const AdminVendas = lazy(() => import('@/pages/admin/AdminVendas'));
 const AdminUsuarios = lazy(() => import('@/pages/admin/AdminUsuarios'));
 const AdminTiposDeProduto = lazy(() => import('@/pages/admin/AdminTiposDeProduto'));
 const AdminContato = lazy(() => import('@/pages/admin/AdminContato'));
+const AdminHeroHome = lazy(() => import('@/pages/admin/AdminHeroHome'));
 
 // Lazy load portal pages
 const PortalDashboard = lazy(() => import('@/pages/portal/PortalDashboard'));
@@ -124,6 +125,7 @@ function App() {
               <Route path="vendas" element={<AdminVendas />} />
               <Route path="usuarios" element={<AdminUsuarios />} />
               <Route path="contato" element={<AdminContato />} />
+              <Route path="hero-home" element={<AdminHeroHome />} />
             </Route>
 
             {/* Customer Portal Routes */}

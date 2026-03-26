@@ -8,6 +8,7 @@ import { Loader2, TestTube2, ArrowRight, Star, Sparkles } from 'lucide-react';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useToast } from '@/components/ui/use-toast';
 import { startProductTrial } from '@/utils/trialHelpers';
+import { ImageCrossfade } from '@/components/ImageCrossfade';
 
 const ProductsSection = () => {
   const [products, setProducts] = useState([]);
@@ -142,6 +143,10 @@ const ProductsSection = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 md:gap-6">
             {products.map((product, index) => {
               const color = cardColors[index % cardColors.length];
+              const extraGallery = Array.isArray(product.hero_gallery_urls)
+                ? product.hero_gallery_urls
+                : [];
+              const cardImages = [product.image_url, ...extraGallery].filter(Boolean);
               return (
                 <motion.div
                   key={product.id}
@@ -161,16 +166,16 @@ const ProductsSection = () => {
                       style={{ background: `linear-gradient(90deg, ${color.from}, ${color.to})` }}
                     />
 
-                    {/* Product image */}
-                    {product.image_url && (
+                    {/* Product image(s) — crossfade se houver hero_gallery_urls */}
+                    {cardImages.length > 0 && (
                       <div className="relative overflow-hidden h-44">
-                        <img
-                          src={product.image_url}
+                        <ImageCrossfade
+                          images={cardImages}
                           alt={product.name}
-                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                          onError={(e) => { e.target.style.display = 'none'; }}
+                          interval={4200}
+                          imgClassName="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                         />
-                        <div className="absolute inset-0 bg-gradient-to-t from-white/20 dark:from-black/40 to-transparent" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-white/20 dark:from-black/40 to-transparent pointer-events-none" />
                       </div>
                     )}
 

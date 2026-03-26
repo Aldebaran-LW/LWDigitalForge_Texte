@@ -14,12 +14,14 @@ import {
   ChevronRight,
   Bell,
   Menu,
-  X
+  X,
+  Home
 } from 'lucide-react';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { supabase } from '@/lib/customSupabaseClient';
 import ThemeToggle from '@/components/ThemeToggle';
 import { getAssetUrl } from '@/config/assets';
+import { setAllowPublicHome } from '@/lib/publicSiteNav';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const PortalLayout = () => {
@@ -201,6 +203,13 @@ const PortalLayout = () => {
 
         {/* Bottom Actions */}
         <div className="p-4 border-t border-gray-200 dark:border-gray-700 space-y-2">
+          <Link
+            to="/"
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium"
+          >
+            <Home size={20} />
+            <span>Voltar ao site</span>
+          </Link>
           <ThemeToggle />
           <button
             onClick={signOut}
@@ -314,6 +323,17 @@ const PortalLayout = () => {
               </nav>
 
               <div className="space-y-2 pt-4 border-t border-gray-200 dark:border-gray-700">
+                <Link
+                  to="/"
+                  onClick={() => {
+                    setAllowPublicHome();
+                    setMobileMenuOpen(false);
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium"
+                >
+                  <Home size={20} />
+                  <span>Voltar ao site</span>
+                </Link>
                 <ThemeToggle />
                 <button
                   onClick={signOut}

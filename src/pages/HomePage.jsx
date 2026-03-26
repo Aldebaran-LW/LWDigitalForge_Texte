@@ -2,7 +2,8 @@ import React, { useEffect } from 'react';
 import { Helmet } from 'react-helmet';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
-import HeroSection from '@/components/HeroSection';
+import { isAllowPublicHome } from '@/lib/publicSiteNav';
+import HomeHeroSplit from '@/components/HomeHeroSplit';
 import ProductsSection from '@/components/ProductsSection';
 import BenefitsSection from '@/components/BenefitsSection';
 import UseCasesSection from '@/components/UseCasesSection';
@@ -10,15 +11,18 @@ import PortfolioSection from '@/components/PortfolioSection';
 import PersuasiveCTA from '@/components/PersuasiveCTA';
 
 const HomePage = () => {
-  const { user, loading } = useAuth();
+  const { user, loading, role } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Se o user já está logado e não estamos a carregar a sessão
-    if (!loading && user) {
-      navigate('/portal/dashboard');
+    if (loading || !user) return;
+    if (isAllowPublicHome()) return;
+    if (role === 'ADMIN') {
+      navigate('/admin/dashboard', { replace: true });
+    } else {
+      navigate('/portal/dashboard', { replace: true });
     }
-  }, [user, loading, navigate]);
+  }, [user, loading, role, navigate]);
 
   // Se ainda estiver carregando, mostrar página normalmente
   // (evita flash de conteúdo antes do redirect)
@@ -40,8 +44,8 @@ const HomePage = () => {
         />
       </Helmet>
       
-      {/* Hero Section - Primeira impressão impactante */}
-      <HeroSection />
+      {/* Hero split: texto à esquerda + carrossel à direita */}
+      <HomeHeroSplit />
       
       {/* Products Section - Mostrar produtos principais */}
       <ProductsSection />

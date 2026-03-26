@@ -1,10 +1,11 @@
 
 import React, { useState } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Package, ShoppingCart, Users, LogOut, Tag, Menu, X, MessageSquare, Briefcase } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingCart, Users, LogOut, Tag, Menu, X, MessageSquare, Briefcase, ImageIcon, Home } from 'lucide-react';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import ThemeToggle from '@/components/ThemeToggle';
 import { getAssetUrl } from '@/config/assets';
+import { setAllowPublicHome } from '@/lib/publicSiteNav';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const AdminLayout = () => {
@@ -16,6 +17,7 @@ const AdminLayout = () => {
     { href: '/admin/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { href: '/admin/produtos', icon: Package, label: 'Produtos' },
     { href: '/admin/portfolio', icon: Briefcase, label: 'Portfólio' },
+    { href: '/admin/hero-home', icon: ImageIcon, label: 'Banners Home' },
     { href: '/admin/tipos-produto', icon: Tag, label: 'Tipos de Produto' },
     { href: '/admin/vendas', icon: ShoppingCart, label: 'Vendas' },
     { href: '/admin/usuarios', icon: Users, label: 'Usuários' },
@@ -80,6 +82,17 @@ const AdminLayout = () => {
             </nav>
           </div>
           <div className="space-y-1 sm:space-y-2 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <Link
+              to="/"
+              onClick={() => {
+                setAllowPublicHome();
+                setIsSidebarOpen(false);
+              }}
+              className="w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors min-h-[44px] text-sm sm:text-base"
+            >
+              <Home size={18} className="sm:w-5 sm:h-5 flex-shrink-0" />
+              <span>Voltar ao site</span>
+            </Link>
             <div className="px-3 sm:px-4">
               <ThemeToggle />
             </div>

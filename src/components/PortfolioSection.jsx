@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { supabase } from '@/lib/customSupabaseClient';
 import { Loader2, ExternalLink, Globe, Bot, Code } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { ImageCrossfade } from '@/components/ImageCrossfade';
 
 const PortfolioSection = () => {
   const [portfolioItems, setPortfolioItems] = useState([]);
@@ -97,7 +98,12 @@ const PortfolioSection = () => {
         </motion.div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-          {portfolioItems.map((item, index) => (
+          {portfolioItems.map((item, index) => {
+            const extraGallery = Array.isArray(item.hero_gallery_urls)
+              ? item.hero_gallery_urls
+              : [];
+            const cardImages = [item.image_url, ...extraGallery].filter(Boolean);
+            return (
             <motion.div
               key={item.id}
               initial={{ opacity: 0, y: 50 }}
@@ -107,18 +113,16 @@ const PortfolioSection = () => {
               whileHover={{ y: -8, scale: 1.02 }}
               className="bg-white dark:bg-[#111827]/60 backdrop-blur-sm rounded-2xl overflow-hidden border-2 border-gray-200 dark:border-blue-500/20 hover:border-blue-400 dark:hover:border-blue-500/60 transition-all duration-300 shadow-lg hover:shadow-2xl group"
             >
-              {/* Imagem do projeto */}
-              {item.image_url && (
+              {/* Imagem do projeto (crossfade opcional) */}
+              {cardImages.length > 0 && (
                 <div className="relative h-48 sm:h-56 overflow-hidden bg-gradient-to-br from-blue-500/10 to-teal-500/10">
-                  <img
-                    src={item.image_url}
+                  <ImageCrossfade
+                    images={cardImages}
                     alt={item.title}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                    onError={(e) => {
-                      e.target.style.display = 'none';
-                    }}
+                    interval={4200}
+                    imgClassName="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                   />
-                  <div className="absolute top-4 right-4">
+                  <div className="absolute top-4 right-4 z-10">
                     <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-lg px-3 py-1.5 flex items-center gap-2 text-xs font-semibold text-gray-700 dark:text-gray-300">
                       {getProjectIcon(item.project_type)}
                       <span>{getProjectTypeLabel(item.project_type)}</span>
@@ -184,7 +188,8 @@ const PortfolioSection = () => {
                 )}
               </div>
             </motion.div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </section>

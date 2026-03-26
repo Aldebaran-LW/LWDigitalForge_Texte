@@ -106,9 +106,9 @@ const PortalProdutos = () => {
 
     // Filtro de preço
     if (priceFilter === 'free') {
-      filtered = filtered.filter(p => !p.price_monthly && !p.price_annual && !p.price_lifetime);
+      filtered = filtered.filter(p => !p.price_monthly && !p.price_annual);
     } else if (priceFilter === 'paid') {
-      filtered = filtered.filter(p => p.price_monthly || p.price_annual || p.price_lifetime);
+      filtered = filtered.filter(p => p.price_monthly || p.price_annual);
     }
 
     // Ordenação
@@ -118,13 +118,11 @@ const PortalProdutos = () => {
       filtered.sort((a, b) => {
         const priceA = Math.min(
           a.price_monthly || Infinity,
-          a.price_annual || Infinity,
-          a.price_lifetime || Infinity
+          a.price_annual || Infinity
         );
         const priceB = Math.min(
           b.price_monthly || Infinity,
-          b.price_annual || Infinity,
-          b.price_lifetime || Infinity
+          b.price_annual || Infinity
         );
         return priceA - priceB;
       });
@@ -132,13 +130,11 @@ const PortalProdutos = () => {
       filtered.sort((a, b) => {
         const priceA = Math.min(
           a.price_monthly || Infinity,
-          a.price_annual || Infinity,
-          a.price_lifetime || Infinity
+          a.price_annual || Infinity
         );
         const priceB = Math.min(
           b.price_monthly || Infinity,
-          b.price_annual || Infinity,
-          b.price_lifetime || Infinity
+          b.price_annual || Infinity
         );
         return priceB - priceA;
       });
@@ -153,7 +149,7 @@ const PortalProdutos = () => {
   };
 
   const getMinPrice = (product) => {
-    const prices = [product.price_monthly, product.price_annual, product.price_lifetime].filter(Boolean);
+    const prices = [product.price_monthly, product.price_annual].filter(Boolean);
     return prices.length > 0 ? Math.min(...prices) : null;
   };
 

@@ -7,6 +7,7 @@ import { supabase } from '@/lib/customSupabaseClient';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { ArrowLeft, Loader2 } from 'lucide-react';
+import { heroGalleryFromTextarea, heroGalleryToTextarea } from '@/lib/galleryUrls';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
@@ -33,6 +34,7 @@ const AdminFormularioPortfolio = () => {
         reset({
           ...data,
           technologies: technologiesString,
+          hero_gallery_urls: heroGalleryToTextarea(data.hero_gallery_urls),
         });
       }
       setLoading(false);
@@ -53,6 +55,7 @@ const AdminFormularioPortfolio = () => {
       client_name: formData.client_name || null,
       project_type: formData.project_type || 'WEB_APP',
       image_url: formData.image_url || null,
+      hero_gallery_urls: heroGalleryFromTextarea(formData.hero_gallery_urls),
       project_url: formData.project_url || null,
       technologies: technologiesArray,
       featured: formData.featured || false,
@@ -166,7 +169,7 @@ const AdminFormularioPortfolio = () => {
             </div>
 
             <div>
-              <Label htmlFor="image_url">URL da Imagem</Label>
+              <Label htmlFor="image_url">URL da Imagem (capa)</Label>
               <Input 
                 id="image_url"
                 type="url" 
@@ -174,6 +177,20 @@ const AdminFormularioPortfolio = () => {
                 className="mt-1"
                 placeholder="https://exemplo.com/imagem.jpg"
               />
+            </div>
+
+            <div>
+              <Label htmlFor="hero_gallery_urls">URLs extra para carrossel (uma por linha)</Label>
+              <textarea
+                id="hero_gallery_urls"
+                rows={3}
+                {...register('hero_gallery_urls')}
+                className="w-full mt-1 p-2 bg-gray-100 dark:bg-gray-900 border rounded-md"
+                placeholder="https://.../outra1.jpg"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Opcional. Fade entre capa e estas imagens na listagem do portfólio.
+              </p>
             </div>
 
             <div>

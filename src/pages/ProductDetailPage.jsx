@@ -4,13 +4,15 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { supabase } from '@/lib/customSupabaseClient';
 import { Button } from '@/components/ui/button';
+import { ProductHeroCarousel } from '@/components/ProductHeroCarousel';
 import { useCart } from '@/hooks/useCart';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
-import { ShoppingCart, Loader2, ArrowLeft, CheckCircle2, Shield, Zap, Calendar, TestTube2, Star, Badge } from 'lucide-react';
+import { ShoppingCart, Loader2, ArrowLeft, CheckCircle2, Shield, Zap, Calendar, TestTube2, Star } from 'lucide-react';
 import { checkUserProductAccess, startProductTrial } from '@/utils/trialHelpers';
 
 const placeholderImage = 'https://placehold.co/800x450/1e293b/white?text=Produto+Digital';
+const ENABLE_LIFETIME_PLAN = false;
 
 const ProductDetailPage = () => {
   const { id } = useParams();
@@ -33,8 +35,7 @@ const ProductDetailPage = () => {
         toast({ variant: 'destructive', title: 'Erro', description: 'Produto não encontrado.' });
       } else {
         setProduct(data);
-        if (data?.price_lifetime) setSelectedPrice('lifetime');
-        else if (data?.price_annual) setSelectedPrice('annual');
+        if (data?.price_annual) setSelectedPrice('annual');
         else if (data?.price_monthly) setSelectedPrice('monthly');
       }
       setLoading(false);
@@ -56,9 +57,13 @@ const ProductDetailPage = () => {
     const priceMap = {
       monthly: { price: product.price_monthly, label: 'Plano Mensal' },
       annual: { price: product.price_annual, label: 'Plano Anual' },
-      lifetime: { price: product.price_lifetime, label: 'Licença Vitalícia' },
     };
-    const { price, label } = priceMap[selectedPrice];
+    const mapped = priceMap[selectedPrice];
+    if (!mapped) {
+      toast({ variant: 'destructive', title: 'Erro', description: 'Plano indisponível no momento.' });
+      return;
+    }
+    const { price, label } = mapped;
     if (!price) { toast({ variant: 'destructive', title: 'Erro', description: 'Preço não disponível.' }); return; }
 
     const cartItem = {
@@ -123,8 +128,13 @@ const ProductDetailPage = () => {
   const plans = [
     product.price_monthly && { key: 'monthly', label: 'Mensal', sublabel: 'Cancele quando quiser', price: product.price_monthly, accent: '#3B82F6', badge: null },
     product.price_annual && { key: 'annual', label: 'Anual', sublabel: `${formatPrice(Math.round(product.price_annual / 12))}/mês em 12x`, price: product.price_annual, accent: '#06B6D4', badge: 'Economize' },
-    product.price_lifetime && { key: 'lifetime', label: 'Vitalício', sublabel: `${formatPrice(Math.round(product.price_lifetime / 12))}/mês em 12x`, price: product.price_lifetime, accent: '#7C3AED', badge: 'Melhor Opção' },
+    ENABLE_LIFETIME_PLAN && product.price_lifetime && { key: 'lifetime', label: 'Vitalício', sublabel: 'Pagamento único', price: product.price_lifetime, accent: '#8B5CF6', badge: 'Melhor Opção' },
   ].filter(Boolean);
+
+  const extraGallery = Array.isArray(product.hero_gallery_urls)
+    ? product.hero_gallery_urls
+    : [];
+  const heroImages = [product.image_url || placeholderImage, ...extraGallery].filter(Boolean);
 
   return (
     <>
@@ -132,13 +142,13 @@ const ProductDetailPage = () => {
         <title>{product.name} - LWDigitalForge</title>
       </Helmet>
 
-      <div className="min-h-screen bg-[var(--light-bg)] dark:bg-[var(--dark-bg)]">
-        {/* Breadcrumb */}
-        <div className="sticky top-16 z-20 bg-white/80 dark:bg-[#080C14]/80 backdrop-blur-md border-b border-gray-200/80 dark:border-white/6">
-          <div className="container mx-auto px-6 py-3">
+      <div className="min-h-screen overflow-x-clip bg-[var(--light-bg)] dark:bg-[var(--dark-bg)]">
+        {/* Breadcrumb — mesma largura do conteúdo principal */}
+        <div className="sticky top-16 z-20 border-b border-gray-200/80 bg-white/80 backdrop-blur-md dark:border-white/6 dark:bg-[#080C14]/80">
+          <div className="mx-auto max-w-[1600px] px-4 py-3 md:px-8">
             <Link
               to="/produtos"
-              className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors"
+              className="inline-flex items-center gap-1.5 text-sm text-gray-500 transition-colors hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400"
             >
               <ArrowLeft className="h-4 w-4" />
               Voltar aos Produtos
@@ -146,86 +156,49 @@ const ProductDetailPage = () => {
           </div>
         </div>
 
-        <div className="container mx-auto px-6 py-10 md:py-16">
-          <div className="grid lg:grid-cols-5 gap-10">
-            {/* Left — product info */}
+        <div className="mx-auto max-w-[1600px] px-4 py-8 md:px-8 md:py-12">
+          <div className="mb-12 grid min-w-0 items-start gap-8 lg:grid-cols-2 lg:gap-12 xl:gap-16">
+            {/* Coluna imagem (à direita no desktop; “vaza” levemente pra borda como referência Macofel) */}
             <motion.div
-              initial={{ opacity: 0, x: -20 }}
+              initial={{ opacity: 0, x: 24 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.5 }}
-              className="lg:col-span-3"
+              className="min-w-0 lg:order-2"
             >
-              {/* Image */}
-              <div className="rounded-3xl overflow-hidden border border-gray-200/80 dark:border-white/6 mb-8 shadow-xl">
-                <img
-                  src={product.image_url || placeholderImage}
-                  alt={product.name}
-                  className="w-full h-auto max-h-[380px] object-cover"
-                />
-              </div>
-
-              {/* Title */}
-              <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-3">
-                {product.name}
-              </h1>
-              <p className="text-base text-gray-500 dark:text-gray-400 leading-relaxed mb-8">
-                {product.description}
-              </p>
-
-              {/* Detailed description */}
-              {product.detailed_description && (
-                <div className="mb-8">
-                  <h3 className="text-base font-bold text-gray-900 dark:text-white mb-3">
-                    Sobre este produto
-                  </h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line">
-                    {product.detailed_description}
-                  </p>
-                </div>
-              )}
-
-              {/* Features */}
-              {product.features && product.features.length > 0 && (
-                <div className="p-6 rounded-2xl bg-white dark:bg-[#0D1526] border border-gray-200/80 dark:border-white/6">
-                  <h3 className="text-base font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                    <Star size={16} className="text-amber-400" />
-                    O que está incluído
-                  </h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                    {product.features.map((feature, idx) => (
-                      <div key={idx} className="flex items-start gap-2.5">
-                        <CheckCircle2 size={15} className="text-emerald-500 flex-shrink-0 mt-0.5" />
-                        <span className="text-sm text-gray-600 dark:text-gray-400">{feature}</span>
-                      </div>
-                    ))}
+              <div className="space-y-4">
+                <div className="mx-auto w-full max-w-lg sm:max-w-xl lg:mx-0 lg:ml-auto lg:max-w-none lg:-mr-4 xl:-mr-8 2xl:-mr-12">
+                  <div className="relative overflow-hidden rounded-3xl border border-slate-100 bg-slate-50 shadow-[0_35px_90px_-45px_rgba(15,23,42,0.22)] dark:border-white/10 dark:bg-slate-900/40 dark:shadow-[0_35px_90px_-45px_rgba(0,0,0,0.55)]">
+                    <ProductHeroCarousel
+                      images={heroImages}
+                      alt={product.name}
+                      autoPlayInterval={5000}
+                      variant="macofel"
+                    />
                   </div>
                 </div>
-              )}
-
-              {/* Trust badges */}
-              <div className="flex flex-wrap gap-3 mt-6">
-                {[
-                  { icon: Shield, label: 'Pagamento Seguro', color: '#10B981' },
-                  { icon: Zap, label: 'Acesso Imediato', color: '#3B82F6' },
-                  { icon: Star, label: 'Suporte Dedicado', color: '#F59E0B' },
-                ].map((badge, i) => (
-                  <div key={i} className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gray-100 dark:bg-white/5 text-xs text-gray-600 dark:text-gray-400">
-                    <badge.icon size={13} style={{ color: badge.color }} />
-                    {badge.label}
-                  </div>
-                ))}
               </div>
             </motion.div>
 
-            {/* Right — pricing */}
+            {/* Coluna texto + planos (à esquerda no desktop) */}
             <motion.div
-              initial={{ opacity: 0, x: 20 }}
+              initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-              className="lg:col-span-2"
+              transition={{ duration: 0.5, delay: 0.08 }}
+              className="flex min-w-0 flex-col lg:order-1"
             >
-              <div className="sticky top-28">
-                <div className="p-6 rounded-3xl bg-white dark:bg-[#0D1526] border border-gray-200/80 dark:border-white/6 shadow-xl">
+              <div className="sticky top-28 space-y-6">
+                <div className="mb-2">
+                  <h1 className="mb-4 text-3xl font-black leading-tight tracking-tight text-slate-900 dark:text-white md:text-4xl">
+                    {product.name}
+                  </h1>
+                  {product.description && (
+                    <p className="max-w-xl text-base leading-relaxed text-slate-600 dark:text-slate-400">
+                      {product.description}
+                    </p>
+                  )}
+                </div>
+
+                <div className="p-6 rounded-3xl bg-white dark:bg-[#0D1526] border border-slate-100 dark:border-white/10 shadow-sm">
                   <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-5">
                     Escolha seu plano
                   </h2>
@@ -364,6 +337,58 @@ const ProductDetailPage = () => {
               </div>
             </motion.div>
           </div>
+
+          {/* Texto longo e extras (abaixo do grid, largura total — evita competir com a galeria) */}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, delay: 0.12 }}
+            className="space-y-8 border-t border-slate-200/80 pt-10 dark:border-white/10"
+          >
+            {product.detailed_description && (
+              <div>
+                <h3 className="mb-3 text-base font-bold text-gray-900 dark:text-white">
+                  Sobre este produto
+                </h3>
+                <p className="max-w-3xl text-sm leading-relaxed text-gray-600 dark:text-gray-400 whitespace-pre-line">
+                  {product.detailed_description}
+                </p>
+              </div>
+            )}
+
+            {product.features && product.features.length > 0 && (
+              <div className="rounded-2xl border border-gray-200/80 bg-white p-6 dark:border-white/6 dark:bg-[#0D1526]">
+                <h3 className="mb-4 flex items-center gap-2 text-base font-bold text-gray-900 dark:text-white">
+                  <Star size={16} className="text-amber-400" />
+                  O que está incluído
+                </h3>
+                <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                  {product.features.map((feature, idx) => (
+                    <div key={idx} className="flex items-start gap-2.5">
+                      <CheckCircle2 size={15} className="mt-0.5 flex-shrink-0 text-emerald-500" />
+                      <span className="text-sm text-gray-600 dark:text-gray-400">{feature}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="flex flex-wrap gap-3">
+              {[
+                { icon: Shield, label: 'Pagamento Seguro', color: '#10B981' },
+                { icon: Zap, label: 'Acesso Imediato', color: '#3B82F6' },
+                { icon: Star, label: 'Suporte Dedicado', color: '#F59E0B' },
+              ].map((badge, i) => (
+                <div
+                  key={i}
+                  className="flex items-center gap-2 rounded-xl bg-gray-100 px-3 py-1.5 text-xs text-gray-600 dark:bg-white/5 dark:text-gray-400"
+                >
+                  <badge.icon size={13} style={{ color: badge.color }} />
+                  {badge.label}
+                </div>
+              ))}
+            </div>
+          </motion.div>
         </div>
       </div>
     </>

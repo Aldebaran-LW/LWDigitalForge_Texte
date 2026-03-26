@@ -1,6 +1,7 @@
 
 import React, { createContext, useContext, useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
+import { clearAllowPublicHome } from '@/lib/publicSiteNav';
 import { useToast } from '@/components/ui/use-toast';
 import { useNavigate } from 'react-router-dom';
 
@@ -257,6 +258,7 @@ export const AuthProvider = ({ children }) => {
   }, [toast]);
 
   const signOut = useCallback(async () => {
+    clearAllowPublicHome();
     setLoading(true);
     await supabase.auth.signOut();
     setLoading(false);

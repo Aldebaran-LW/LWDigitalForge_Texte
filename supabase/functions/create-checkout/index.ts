@@ -81,8 +81,21 @@ serve(async (req) => {
       );
     }
 
-    // Determinar preço baseado no tipo de compra
-    let price = app.price_lifetime || 0;
+    // Vitalício (LIFETIME) só via liberação manual no admin — não vendido no checkout
+    if (purchaseType === "LIFETIME") {
+      return new Response(
+        JSON.stringify({
+          error:
+            "Plano vitalício não está disponível para compra online. Escolha mensal ou anual, ou fale com o suporte.",
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
+
+    let price = 0;
     if (purchaseType === "MONTHLY" && app.price_monthly) {
       price = app.price_monthly;
     } else if (purchaseType === "ANNUAL" && app.price_annual) {

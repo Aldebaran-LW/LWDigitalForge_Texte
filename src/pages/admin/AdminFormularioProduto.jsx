@@ -8,6 +8,7 @@ import { supabase } from '@/lib/customSupabaseClient';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { ArrowLeft, Loader2 } from 'lucide-react';
+import { heroGalleryFromTextarea, heroGalleryToTextarea } from '@/lib/galleryUrls';
 
 const AdminFormularioProduto = () => {
   const { id } = useParams();
@@ -38,6 +39,7 @@ const AdminFormularioProduto = () => {
           price_monthly: data.price_monthly ? data.price_monthly / 100 : '',
           price_annual: data.price_annual ? data.price_annual / 100 : '',
           price_lifetime: data.price_lifetime ? data.price_lifetime / 100 : '',
+          hero_gallery_urls: heroGalleryToTextarea(data.hero_gallery_urls),
         });
       }
       setLoading(false);
@@ -59,6 +61,7 @@ const AdminFormularioProduto = () => {
       detailed_description: formData.detailed_description || null, // Novo Campo
       features: featuresArray, // Novo Campo
       image_url: formData.image_url || null,
+      hero_gallery_urls: heroGalleryFromTextarea(formData.hero_gallery_urls),
       github_repo_url: formData.github_repo_url || null,
       vercel_deployment_url: formData.vercel_deployment_url || null,
       
@@ -135,8 +138,24 @@ const AdminFormularioProduto = () => {
             </div>
 
             <div>
-              <label htmlFor="image_url" className="block text-sm font-medium mb-1">URL da Imagem</label>
+              <label htmlFor="image_url" className="block text-sm font-medium mb-1">URL da Imagem (capa)</label>
               <input type="url" id="image_url" {...register('image_url')} className="w-full p-2 bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-md" placeholder="https://exemplo.com/imagem.jpg" />
+            </div>
+
+            <div>
+              <label htmlFor="hero_gallery_urls" className="block text-sm font-medium mb-1">
+                URLs extra para carrossel no card (uma por linha)
+              </label>
+              <textarea
+                id="hero_gallery_urls"
+                rows={3}
+                {...register('hero_gallery_urls')}
+                className="w-full p-2 bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-md"
+                placeholder="https://.../foto2.jpg&#10;https://.../foto3.jpg"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Opcional. Com duas ou mais URLs (capa + extras), o card alterna as imagens em fade.
+              </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

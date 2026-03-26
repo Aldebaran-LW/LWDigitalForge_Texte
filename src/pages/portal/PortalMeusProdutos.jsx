@@ -30,7 +30,7 @@ const PortalMeusProdutos = () => {
 
       try {
         // Buscar produtos comprados pelo usuário (apenas aprovados e não expirados)
-        // Inclui: acesso vitalício do admin + compras via pagamento (mensal, anual, vitalício)
+        // Inclui: liberação manual (vitalício) pelo admin + assinaturas mensais/anuais pagas
         const now = new Date().toISOString();
         const { data: purchases, error: purchasesError } = await supabase
           .from('user_purchases')

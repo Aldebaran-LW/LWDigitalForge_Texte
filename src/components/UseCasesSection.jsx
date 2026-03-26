@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { Briefcase, ShoppingBag, TrendingUp, Users, FileText, Globe, ChevronLeft, ChevronRight } from 'lucide-react';
 
@@ -72,18 +72,6 @@ const UseCasesSection = () => {
   const isUserScrollingRef = useRef(false);
   const userScrollTimeoutRef = useRef(null);
 
-  const isProgrammaticScrollRef = useRef(false);
-  const programmaticScrollTimeoutRef = useRef(null);
-
-  const markProgrammaticScroll = useCallback(() => {
-    if (reducedMotion) return;
-    isProgrammaticScrollRef.current = true;
-    if (programmaticScrollTimeoutRef.current) window.clearTimeout(programmaticScrollTimeoutRef.current);
-    programmaticScrollTimeoutRef.current = window.setTimeout(() => {
-      isProgrammaticScrollRef.current = false;
-    }, 650);
-  }, [reducedMotion]);
-
   const pauseAuto = (ms = 3000) => {
     if (reducedMotion) return;
     isAutoPausedRef.current = true;
@@ -95,7 +83,6 @@ const UseCasesSection = () => {
 
   const handleUserScroll = (ms = 2500) => {
     if (reducedMotion) return;
-    if (isProgrammaticScrollRef.current) return;
     isUserScrollingRef.current = true;
     pauseAuto(ms);
     if (userScrollTimeoutRef.current) window.clearTimeout(userScrollTimeoutRef.current);
@@ -107,7 +94,6 @@ const UseCasesSection = () => {
   const scrollByCards = (dir) => {
     if (!scrollRef.current) return;
     pauseAuto(3500);
-    markProgrammaticScroll();
     const amount = scrollRef.current.clientWidth * 0.85 * dir;
     scrollRef.current.scrollBy({ left: amount, behavior: 'smooth' });
   };
@@ -120,7 +106,7 @@ const UseCasesSection = () => {
 
     let rafId;
     let lastTs = performance.now();
-    const pxPerSecond = 55;
+    const pxPerSecond = 85;
 
     const step = (ts) => {
       const dtMs = ts - lastTs;
@@ -139,7 +125,6 @@ const UseCasesSection = () => {
 
         const half = el.scrollWidth / 2;
         if (half > 1) {
-          markProgrammaticScroll();
           el.scrollLeft += (pxPerSecond * dtMs) / 1000;
           if (el.scrollLeft >= half - 2) el.scrollLeft -= half;
         }
@@ -150,7 +135,7 @@ const UseCasesSection = () => {
 
     rafId = window.requestAnimationFrame(step);
     return () => window.cancelAnimationFrame(rafId);
-  }, [reducedMotion, isCarouselVisible, markProgrammaticScroll]);
+  }, [reducedMotion, isCarouselVisible]);
 
   useEffect(() => {
     const region = carouselRegionRef.current;
@@ -221,7 +206,6 @@ const UseCasesSection = () => {
             role="region"
             aria-label="Lista de casos de uso"
             className="flex gap-5 overflow-x-auto scroll-smooth px-1 pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden cursor-grab active:cursor-grabbing"
-            onScroll={() => handleUserScroll(2500)}
             onPointerDown={(e) => {
               if (!scrollRef.current) return;
               pauseAuto(8000);
@@ -253,8 +237,12 @@ const UseCasesSection = () => {
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: (i % useCases.length) * 0.07, ease: [0.22, 1, 0.36, 1] }}
                 viewport={{ once: true }}
-                whileHover={{ y: -5 }}
-                className="group relative shrink-0 w-[320px] sm:w-[360px] lg:w-[380px] p-6 rounded-2xl bg-white dark:bg-[#0D1526] border border-gray-200/80 dark:border-white/6 shadow-sm hover:shadow-xl dark:hover:shadow-blue-500/5 transition-all duration-300 overflow-hidden"
+                whileHover={{
+                  y: -4,
+                  scale: 1.02,
+                  transition: { type: 'spring', stiffness: 400, damping: 20 },
+                }}
+                className="group relative shrink-0 w-[320px] sm:w-[360px] lg:w-[380px] p-6 rounded-2xl bg-white dark:bg-[#0D1526] border border-gray-200/80 dark:border-white/6 shadow-sm hover:shadow-lg dark:hover:shadow-blue-500/5 transition-all duration-300 overflow-hidden"
               >
               {/* Corner number */}
               <div
