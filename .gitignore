@@ -266,3 +266,12 @@ EXECUTAR_*.ps1
 
 # Workflows n8n locais
 n8n-workflow-*.json
+Dockerfile.n8n
+*n8n*
+README_N8N*.md
+GUIA_N8N*.md
+
+# Pastas temporárias / protótipos locais
+ponto_diario_temp/
+temp_ponto_diario_impl/
+webhook-sync-server/
