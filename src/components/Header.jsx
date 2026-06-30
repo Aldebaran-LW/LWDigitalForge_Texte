@@ -40,10 +40,20 @@ const Header = () => {
     { to: '/', label: 'Início' },
     { to: '/produtos', label: 'Produtos' },
     { to: '/portfolio', label: 'Portfólio' },
+    { to: '/recursos', label: 'Recursos' },
     { to: '/sobre', label: 'Sobre' },
   ];
 
-  const isActive = (path) => location.pathname === path;
+  const isActive = (path) => {
+    if (path === '/recursos') {
+      return (
+        location.pathname === '/recursos' ||
+        location.pathname.startsWith('/blog') ||
+        location.pathname.startsWith('/docs')
+      );
+    }
+    return location.pathname === path;
+  };
 
   return (
     <>

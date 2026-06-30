@@ -22,6 +22,8 @@ const Footer = () => {
 
   const navLinks = [
     { to: '/produtos', label: 'Soluções' },
+    { to: '/blog', label: 'Blog' },
+    { to: '/docs', label: 'Documentação' },
     { to: '/sobre', label: 'Sobre Nós' },
     { to: '/contato-orcamento', label: 'Contato' },
     { to: '/login', label: 'Área do Cliente' },

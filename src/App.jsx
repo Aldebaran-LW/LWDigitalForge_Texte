@@ -27,6 +27,11 @@ const ProductDetailPage = lazy(() => import('@/pages/ProductDetailPage'));
 const SuccessPage = lazy(() => import('@/pages/SuccessPage'));
 const AuthCallback = lazy(() => import('@/pages/AuthCallback'));
 const AssinaturaNecessaria = lazy(() => import('@/pages/AssinaturaNecessaria'));
+const PaginaRecursos = lazy(() => import('@/pages/PaginaRecursos'));
+const PaginaBlog = lazy(() => import('@/pages/PaginaBlog'));
+const PaginaArtigo = lazy(() => import('@/pages/PaginaArtigo'));
+const PaginaDocs = lazy(() => import('@/pages/PaginaDocs'));
+const PaginaDoc = lazy(() => import('@/pages/PaginaDoc'));
 
 // Lazy load layouts
 const AdminLayout = lazy(() => import('@/components/admin/AdminLayout'));
@@ -43,6 +48,10 @@ const AdminUsuarios = lazy(() => import('@/pages/admin/AdminUsuarios'));
 const AdminTiposDeProduto = lazy(() => import('@/pages/admin/AdminTiposDeProduto'));
 const AdminContato = lazy(() => import('@/pages/admin/AdminContato'));
 const AdminHeroHome = lazy(() => import('@/pages/admin/AdminHeroHome'));
+const AdminControleAcesso = lazy(() => import('@/pages/admin/AdminControleAcesso'));
+const AdminAplicacoes = lazy(() => import('@/pages/admin/AdminAplicacoes'));
+const AdminBlog = lazy(() => import('@/pages/admin/AdminBlog'));
+const AdminFormularioBlog = lazy(() => import('@/pages/admin/AdminFormularioBlog'));
 
 // Lazy load portal pages
 const PortalDashboard = lazy(() => import('@/pages/portal/PortalDashboard'));
@@ -107,6 +116,11 @@ function App() {
             <Route path="/success" element={<SuccessPage />} />
             <Route path="/auth/callback" element={<AuthCallback />} />
             <Route path="/assinatura-necessaria" element={<AssinaturaNecessaria />} />
+            <Route path="/recursos" element={<PaginaRecursos />} />
+            <Route path="/blog" element={<PaginaBlog />} />
+            <Route path="/blog/:slug" element={<PaginaArtigo />} />
+            <Route path="/docs" element={<PaginaDocs />} />
+            <Route path="/docs/:slug" element={<PaginaDoc />} />
 
             {/* Admin Routes */}
             <Route
@@ -124,8 +138,13 @@ function App() {
               <Route path="tipos-produto" element={<AdminTiposDeProduto />} />
               <Route path="vendas" element={<AdminVendas />} />
               <Route path="usuarios" element={<AdminUsuarios />} />
+              <Route path="controle-acesso" element={<AdminControleAcesso />} />
+              <Route path="aplicacoes" element={<AdminAplicacoes />} />
               <Route path="contato" element={<AdminContato />} />
               <Route path="hero-home" element={<AdminHeroHome />} />
+              <Route path="blog" element={<AdminBlog />} />
+              <Route path="blog/novo" element={<AdminFormularioBlog />} />
+              <Route path="blog/:id/editar" element={<AdminFormularioBlog />} />
             </Route>
 
             {/* Customer Portal Routes */}

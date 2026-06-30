@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Package, ShoppingCart, Users, LogOut, Tag, Menu, X, MessageSquare, Briefcase, ImageIcon, Home } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingCart, Users, LogOut, Tag, Menu, X, MessageSquare, Briefcase, ImageIcon, Home, Shield, Code2, FileText } from 'lucide-react';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import ThemeToggle from '@/components/ThemeToggle';
 import { getAssetUrl } from '@/config/assets';
@@ -17,10 +17,13 @@ const AdminLayout = () => {
     { href: '/admin/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { href: '/admin/produtos', icon: Package, label: 'Produtos' },
     { href: '/admin/portfolio', icon: Briefcase, label: 'Portfólio' },
+    { href: '/admin/blog', icon: FileText, label: 'Blog' },
     { href: '/admin/hero-home', icon: ImageIcon, label: 'Banners Home' },
     { href: '/admin/tipos-produto', icon: Tag, label: 'Tipos de Produto' },
     { href: '/admin/vendas', icon: ShoppingCart, label: 'Vendas' },
     { href: '/admin/usuarios', icon: Users, label: 'Usuários' },
+    { href: '/admin/controle-acesso', icon: Shield, label: 'Controle de Acesso' },
+    { href: '/admin/aplicacoes', icon: Code2, label: 'Aplicações' },
     { href: '/admin/contato', icon: MessageSquare, label: 'Mensagens', badge: null },
   ];
 
